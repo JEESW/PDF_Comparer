@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>PDF Visual Compare Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        /* ── CSS 변수 ── */
+        :root {
+            --white:     #ffffff;
+            --gray-50:   #f8f9fb;
+            --gray-100:  #f0f2f5;
+            --gray-200:  #e4e7ed;
+            --gray-300:  #cdd2db;
+            --gray-400:  #9aa1b0;
+            --gray-500:  #6b7280;
+            --gray-700:  #374151;
+            --gray-900:  #111827;
+
+            --blue-50:   #eff6ff;
+            --blue-100:  #dbeafe;
+            --blue-200:  #bfdbfe;
+            --blue-300:  #93c5fd;
+            --blue-400:  #60a5fa;
+            --blue-500:  #3b82f6;
+            --blue-600:  #2563eb;
+            --blue-700:  #1d4ed8;
+
+            --red-100:   #fee2e2;
+            --red-700:   #b91c1c;
+
+            --green-100: #dcfce7;
+            --green-700: #15803d;
+
+            --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-sm: 0 1px 4px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+
+            --radius-sm: 5px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+
+            /* CDN 없이 시스템 폰트 사용 */
+            --font-ui:   -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', '맑은 고딕', sans-serif;
+            --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+            --toolbar-h: 56px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background: var(--gray-50);
+            color: var(--gray-900);
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── TOOLBAR ── */
+        .toolbar {
+            height: var(--toolbar-h);
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            flex-wrap: nowrap;
+            box-shadow: var(--shadow-xs);
+        }
+
+        /* 툴바 버전 레이블 텍스트 */
+        .toolbar > div:not(.summary) {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--gray-400);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .toolbar select,
+        .toolbar button {
+            height: 32px;
+        }
+
+        .toolbar select {
+            width: 200px;
+            padding: 0 28px 0 10px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            background-color: var(--gray-50);
+            /* 인라인 SVG 드롭다운 화살표 — 외부 리소스 없음 */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239aa1b0' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 9px center;
+            color: var(--gray-700);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .toolbar select:hover { border-color: var(--gray-300); }
+        .toolbar select:focus {
+            outline: none;
+            border-color: var(--blue-400);
+            box-shadow: 0 0 0 3px var(--blue-100);
+        }
+
+        .toolbar button {
+            padding: 0 12px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            background: var(--white);
+            color: var(--gray-700);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.12s;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .toolbar button:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-300);
+            color: var(--gray-900);
+        }
+
+        .toolbar button:active {
+            background: var(--gray-100);
+            transform: translateY(1px);
+            box-shadow: none;
+        }
+
+        /* 다시 비교 버튼만 블루 강조 */
+        #compareBtn {
+            background: var(--blue-600);
+            border-color: var(--blue-700);
+            color: var(--white);
+            box-shadow: var(--shadow-sm);
+        }
+
+        #compareBtn:hover {
+            background: var(--blue-700);
+            border-color: var(--blue-700);
+            color: var(--white);
+        }
+
+        .toolbar .summary {
+            margin-left: auto;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--gray-400);
+            letter-spacing: -0.01em;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* ── LAYOUT ── */
+        .layout {
+            display: grid;
+            grid-template-columns: 272px 1fr;
+            height: calc(100vh - var(--toolbar-h));
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            background: var(--white);
+            overflow: auto;
+            border-right: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar::-webkit-scrollbar       { width: 4px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 2px; }
+
+        .sidebar h2 {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--gray-400);
+            padding: 16px 16px 12px;
+            position: sticky;
+            top: 0;
+            background: var(--white);
+            z-index: 2;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .note {
+            font-size: 12px;
+            color: var(--gray-400);
+            line-height: 1.55;
+            padding: 10px 16px 8px;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .thumb-list {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding: 10px;
+        }
+
+        .thumb-item {
+            border: 1px solid var(--gray-100);
+            background: var(--white);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+        }
+
+        .thumb-item:hover {
+            border-color: var(--gray-300);
+            background: var(--gray-50);
+            box-shadow: var(--shadow-xs);
+        }
+
+        .thumb-item.active {
+            border-color: var(--blue-300);
+            background: var(--blue-50);
+            box-shadow: 0 0 0 3px var(--blue-100);
+        }
+
+        .thumb-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 6px;
+        }
+
+        .thumb-meta {
+            font-size: 11px;
+            color: var(--gray-400);
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        .badge {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .badge.pending { background: var(--gray-100); color: var(--gray-500); }
+        .badge.same    { background: var(--green-100); color: var(--green-700); }
+        .badge.changed { background: var(--red-100);   color: var(--red-700); }
+
+        .empty {
+            font-size: 13px;
+            color: var(--gray-400);
+            padding: 20px 6px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* ── MAIN ── */
+        .main {
+            display: flex;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .pdf-pane {
+            width: 50%;
+            overflow: auto;
+            border-right: 1px solid var(--gray-200);
+            background: var(--gray-100);
+            padding: 20px 16px;
+        }
+
+        .pdf-pane:last-child { border-right: none; }
+
+        .pdf-pane::-webkit-scrollbar       { width: 6px; height: 6px; }
+        .pdf-pane::-webkit-scrollbar-track { background: transparent; }
+        .pdf-pane::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+        .pdf-pane::-webkit-scrollbar-thumb:hover { background: var(--blue-400); }
+
+        /* ── PAGE CARD ── */
+        .page-wrap {
+            position: relative;
+            margin: 0 auto 20px;
+            width: fit-content;
+            background: var(--white);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .page-wrap:hover {
+            box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+            border-color: var(--gray-300);
+        }
+
+        .page-label {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-100);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--gray-400);
+            padding: 7px 12px;
+        }
+
+        .page-stage {
+            position: relative;
+            background: white;
+        }
+
+        canvas {
+            display: block;
+            background: white;
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        /* ── DIFF BOXES ── */
+        .diff-box {
+            position: absolute;
+            border-radius: 3px;
+            border: 1.5px solid rgba(239, 68, 68, 0.80);
+            background: rgba(239, 68, 68, 0.08);
+            transition: 0.2s ease;
+        }
+
+        .diff-box.current {
+            border-color: rgba(37, 99, 235, 0.95) !important;
+            background: rgba(59, 130, 246, 0.18) !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+
+        .diff-box.flash {
+            animation: flashBox 0.9s ease-in-out 2;
+        }
+
+        @keyframes flashBox {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+        /* ── PAGE STATUS PILL ── */
+        .page-status {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 3;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--white);
+            background: rgba(31, 41, 55, 0.75);
+            padding: 3px 8px;
+            border-radius: 999px;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        @media (max-width: 1000px) {
+            .layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 240px 1fr;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--gray-200);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="toolbar">
+    <input type="file" id="file1" accept="application/pdf"/>
+    <input type="file" id="file2" accept="application/pdf"/>
+
+    <button id="zoomOutBtn">Zoom -</button>
+    <button id="zoomInBtn">Zoom +</button>
+    <button id="prevBtn">이전 변경</button>
+    <button id="nextBtn">다음 변경</button>
+    <button id="compareBtn">다시 비교</button>
+
+    <div class="summary" id="summaryText">PDF 2개를 선택하세요.</div>
+</div>
+<div class="layout">
+    <aside class="sidebar">
+        <h2>변경 페이지 목록</h2>
+        <div class="note">
+            전체 페이지를 한 번에 렌더링하고 비교합니다.<br>
+            목록에는 변경이 감지된 페이지만 표시됩니다.<br>
+            항목을 클릭하면 해당 페이지로 이동합니다.
+        </div>
+        <div id="thumbList" class="thumb-list">
+            <div class="empty">비교 후 변경된 페이지 목록이 표시됩니다.</div>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div id="pdf1" class="pdf-pane"></div>
+        <div id="pdf2" class="pdf-pane"></div>
+    </div>
+</div>
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    var pdfDoc1 = null; // 왼쪽 PDF 문서 객체
+    var pdfDoc2 = null; // 오른쪽 PDF 문서 객체
+    var scale = 1.15; // 렌더링 배율
+    var dpr = window.devicePixelRatio || 1; // 레티나 디스플레이 대응 픽셀 비율
+
+    var pageViews1 = []; // 왼쪽 각 페이지의 DOM+데이터 객체 배열
+    var pageViews2 = []; // 오른쪽 각 페이지의 DOM+데이터 객체 배열
+    var diffEntries = [];     // 감지된 변경 목록 (페이지번호, 위치 등)
+    var currentDiffIndex = -1; // 현재 선택된 변경 인덱스
+    var renderGeneration = 0; // 렌더링 세대 번호 (중복 렌더 방지용)
+
+    var syncLock = false;      // 스크롤 무한루프 방지 잠금
+    var navLockUntil = 0;      // 버튼 이동 후 잠시 스크롤 동기화 억제
+
+    var file1El = document.getElementById("file1");
+    var file2El = document.getElementById("file2");
+    var pdf1El = document.getElementById("pdf1");
+    var pdf2El = document.getElementById("pdf2");
+    var thumbListEl = document.getElementById("thumbList");
+    var summaryTextEl = document.getElementById("summaryText");
+
+    file1El.addEventListener("change", loadPDF1);
+    file2El.addEventListener("change", loadPDF2);
+
+    document.getElementById("zoomInBtn").addEventListener("click", function () {
+        scale = Math.min(scale + 0.15, 3);
+        rerenderIfReady();
+    });
+
+    document.getElementById("zoomOutBtn").addEventListener("click", function () {
+        scale = Math.max(scale - 0.15, 0.5);
+        rerenderIfReady();
+    });
+
+    document.getElementById("prevBtn").addEventListener("click", goToPrevDiff);
+    document.getElementById("nextBtn").addEventListener("click", goToNextDiff);
+    document.getElementById("compareBtn").addEventListener("click", rerenderIfReady);
+
+    // 드롭다운에서 PDF를 선택하면 호출되어 해당 PDF를 로드합니다.
+    async function loadPDF1(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var data = await file.arrayBuffer();
+        pdfDoc1 = await pdfjsLib.getDocument({data: data}).promise;
+
+        rerenderIfReady();
+    }
+
+    // 드롭다운에서 PDF를 선택하면 호출되어 해당 PDF를 로드합니다.
+    async function loadPDF2(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var data = await file.arrayBuffer();
+        pdfDoc2 = await pdfjsLib.getDocument({data: data}).promise;
+
+        rerenderIfReady();
+    }
+
+    // 양쪽 PDF가 모두 로드된 상태인지 확인하고, 둘 다 있을 때만 본격적인 렌더링+비교를 시작합니다.
+    async function rerenderIfReady() {
+        if (!pdfDoc1 || !pdfDoc2) {
+            summaryTextEl.textContent = "PDF 2개를 선택하세요.";
+            return;
+        }
+        await renderAll();
+    }
+
+    // 렌더링 + 비교
+    async function renderAll() {
+        // renderGeneration을 1 올려서 "새 렌더링 시작"을 선언
+        // myGeneration에 현재 번호를 저장해두고, 나중에 "내가 시작한 작업이 아직 유효한가?" 체크에 사용
+        renderGeneration++;
+        var myGeneration = renderGeneration;
+
+        pdf1El.innerHTML = "";
+        pdf2El.innerHTML = "";
+        thumbListEl.innerHTML = "";
+        summaryTextEl.textContent = "렌더링 중...";
+
+        pageViews1 = [];
+        pageViews2 = [];
+        diffEntries = [];
+        currentDiffIndex = -1;
+
+        // 1단계: 페이지 껍데기(Shell) 생성
+        var pageCount = Math.min(pdfDoc1.numPages, pdfDoc2.numPages);
+
+        for (var i = 1; i <= pageCount; i++) {
+            var meta1 = await getPageMeta(pdfDoc1, i);
+            var meta2 = await getPageMeta(pdfDoc2, i);
+
+            var view1 = createPageShell(pdf1El, i, "좌측", meta1.width, meta1.height);
+            var view2 = createPageShell(pdf2El, i, "우측", meta2.width, meta2.height);
+
+            pageViews1.push(view1);
+            pageViews2.push(view2);
+        }
+
+        // 2단계: 페이지별 순차 렌더링 + 비교
+        summaryTextEl.textContent = "총 " + pageCount + "페이지 렌더링 중...";
+
+        for (var j = 1; j <= pageCount; j++) {
+            if (myGeneration !== renderGeneration) return;
+
+            await ensureRendered(pdfDoc1, pageViews1[j - 1], myGeneration);
+            await ensureRendered(pdfDoc2, pageViews2[j - 1], myGeneration);
+            await maybeComparePage(j, myGeneration);
+
+            summaryTextEl.textContent =
+                "총 " + pageCount + "페이지 / " + j + "페이지까지 비교 완료 / 현재 변경 " + diffEntries.length + "건";
+        }
+
+        // 3단계: 완료 처리
+        buildChangedThumbList();
+
+        var changedPages = new Set(diffEntries.map(function (d) {
+            return d.pageNo;
+        }));
+        summaryTextEl.textContent =
+            "총 " + pageCount + "페이지 / 변경 " + diffEntries.length + "건 / 변경 페이지 " + changedPages.size + "개";
+    }
+
+    // 특정 페이지를 실제로 그리지 않고, 크기(가로/세로)만 미리 조회합니다.
+    async function getPageMeta(pdf, pageNo) {
+        var page = await pdf.getPage(pageNo);
+        var viewport = page.getViewport({scale: scale});
+        return {width: viewport.width, height: viewport.height};
+    }
+
+    // 한 페이지의 DOM 구조를 만들어 화면에 배치하고, 나중에 참조할 데이터 객체를 반환합니다.
+    function createPageShell(container, pageNo, sideLabel, width, height) {
+        var pageWrap = document.createElement("div");
+        pageWrap.className = "page-wrap";
+
+        var label = document.createElement("div");
+        label.className = "page-label";
+        label.textContent = sideLabel + " PDF - 페이지 " + pageNo;
+
+        var stage = document.createElement("div");
+        stage.className = "page-stage";
+        stage.style.width = width + "px";
+        stage.style.height = height + "px";
+
+        var overlay = document.createElement("div");
+        overlay.className = "overlay";
+        overlay.style.width = width + "px";
+        overlay.style.height = height + "px";
+
+        var status = document.createElement("div");
+        status.className = "page-status";
+        status.textContent = "pending";
+
+        stage.appendChild(overlay);
+        stage.appendChild(status);
+
+        pageWrap.appendChild(label);
+        pageWrap.appendChild(stage);
+        container.appendChild(pageWrap);
+
+        return {
+            pageNo: pageNo,
+            width: width,
+            height: height,
+            pageWrap: pageWrap,
+            stage: stage,
+            overlay: overlay,
+            status: status,
+            canvas: null,
+            viewport: null,
+            textLines: [],
+            contentBounds: null,
+            isRendered: false,
+            isCompared: false,
+            renderToken: 0,
+            meta: {}
+        };
+    }
+
+    // 특정 페이지를 실제로 canvas에 그리고, 텍스트 데이터까지 추출해서 pageView 객체에 저장합니다.
+    async function ensureRendered(pdfDoc, pageView, generation) {
+        if (generation !== renderGeneration) return;
+        if (pageView.isRendered) return;
+
+        pageView.renderToken++;
+        var token = pageView.renderToken;
+        pageView.status.textContent = "rendering";
+
+        var page = await pdfDoc.getPage(pageView.pageNo);
+        var viewport = page.getViewport({scale: scale});
+
+        if (generation !== renderGeneration || token !== pageView.renderToken) {
+            return;
+        }
+
+        var canvas = document.createElement("canvas");
+        canvas.style.width = viewport.width + "px";
+        canvas.style.height = viewport.height + "px";
+        canvas.width = Math.floor(viewport.width * dpr);
+        canvas.height = Math.floor(viewport.height * dpr);
+
+        var ctx = canvas.getContext("2d", {alpha: false});
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        await page.render({
+            canvasContext: ctx,
+            viewport: viewport
+        }).promise;
+
+        var textContent = await page.getTextContent();
+        var textLines = extractTextLines(textContent, viewport);
+        var contentBounds = detectCanvasContentBounds(canvas, textLines);
+
+        if (generation !== renderGeneration || token !== pageView.renderToken) {
+            return;
+        }
+
+        if (!pageView.canvas) {
+            pageView.stage.insertBefore(canvas, pageView.overlay);
+        } else {
+            pageView.canvas.replaceWith(canvas);
+        }
+
+        pageView.canvas = canvas;
+        pageView.viewport = viewport;
+        pageView.textLines = textLines;
+        pageView.contentBounds = contentBounds;
+        pageView.isRendered = true;
+        pageView.status.textContent = "ready";
+    }
+
+    async function maybeComparePage(pageNo, generation) {
+        if (generation !== renderGeneration) return;
+
+        var left = pageViews1[pageNo - 1];
+        var right = pageViews2[pageNo - 1];
+        if (!left || !right) return;
+        if (!left.isRendered || !right.isRendered) return;
+        if (left.isCompared && right.isCompared) return;
+
+        clearPageDiffBoxes(left.overlay);
+        clearPageDiffBoxes(right.overlay);
+        removeDiffEntriesForPage(pageNo);
+
+        var result = detectDiffRects(left, right);
+
+        result.rects.forEach(function (rect, idx) {
+            var diffId = "p" + pageNo + "-d" + (idx + 1);
+            drawDiffBox(left.overlay, rect, diffId);
+            drawDiffBox(right.overlay, rect, diffId);
+
+            diffEntries.push({
+                id: diffId,
+                pageNo: pageNo,
+                leftRect: rect,
+                rightRect: rect
+            });
+        });
+
+        left.isCompared = true;
+        right.isCompared = true;
+        left.meta = result.meta;
+        right.meta = result.meta;
+
+        updatePageStatusBadge(left, result.rects.length);
+        updatePageStatusBadge(right, result.rects.length);
+        sortDiffEntries();
+    }
+
+    // 두 페이지의 canvas를 픽셀 단위로 비교해서 달라진 영역들을 사각형 목록으로 반환합니다.
+    function detectDiffRects(leftView, rightView) {
+        var canvas1 = leftView.canvas;
+        var canvas2 = rightView.canvas;
+        var cssWidth = leftView.width;
+        var cssHeight = leftView.height;
+
+        var ctx1 = canvas1.getContext("2d");
+        var ctx2 = canvas2.getContext("2d");
+
+        var w = canvas1.width;
+        var h = canvas1.height;
+
+        var img1 = ctx1.getImageData(0, 0, w, h).data;
+        var img2 = ctx2.getImageData(0, 0, w, h).data;
+
+        var ignoreMask = buildMatchedGlyphIgnoreMask(leftView, rightView, w, h);
+
+        var gridSize = Math.max(8, Math.round(10 * dpr));
+        var cols = Math.ceil(w / gridSize);
+        var rows = Math.ceil(h / gridSize);
+        var cells = Array.from({length: rows}, function () {
+            return Array(cols).fill(0);
+        });
+
+        for (var gy = 0; gy < rows; gy++) {
+            for (var gx = 0; gx < cols; gx++) {
+                var colorScore = 0;
+                var alphaScore = 0;
+                var samples = 0;
+
+                var startX = gx * gridSize;
+                var startY = gy * gridSize;
+                var endX = Math.min(startX + gridSize, w);
+                var endY = Math.min(startY + gridSize, h);
+
+                for (var y = startY; y < endY; y += 2) {
+                    for (var x = startX; x < endX; x += 2) {
+                        var idx = y * w + x;
+                        if (ignoreMask[idx]) continue;
+
+                        var p = idx * 4;
+
+                        var r1 = img1[p], g1 = img1[p + 1], b1 = img1[p + 2], a1 = img1[p + 3];
+                        var r2 = img2[p], g2 = img2[p + 1], b2 = img2[p + 2], a2 = img2[p + 3];
+
+                        var dr = r1 - r2;
+                        var dg = g1 - g2;
+                        var db = b1 - b2;
+                        var da = a1 - a2;
+
+                        var rgbDistance = Math.sqrt(dr * dr + dg * dg + db * db);
+                        var luminanceGap = Math.abs(
+                            (0.299 * r1 + 0.587 * g1 + 0.114 * b1) -
+                            (0.299 * r2 + 0.587 * g2 + 0.114 * b2)
+                        );
+                        var chromaWeighted = rgbDistance * 0.75 + luminanceGap * 0.25;
+
+                        colorScore += chromaWeighted;
+                        alphaScore += Math.abs(da);
+                        samples++;
+                    }
+                }
+
+                var avgColor = samples ? colorScore / samples : 0;
+                var avgAlpha = samples ? alphaScore / samples : 0;
+
+                if (avgColor > 22 || avgAlpha > 15) {
+                    cells[gy][gx] = 1;
+                }
+            }
+        }
+
+        var textRectsPx = buildTextDiffRectsPx(leftView, rightView);
+        var textBgRectsPx = buildMatchedTextBackgroundDiffRects(leftView, rightView);
+
+        for (var i = 0; i < textRectsPx.length; i++) {
+            stampRectToCells(textRectsPx[i], cells, gridSize, cols, rows);
+        }
+
+        for (var j = 0; j < textBgRectsPx.length; j++) {
+            stampRectToCells(textBgRectsPx[j], cells, gridSize, cols, rows);
+        }
+
+        smoothBinaryGrid(cells);
+
+        var rectsPx = connectedComponentsToRects(cells, gridSize, w, h)
+            .filter(function (r) {
+                return r.w > 12 * dpr && r.h > 12 * dpr;
+            })
+            .map(function (r) {
+                return expandRect(r, 6 * dpr, w, h);
+            });
+
+        var merged = mergeNearbyRects(rectsPx, 20 * dpr);
+
+        var scaleX = cssWidth / w;
+        var scaleY = cssHeight / h;
+
+        return {
+            rects: merged.map(function (r) {
+                return {
+                    x: r.x * scaleX,
+                    y: r.y * scaleY,
+                    w: r.w * scaleX,
+                    h: r.h * scaleY
+                };
+            }),
+            meta: {
+                ignoredTextBlocks: countMatchedTextPairs(leftView, rightView),
+                textDiffBlocks: textRectsPx.length,
+                textBgDiffBlocks: textBgRectsPx.length
+            }
+        };
+    }
+
+    // pdfjs가 추출한 텍스트 아이템들을 받아서, 같은 줄에 있는 것끼리 묶어 "줄 단위" 객체 배열로 정리합니다.
+    function extractTextLines(textContent, viewport) {
+        var rawItems = (textContent.items || [])
+            .map(function (item) {
+                var str = (item.str || "").trim();
+                if (!str) return null;
+
+                var tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+                var x = tx[4];
+                var baselineY = tx[5];
+                var h = Math.max(1, Math.abs(tx[3]) || Math.abs(item.height * viewport.scale) || 10);
+                var y = baselineY - h;
+                var w = Math.max(1, item.width * viewport.scale);
+
+                return {
+                    text: str,
+                    x: x,
+                    y: y,
+                    w: w,
+                    h: h,
+                    baselineY: baselineY
+                };
+            })
+            .filter(Boolean)
+            .sort(function (a, b) {
+                if (Math.abs(a.baselineY - b.baselineY) > 3) return a.baselineY - b.baselineY;
+                return a.x - b.x;
+            });
+
+        var lines = [];
+        for (var i = 0; i < rawItems.length; i++) {
+            var item = rawItems[i];
+            var targetLine = null;
+
+            for (var j = 0; j < lines.length; j++) {
+                var line = lines[j];
+                var threshold = Math.max(4, item.h * 0.6);
+                if (Math.abs(line.baselineY - item.baselineY) <= threshold) {
+                    targetLine = line;
+                    break;
+                }
+            }
+
+            if (!targetLine) {
+                targetLine = {baselineY: item.baselineY, items: []};
+                lines.push(targetLine);
+            }
+
+            targetLine.items.push(item);
+            targetLine.baselineY =
+                (targetLine.baselineY * (targetLine.items.length - 1) + item.baselineY) /
+                targetLine.items.length;
+        }
+
+        return lines.map(function (line) {
+            line.items.sort(function (a, b) {
+                return a.x - b.x;
+            });
+
+            var text = "";
+            for (var i = 0; i < line.items.length; i++) {
+                var cur = line.items[i];
+                text += cur.text;
+
+                if (i < line.items.length - 1) {
+                    var next = line.items[i + 1];
+                    var gap = next.x - (cur.x + cur.w);
+                    if (gap > Math.max(3, cur.h * 0.25)) text += " ";
+                }
+            }
+
+            var minX = Math.min.apply(null, line.items.map(function (i) {
+                return i.x;
+            }));
+            var minY = Math.min.apply(null, line.items.map(function (i) {
+                return i.y;
+            }));
+            var maxX = Math.max.apply(null, line.items.map(function (i) {
+                return i.x + i.w;
+            }));
+            var maxY = Math.max.apply(null, line.items.map(function (i) {
+                return i.y + i.h;
+            }));
+
+            return {
+                rawText: text.trim(),
+                text: normalizeTextForCompare(text),
+                x: minX,
+                y: minY,
+                w: Math.max(1, maxX - minX),
+                h: Math.max(1, maxY - minY)
+            };
+        }).filter(function (line) {
+            return line.text.length > 0;
+        });
+    }
+
+    // 비교용 텍스트를 정규화합니다.
+    function normalizeTextForCompare(str) {
+        return (str || "")
+            .replace(/\s+/g, " ")
+            .replace(/[‐-‒–—―]/g, "-")
+            .replace(/[""]/g, '"')
+            .replace(/['']/g, "'")
+            .trim()
+            .toLowerCase();
+    }
+
+    // 렌더링된 canvas에서 실제 콘텐츠(텍스트, 도형, 이미지 등)가 존재하는 영역의 경계 사각형을 찾아냅니다.
+    function detectCanvasContentBounds(canvas, textLines) {
+        textLines = textLines || [];
+
+        var ctx = canvas.getContext("2d");
+        var w = canvas.width;
+        var h = canvas.height;
+        var img = ctx.getImageData(0, 0, w, h).data;
+
+        var step = Math.max(2, Math.round(Math.min(w, h) / 700));
+        var minX = w, minY = h, maxX = -1, maxY = -1;
+
+        for (var y = 0; y < h; y += step) {
+            for (var x = 0; x < w; x += step) {
+                var p = (y * w + x) * 4;
+                var r = img[p];
+                var g = img[p + 1];
+                var b = img[p + 2];
+                var a = img[p + 3];
+                var lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                if (a < 250 || lum < 246) {
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+        }
+
+        for (var i = 0; i < textLines.length; i++) {
+            var line = textLines[i];
+            minX = Math.min(minX, line.x);
+            minY = Math.min(minY, line.y);
+            maxX = Math.max(maxX, line.x + line.w);
+            maxY = Math.max(maxY, line.y + line.h);
+        }
+
+        if (maxX < minX || maxY < minY) {
+            return {x: 0, y: 0, w: w, h: h};
+        }
+
+        var pad = Math.max(8, Math.round(Math.min(w, h) * 0.01));
+        var rx = Math.max(0, Math.floor(minX - pad));
+        var ry = Math.max(0, Math.floor(minY - pad));
+        var right = Math.min(w, Math.ceil(maxX + pad));
+        var bottom = Math.min(h, Math.ceil(maxY + pad));
+
+        return {
+            x: rx,
+            y: ry,
+            w: Math.max(1, right - rx),
+            h: Math.max(1, bottom - ry)
+        };
+    }
+
+    function normalizeLineRect(line, bounds, normW, normH) {
+        normW = normW || 1000;
+        normH = normH || 1000;
+
+        return {
+            text: line.text,
+            rawText: line.rawText,
+            x: ((line.x - bounds.x) / bounds.w) * normW,
+            y: ((line.y - bounds.y) / bounds.h) * normH,
+            w: (line.w / bounds.w) * normW,
+            h: (line.h / bounds.h) * normH
+        };
+    }
+
+    function centerY(rect) {
+        return rect.y + rect.h / 2;
+    }
+
+    // 두 문자열 사이의 편집 거리(Edit Distance)를 계산합니다. 한 문자열을 다른 문자열로 바꾸는 데 필요한 최소 편집 횟수입니다.
+    function levenshtein(a, b) {
+        var m = a.length;
+        var n = b.length;
+        var dp = Array.from({length: m + 1}, function () {
+            return new Array(n + 1).fill(0);
+        });
+
+        for (var i = 0; i <= m; i++) dp[i][0] = i;
+        for (var j = 0; j <= n; j++) dp[0][j] = j;
+
+        for (var y = 1; y <= m; y++) {
+            for (var x = 1; x <= n; x++) {
+                var cost = a[y - 1] === b[x - 1] ? 0 : 1;
+                dp[y][x] = Math.min(
+                    dp[y - 1][x] + 1,
+                    dp[y][x - 1] + 1,
+                    dp[y - 1][x - 1] + cost
+                );
+            }
+        }
+
+        return dp[m][n];
+    }
+
+    // 편집 거리를 0~1 사이의 유사도 점수로 변환합니다.
+    function textSimilarity(a, b) {
+        if (a === b) return 1;
+        if (!a || !b) return 0;
+
+        var maxLen = Math.max(a.length, b.length);
+        if (!maxLen) return 1;
+
+        return 1 - (levenshtein(a, b) / maxLen);
+    }
+
+    // 왼쪽 PDF와 오른쪽 PDF의 텍스트 줄들을 1:1로 매칭합니다. 같은 내용의 줄끼리 짝을 지어주고, 짝이 없는 줄은 "변경된 것"으로 분류합니다.
+    function matchTextLines(leftView, rightView) {
+        var normW = 1000;
+        var normH = 1000;
+
+        var leftLines = leftView.textLines.map(function (line) {
+            return normalizeLineRect(line, leftView.contentBounds, normW, normH);
+        });
+        var rightLines = rightView.textLines.map(function (line) {
+            return normalizeLineRect(line, rightView.contentBounds, normW, normH);
+        });
+
+        var usedRight = new Set();
+        var matched = [];
+        var unmatchedLeft = [];
+        var unmatchedRight = [];
+
+        for (var i = 0; i < leftLines.length; i++) {
+            var a = leftLines[i];
+            var bestIdx = -1;
+            var bestScore = Infinity;
+
+            for (var j = 0; j < rightLines.length; j++) {
+                if (usedRight.has(j)) continue;
+
+                var b = rightLines[j];
+                var sim = textSimilarity(a.text, b.text);
+                var yGap = Math.abs(centerY(a) - centerY(b));
+                var xGap = Math.abs(a.x - b.x);
+
+                if (sim < 0.96 && !(sim >= 0.88 && yGap <= 28)) continue;
+                if (xGap > 420) continue;
+
+                var score =
+                    (1 - sim) * 100 +
+                    yGap * 0.8 +
+                    xGap * 0.04 +
+                    Math.abs(a.w - b.w) * 0.03;
+
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestIdx = j;
+                }
+            }
+
+            if (bestIdx >= 0) {
+                usedRight.add(bestIdx);
+                matched.push({
+                    left: leftView.textLines[i],
+                    right: rightView.textLines[bestIdx],
+                    leftNorm: a,
+                    rightNorm: rightLines[bestIdx],
+                    similarity: textSimilarity(a.text, rightLines[bestIdx].text)
+                });
+            } else {
+                unmatchedLeft.push(leftView.textLines[i]);
+            }
+        }
+
+        for (var k = 0; k < rightLines.length; k++) {
+            if (!usedRight.has(k)) {
+                unmatchedRight.push(rightView.textLines[k]);
+            }
+        }
+
+        return {matched: matched, unmatchedLeft: unmatchedLeft, unmatchedRight: unmatchedRight};
+    }
+
+    function countMatchedTextPairs(leftView, rightView) {
+        return matchTextLines(leftView, rightView).matched.length;
+    }
+
+    // 매칭된 텍스트 줄들의 영역을 픽셀 비교에서 완전히 제외하는 마스크 배열을 만듭니다.
+    function buildMatchedGlyphIgnoreMask(leftView, rightView, w, h) {
+        var matchedResult = matchTextLines(leftView, rightView);
+        var matched = matchedResult.matched;
+        var mask = new Uint8Array(w * h);
+
+        var ctx1 = leftView.canvas.getContext("2d");
+        var ctx2 = rightView.canvas.getContext("2d");
+        var img1 = ctx1.getImageData(0, 0, w, h).data;
+        var img2 = ctx2.getImageData(0, 0, w, h).data;
+
+        for (var i = 0; i < matched.length; i++) {
+            var pair = matched[i];
+            var union = unionRect(
+                expandRect(pair.left, 2 * dpr, w, h),
+                expandRect(pair.right, 2 * dpr, w, h)
+            );
+
+            var x0 = Math.max(0, Math.floor(union.x));
+            var y0 = Math.max(0, Math.floor(union.y));
+            var x1 = Math.min(w, Math.ceil(union.x + union.w));
+            var y1 = Math.min(h, Math.ceil(union.y + union.h));
+
+            for (var y = y0; y < y1; y++) {
+                for (var x = x0; x < x1; x++) {
+                    var idx = y * w + x;
+                    var p = idx * 4;
+
+                    var lum1 = 0.299 * img1[p] + 0.587 * img1[p + 1] + 0.114 * img1[p + 2];
+                    var lum2 = 0.299 * img2[p] + 0.587 * img2[p + 1] + 0.114 * img2[p + 2];
+
+                    var sat1 = Math.max(img1[p], img1[p + 1], img1[p + 2]) - Math.min(img1[p], img1[p + 1], img1[p + 2]);
+                    var sat2 = Math.max(img2[p], img2[p + 1], img2[p + 2]) - Math.min(img2[p], img2[p + 1], img2[p + 2]);
+
+                    var isInk1 = img1[p + 3] > 10 && lum1 < 205 && sat1 < 70;
+                    var isInk2 = img2[p + 3] > 10 && lum2 < 205 && sat2 < 70;
+
+                    if (isInk1 || isInk2) {
+                        mask[idx] = 1;
+                    }
+                }
+            }
+        }
+
+        return mask;
+    }
+
+    // 텍스트 매칭 결과를 바탕으로 변경된 텍스트 줄들의 픽셀 좌표 사각형 목록을 만듭니다.
+    function buildTextDiffRectsPx(leftView, rightView) {
+        var matchedResult = matchTextLines(leftView, rightView);
+        var matched = matchedResult.matched;
+        var unmatchedLeft = matchedResult.unmatchedLeft;
+        var unmatchedRight = matchedResult.unmatchedRight;
+        var rects = [];
+
+        for (var i = 0; i < matched.length; i++) {
+            var pair = matched[i];
+            if (pair.similarity < 0.985) {
+                rects.push(
+                    expandRect(
+                        unionRect(pair.left, pair.right),
+                        8 * dpr,
+                        leftView.canvas.width,
+                        leftView.canvas.height
+                    )
+                );
+            }
+        }
+
+        for (var j = 0; j < unmatchedLeft.length; j++) {
+            rects.push(expandRect(unmatchedLeft[j], 8 * dpr, leftView.canvas.width, leftView.canvas.height));
+        }
+
+        for (var k = 0; k < unmatchedRight.length; k++) {
+            rects.push(expandRect(unmatchedRight[k], 8 * dpr, rightView.canvas.width, rightView.canvas.height));
+        }
+
+        return mergeNearbyRects(rects, 12 * dpr)
+            .filter(function (r) {
+                return r.w > 10 * dpr && r.h > 8 * dpr;
+            });
+    }
+
+    // 텍스트 내용은 같지만 배경색이 달라진 영역을 찾아냅니다.
+    function buildMatchedTextBackgroundDiffRects(leftView, rightView) {
+        var matchedResult = matchTextLines(leftView, rightView);
+        var matched = matchedResult.matched;
+        var rects = [];
+
+        var w = leftView.canvas.width;
+        var h = leftView.canvas.height;
+
+        var ctx1 = leftView.canvas.getContext("2d");
+        var ctx2 = rightView.canvas.getContext("2d");
+        var img1 = ctx1.getImageData(0, 0, w, h).data;
+        var img2 = ctx2.getImageData(0, 0, w, h).data;
+
+        var localGrid = Math.max(3, Math.round(4 * dpr));
+
+        for (var i = 0; i < matched.length; i++) {
+            var pair = matched[i];
+            var rect = expandRect(
+                unionRect(
+                    expandRect(pair.left, 5 * dpr, w, h),
+                    expandRect(pair.right, 5 * dpr, w, h)
+                ),
+                2 * dpr,
+                w,
+                h
+            );
+
+            var x0 = Math.max(0, Math.floor(rect.x));
+            var y0 = Math.max(0, Math.floor(rect.y));
+            var x1 = Math.min(w, Math.ceil(rect.x + rect.w));
+            var y1 = Math.min(h, Math.ceil(rect.y + rect.h));
+
+            var cols = Math.ceil((x1 - x0) / localGrid);
+            var rows = Math.ceil((y1 - y0) / localGrid);
+            var cells = Array.from({length: rows}, function () {
+                return Array(cols).fill(0);
+            });
+
+            for (var gy = 0; gy < rows; gy++) {
+                for (var gx = 0; gx < cols; gx++) {
+                    var sx = x0 + gx * localGrid;
+                    var sy = y0 + gy * localGrid;
+                    var ex = Math.min(sx + localGrid, x1);
+                    var ey = Math.min(sy + localGrid, y1);
+
+                    var changed = 0;
+                    var colored = 0;
+                    var samples = 0;
+
+                    for (var y = sy; y < ey; y++) {
+                        for (var x = sx; x < ex; x++) {
+                            var idx = y * w + x;
+                            var p = idx * 4;
+
+                            var r1 = img1[p], g1 = img1[p + 1], b1 = img1[p + 2], a1 = img1[p + 3];
+                            var r2 = img2[p], g2 = img2[p + 1], b2 = img2[p + 2], a2 = img2[p + 3];
+
+                            var lum1 = 0.299 * r1 + 0.587 * g1 + 0.114 * b1;
+                            var lum2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2;
+
+                            var sat1 = Math.max(r1, g1, b1) - Math.min(r1, g1, b1);
+                            var sat2 = Math.max(r2, g2, b2) - Math.min(r2, g2, b2);
+
+                            var isInk1 = a1 > 10 && lum1 < 205 && sat1 < 70;
+                            var isInk2 = a2 > 10 && lum2 < 205 && sat2 < 70;
+
+                            if (isInk1 || isInk2) continue;
+
+                            var dr = r1 - r2;
+                            var dg = g1 - g2;
+                            var db = b1 - b2;
+                            var rgbDistance = Math.sqrt(dr * dr + dg * dg + db * db);
+
+                            var isColoredBg1 = lum1 < 248 && sat1 > 18;
+                            var isColoredBg2 = lum2 < 248 && sat2 > 18;
+
+                            if (rgbDistance > 28) changed++;
+                            if (isColoredBg1 || isColoredBg2) colored++;
+                            samples++;
+                        }
+                    }
+
+                    if (!samples) continue;
+
+                    var changedRatio = changed / samples;
+                    var coloredRatio = colored / samples;
+
+                    if (changedRatio > 0.18 && coloredRatio > 0.10) {
+                        cells[gy][gx] = 1;
+                    }
+                }
+            }
+
+            smoothBinaryGrid(cells);
+
+            var localRects = connectedComponentsToRects(cells, localGrid, x1 - x0, y1 - y0)
+                .map(function (r) {
+                    return {
+                        x: x0 + r.x,
+                        y: y0 + r.y,
+                        w: r.w,
+                        h: r.h
+                    };
+                })
+                .filter(function (r) {
+                    return r.w > 6 * dpr && r.h > 4 * dpr;
+                })
+                .map(function (r) {
+                    return expandRect(r, 2 * dpr, w, h);
+                });
+
+            rects.push.apply(rects, localRects);
+        }
+
+        return mergeNearbyRects(rects, 8 * dpr)
+            .filter(function (r) {
+                return r.w > 10 * dpr && r.h > 8 * dpr;
+            });
+    }
+
+    function stampRectToCells(rect, cells, gridSize, cols, rows) {
+        var startCol = Math.max(0, Math.floor(rect.x / gridSize));
+        var endCol = Math.min(cols - 1, Math.floor((rect.x + rect.w) / gridSize));
+        var startRow = Math.max(0, Math.floor(rect.y / gridSize));
+        var endRow = Math.min(rows - 1, Math.floor((rect.y + rect.h) / gridSize));
+
+        for (var gy = startRow; gy <= endRow; gy++) {
+            for (var gx = startCol; gx <= endCol; gx++) {
+                cells[gy][gx] = 1;
+            }
+        }
+    }
+
+    function clearPageDiffBoxes(overlay) {
+        overlay.querySelectorAll(".diff-box").forEach(function (el) {
+            el.remove();
+        });
+    }
+
+    function removeDiffEntriesForPage(pageNo) {
+        diffEntries = diffEntries.filter(function (d) {
+            return d.pageNo !== pageNo;
+        });
+    }
+
+    function sortDiffEntries() {
+        diffEntries.sort(function (a, b) {
+            if (a.pageNo !== b.pageNo) return a.pageNo - b.pageNo;
+            if (a.leftRect.y !== b.leftRect.y) return a.leftRect.y - b.leftRect.y;
+            return a.leftRect.x - b.leftRect.x;
+        });
+    }
+
+    // 0/1로 채워진 그리드에서 노이즈를 제거하고 덩어리를 자연스럽게 만듭니다.
+    function smoothBinaryGrid(cells) {
+        var rows = cells.length;
+        var cols = cells[0] ? cells[0].length : 0;
+        var copy = cells.map(function (row) {
+            return row.slice();
+        });
+
+        for (var y = 0; y < rows; y++) {
+            for (var x = 0; x < cols; x++) {
+                var neighbors = 0;
+
+                for (var dy = -1; dy <= 1; dy++) {
+                    for (var dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        var ny = y + dy;
+                        var nx = x + dx;
+
+                        if (ny >= 0 && ny < rows && nx >= 0 && nx < cols) {
+                            neighbors += copy[ny][nx];
+                        }
+                    }
+                }
+
+                if (copy[y][x] === 0 && neighbors >= 7) cells[y][x] = 1;
+                if (copy[y][x] === 1 && neighbors <= 1) cells[y][x] = 0;
+            }
+        }
+    }
+
+    // 1로 표시된 셀들 중 서로 연결된 덩어리(연결 컴포넌트)를 찾아서 각각을 하나의 사각형으로 변환합니다.
+    function connectedComponentsToRects(cells, gridSize, maxW, maxH) {
+        var rows = cells.length;
+        var cols = cells[0] ? cells[0].length : 0;
+        var visited = Array.from({length: rows}, function () {
+            return Array(cols).fill(false);
+        });
+        var rects = [];
+        var dirs = [
+            [1, 0], [-1, 0], [0, 1], [0, -1],
+            [1, 1], [1, -1], [-1, 1], [-1, -1]
+        ];
+
+        for (var y = 0; y < rows; y++) {
+            for (var x = 0; x < cols; x++) {
+                if (cells[y][x] !== 1 || visited[y][x]) continue;
+
+                var minX = x, maxX = x, minY = y, maxY = y;
+                var stack = [[x, y]];
+                visited[y][x] = true;
+
+                while (stack.length) {
+                    var current = stack.pop();
+                    var cx = current[0];
+                    var cy = current[1];
+                    minX = Math.min(minX, cx);
+                    maxX = Math.max(maxX, cx);
+                    minY = Math.min(minY, cy);
+                    maxY = Math.max(maxY, cy);
+
+                    for (var i = 0; i < dirs.length; i++) {
+                        var nx = cx + dirs[i][0];
+                        var ny = cy + dirs[i][1];
+
+                        if (
+                            nx >= 0 && nx < cols &&
+                            ny >= 0 && ny < rows &&
+                            !visited[ny][nx] &&
+                            cells[ny][nx] === 1
+                        ) {
+                            visited[ny][nx] = true;
+                            stack.push([nx, ny]);
+                        }
+                    }
+                }
+
+                rects.push({
+                    x: minX * gridSize,
+                    y: minY * gridSize,
+                    w: Math.min((maxX - minX + 1) * gridSize, maxW),
+                    h: Math.min((maxY - minY + 1) * gridSize, maxH)
+                });
+            }
+        }
+
+        return rects;
+    }
+
+    // 서로 가까운 사각형들을 하나로 합칩니다.
+    function mergeNearbyRects(rects, gap) {
+        gap = typeof gap === "number" ? gap : 20;
+
+        var merged = rects.slice();
+        var changed = true;
+
+        while (changed) {
+            changed = false;
+            var result = [];
+            var used = Array(merged.length).fill(false);
+
+            for (var i = 0; i < merged.length; i++) {
+                if (used[i]) continue;
+
+                var base = Object.assign({}, merged[i]);
+
+                for (var j = i + 1; j < merged.length; j++) {
+                    if (used[j]) continue;
+                    if (areRectsNear(base, merged[j], gap)) {
+                        base = unionRect(base, merged[j]);
+                        used[j] = true;
+                        changed = true;
+                    }
+                }
+
+                used[i] = true;
+                result.push(base);
+            }
+
+            merged = result;
+        }
+
+        return merged;
+    }
+
+    // 4개 조건 중 하나라도 참이면 "멀다" → NOT → false 반환
+    function areRectsNear(a, b, gap) {
+        return !(
+            a.x + a.w + gap < b.x ||
+            b.x + b.w + gap < a.x ||
+            a.y + a.h + gap < b.y ||
+            b.y + b.h + gap < a.y
+        );
+    }
+
+    // 두 사각형을 모두 포함하는 최소 사각형
+    function unionRect(a, b) {
+        var x = Math.min(a.x, b.x);
+        var y = Math.min(a.y, b.y);
+        var right = Math.max(a.x + a.w, b.x + b.w);
+        var bottom = Math.max(a.y + a.h, b.y + b.h);
+        return {x: x, y: y, w: right - x, h: bottom - y};
+    }
+
+    function expandRect(rect, padding, maxW, maxH) {
+        var x = Math.max(0, rect.x - padding);
+        var y = Math.max(0, rect.y - padding);
+        var right = Math.min(maxW, rect.x + rect.w + padding);
+        var bottom = Math.min(maxH, rect.y + rect.h + padding);
+        return {x: x, y: y, w: right - x, h: bottom - y};
+    }
+
+    function drawDiffBox(overlay, rect, diffId) {
+        var box = document.createElement("div");
+        box.className = "diff-box";
+        box.dataset.diffId = diffId;
+        box.style.left = rect.x + "px";
+        box.style.top = rect.y + "px";
+        box.style.width = rect.w + "px";
+        box.style.height = rect.h + "px";
+        overlay.appendChild(box);
+    }
+
+    function buildChangedThumbList() {
+        thumbListEl.innerHTML = "";
+
+        var changedPages = Array.from(new Set(diffEntries.map(function (d) {
+            return d.pageNo;
+        }))).sort(function (a, b) {
+            return a - b;
+        });
+
+        if (!changedPages.length) {
+            thumbListEl.innerHTML = '<div class="empty">변경된 페이지가 없습니다.</div>';
+            return;
+        }
+
+        for (var i = 0; i < changedPages.length; i++) {
+            (function (pageNo) {
+                var pageDiffs = diffEntries.filter(function (d) {
+                    return d.pageNo === pageNo;
+                });
+                var meta = (pageViews1[pageNo - 1] && pageViews1[pageNo - 1].meta) || {};
+
+                var item = document.createElement("div");
+                item.className = "thumb-item";
+                item.dataset.pageNo = pageNo;
+
+                var titleDiv = document.createElement("div");
+                titleDiv.className = "thumb-title";
+                titleDiv.textContent = "페이지 " + pageNo;
+
+                var metaDiv = document.createElement("div");
+                metaDiv.className = "thumb-meta";
+                metaDiv.textContent =
+                    "변경 " + pageDiffs.length + "건\n" +
+                    "동일 텍스트 무시 " + (meta.ignoredTextBlocks || 0) + "줄 / " +
+                    "텍스트 변경 " + (meta.textDiffBlocks || 0) + "건 / " +
+                    "텍스트 배경색 변경 " + (meta.textBgDiffBlocks || 0) + "건";
+
+                var badge = document.createElement("span");
+                badge.className = "badge changed";
+                badge.textContent = "changed";
+
+                item.appendChild(titleDiv);
+                item.appendChild(metaDiv);
+                item.appendChild(badge);
+
+                item.addEventListener("click", function () {
+                    var firstIndex = diffEntries.findIndex(function (d) {
+                        return d.pageNo === pageNo;
+                    });
+                    if (firstIndex >= 0) {
+                        goToDiff(firstIndex);
+                    } else {
+                        scrollToPage(pageNo);
+                        highlightThumbOnly(pageNo);
+                    }
+                });
+
+                thumbListEl.appendChild(item);
+            })(changedPages[i]);
+        }
+    }
+
+    function updatePageStatusBadge(pageView, diffCount) {
+        if (!pageView || !pageView.status) return;
+        pageView.status.textContent = diffCount > 0 ? ("changed " + diffCount) : "same";
+    }
+
+    // 특정 페이지로 양쪽 패널을 동시에 스크롤합니다.
+    function scrollToPage(pageNo, smooth) {
+        smooth = smooth !== false;
+
+        var left = pageViews1[pageNo - 1];
+        var right = pageViews2[pageNo - 1];
+        if (!left || !right) return;
+
+        navLockUntil = performance.now() + 500;
+
+        var top1 = Math.max(0, left.pageWrap.offsetTop - 20);
+        var top2 = Math.max(0, right.pageWrap.offsetTop - 20);
+
+        pdf1El.scrollTo({top: top1, behavior: smooth ? "smooth" : "auto"});
+        pdf2El.scrollTo({top: top2, behavior: smooth ? "smooth" : "auto"});
+    }
+
+    // diff 박스가 화면 중앙 약간 위에 오도록 스크롤 위치를 계산합니다.
+    function getScrollTopForRect(pageWrap, rect, container) {
+        var targetTop = pageWrap.offsetTop + rect.y - (container.clientHeight * 0.35);
+        var max = Math.max(0, container.scrollHeight - container.clientHeight);
+        return Math.max(0, Math.min(targetTop, max));
+    }
+
+    // 특정 diff 항목으로 이동하고 하이라이트합니다.
+    async function goToDiff(index, smooth) {
+        smooth = smooth !== false;
+
+        if (!diffEntries.length) return;
+
+        if (index < 0) index = diffEntries.length - 1;
+        if (index >= diffEntries.length) index = 0;
+
+        currentDiffIndex = index;
+        var entry = diffEntries[index];
+
+        highlightCurrent();
+
+        var leftView = pageViews1[entry.pageNo - 1];
+        var rightView = pageViews2[entry.pageNo - 1];
+        if (!leftView || !rightView) return;
+
+        var top1 = getScrollTopForRect(leftView.pageWrap, entry.leftRect, pdf1El);
+        var top2 = getScrollTopForRect(rightView.pageWrap, entry.rightRect, pdf2El);
+
+        navLockUntil = performance.now() + 500;
+        pdf1El.scrollTo({top: top1, behavior: smooth ? "smooth" : "auto"});
+        pdf2El.scrollTo({top: top2, behavior: smooth ? "smooth" : "auto"});
+
+        flashCurrent(entry.id);
+    }
+
+    function goToNextDiff() {
+        if (!diffEntries.length) return;
+        goToDiff(currentDiffIndex + 1);
+    }
+
+    function goToPrevDiff() {
+        if (!diffEntries.length) return;
+        goToDiff(currentDiffIndex - 1);
+    }
+
+    // 현재 diff 박스에 깜빡이는 애니메이션을 줍니다.
+    function flashCurrent(diffId) {
+        document.querySelectorAll('.diff-box[data-diff-id="' + diffId + '"]').forEach(function (el) {
+            el.classList.remove("flash");
+            void el.offsetWidth;
+            el.classList.add("flash");
+            setTimeout(function () {
+                el.classList.remove("flash");
+            }, 1000);
+        });
+    }
+
+    // 스크롤 없이 사이드바 항목만 활성화합니다.
+    function highlightThumbOnly(pageNo) {
+        document.querySelectorAll(".thumb-item.active").forEach(function (el) {
+            el.classList.remove("active");
+        });
+
+        var thumbItem = thumbListEl.querySelector('.thumb-item[data-page-no="' + pageNo + '"]');
+        if (thumbItem) {
+            thumbItem.classList.add("active");
+            thumbItem.scrollIntoView({block: "nearest", behavior: "smooth"});
+        }
+    }
+
+    // 현재 선택된 diff 박스를 파란색으로 강조하고, 사이드바에서도 해당 항목을 활성화합니다.
+    function highlightCurrent() {
+        document.querySelectorAll(".diff-box.current").forEach(function (el) {
+            el.classList.remove("current");
+        });
+
+        document.querySelectorAll(".thumb-item.active").forEach(function (el) {
+            el.classList.remove("active");
+        });
+
+        if (currentDiffIndex < 0 || currentDiffIndex >= diffEntries.length) return;
+
+        var current = diffEntries[currentDiffIndex];
+
+        document.querySelectorAll('.diff-box[data-diff-id="' + current.id + '"]').forEach(function (el) {
+            el.classList.add("current");
+        });
+
+        var thumbItem = thumbListEl.querySelector('.thumb-item[data-page-no="' + current.pageNo + '"]');
+        if (thumbItem) {
+            thumbItem.classList.add("active");
+            thumbItem.scrollIntoView({block: "nearest", behavior: "smooth"});
+        }
+    }
+
+    pdf1El.addEventListener("scroll", function () {
+        syncScroll(pdf1El, pdf2El);
+    });
+    pdf2El.addEventListener("scroll", function () {
+        syncScroll(pdf2El, pdf1El);
+    });
+
+    // 한쪽 패널을 스크롤하면 반대쪽도 같은 비율로 스크롤합니다.
+    function syncScroll(source, target) {
+        if (syncLock) return;
+        if (performance.now() < navLockUntil) return;
+
+        syncLock = true;
+
+        var sourceMaxY = Math.max(1, source.scrollHeight - source.clientHeight);
+        var targetMaxY = Math.max(1, target.scrollHeight - target.clientHeight);
+        var ratioY = source.scrollTop / sourceMaxY;
+        target.scrollTop = ratioY * targetMaxY;
+
+        var sourceMaxX = Math.max(1, source.scrollWidth - source.clientWidth);
+        var targetMaxX = Math.max(1, target.scrollWidth - target.clientWidth);
+        var ratioX = source.scrollLeft / sourceMaxX;
+        target.scrollLeft = ratioX * targetMaxX;
+
+        requestAnimationFrame(function () {
+            syncLock = false;
+        });
+    }
+</script>
+</body>
+</html>
