@@ -7,36 +7,34 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root {
-            --white: #ffffff;
-            --gray-50: #f8f9fb;
-            --gray-100: #f0f2f5;
-            --gray-200: #e4e7ed;
-            --gray-300: #cdd2db;
-            --gray-400: #9aa1b0;
-            --gray-500: #6b7280;
-            --gray-700: #374151;
-            --gray-900: #111827;
-            --blue-50: #eff6ff;
-            --blue-100: #dbeafe;
-            --blue-300: #93c5fd;
-            --blue-400: #60a5fa;
-            --blue-600: #2563eb;
-            --blue-700: #1d4ed8;
-            --red-100: #fee2e2;
-            --red-700: #b91c1c;
+            --white:     #ffffff;
+            --gray-50:   #f8f9fb;
+            --gray-100:  #f0f2f5;
+            --gray-200:  #e4e7ed;
+            --gray-300:  #cdd2db;
+            --gray-400:  #9aa1b0;
+            --gray-500:  #6b7280;
+            --gray-700:  #374151;
+            --gray-900:  #111827;
+            --blue-50:   #eff6ff;
+            --blue-100:  #dbeafe;
+            --blue-200:  #bfdbfe;
+            --blue-300:  #93c5fd;
+            --blue-400:  #60a5fa;
+            --blue-500:  #3b82f6;
+            --blue-600:  #2563eb;
+            --blue-700:  #1d4ed8;
+            --red-100:   #fee2e2;
+            --red-700:   #b91c1c;
             --green-100: #dcfce7;
             --green-700: #15803d;
-            --amber-100: #fef3c7;
-            --amber-700: #b45309;
-            --violet-100: #ede9fe;
-            --violet-700: #6d28d9;
             --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
             --shadow-sm: 0 1px 4px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
             --shadow-lg: 0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
             --radius-sm: 5px;
             --radius-md: 8px;
             --radius-lg: 12px;
-            --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', '맑은 고딕', sans-serif;
+            --font-ui:   -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', '맑은 고딕', sans-serif;
             --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
             --toolbar-h: 56px;
         }
@@ -63,8 +61,52 @@
             flex-wrap: nowrap;
             box-shadow: var(--shadow-xs);
         }
+        .toolbar > div:not(.summary) {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--gray-400);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .toolbar select, .toolbar button { height: 32px; }
+        .toolbar .select-wrap {
+            position: relative;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .toolbar .select-wrap select {
+            width: 200px;
+            padding: 0 28px 0 10px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            background: var(--gray-50);
+            color: var(--gray-700);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            box-shadow: var(--shadow-xs);
+        }
+        .toolbar .select-wrap::after {
+            content: "";
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            width: 8px;
+            height: 8px;
+            border-right: 1.5px solid var(--gray-400);
+            border-bottom: 1.5px solid var(--gray-400);
+            transform: translateY(-65%) rotate(45deg);
+            pointer-events: none;
+        }
+        .toolbar select:hover { border-color: var(--gray-300); }
+        .toolbar select:focus { outline: none; border-color: var(--blue-400); box-shadow: 0 0 0 3px var(--blue-100); }
         .toolbar button {
-            height: 32px;
             padding: 0 12px;
             border: 1px solid var(--gray-200);
             border-radius: var(--radius-sm);
@@ -93,7 +135,7 @@
         }
         .layout {
             display: grid;
-            grid-template-columns: 300px 1fr;
+            grid-template-columns: 272px 1fr;
             height: calc(100vh - var(--toolbar-h));
         }
         .sidebar {
@@ -149,10 +191,9 @@
             letter-spacing: 0.05em;
             text-transform: uppercase;
         }
-        .badge.same    { background: var(--green-100);  color: var(--green-700); }
-        .badge.changed { background: var(--red-100);    color: var(--red-700); }
-        .badge.inserted { background: var(--amber-100); color: var(--amber-700); }
-        .badge.deleted  { background: var(--violet-100); color: var(--violet-700); }
+        .badge.pending { background: var(--gray-100); color: var(--gray-500); }
+        .badge.same    { background: var(--green-100); color: var(--green-700); }
+        .badge.changed { background: var(--red-100);   color: var(--red-700); }
         .empty { font-size: 13px; color: var(--gray-400); padding: 20px 6px; text-align: center; line-height: 1.6; }
         .main { display: flex; height: 100%; overflow: hidden; }
         .pdf-pane {
@@ -179,7 +220,14 @@
             transition: box-shadow 0.2s, border-color 0.2s;
         }
         .page-wrap:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06); border-color: var(--gray-300); }
-        .page-label { background: var(--white); border-bottom: 1px solid var(--gray-100); font-family: var(--font-mono); font-size: 11px; color: var(--gray-400); padding: 7px 12px; }
+        .page-label {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-100);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--gray-400);
+            padding: 7px 12px;
+        }
         .page-stage { position: relative; background: white; }
         canvas { display: block; background: white; }
         .overlay { position: absolute; inset: 0; pointer-events: none; }
@@ -190,52 +238,266 @@
             background: rgba(239, 68, 68, 0.08);
             transition: 0.2s ease;
         }
-        .diff-box.insert-box { border-color: rgba(217,119,6,0.9); background: rgba(245,158,11,0.15); }
-        .diff-box.delete-box { border-color: rgba(109,40,217,0.9); background: rgba(139,92,246,0.15); }
         .diff-box.current {
-            border-color: rgba(37,99,235,0.95) !important;
-            background: rgba(59,130,246,0.18) !important;
-            box-shadow: 0 0 0 2px rgba(59,130,246,0.3);
+            border-color: rgba(37, 99, 235, 0.95) !important;
+            background: rgba(59, 130, 246, 0.18) !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
         }
         .diff-box.flash { animation: flashBox 0.9s ease-in-out 2; }
-        @keyframes flashBox { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        @keyframes flashBox {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
         .page-status {
             position: absolute;
-            top: 8px; right: 8px;
+            top: 8px;
+            right: 8px;
             z-index: 3;
             font-family: var(--font-mono);
             font-size: 10px;
             font-weight: 500;
             color: var(--white);
-            background: rgba(31,41,55,0.75);
+            background: rgba(31, 41, 55, 0.75);
             padding: 3px 8px;
             border-radius: 999px;
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
         }
-        .missing-stage {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background:
-                linear-gradient(135deg, rgba(15,23,42,0.03) 25%, transparent 25%) -16px 0/32px 32px,
-                linear-gradient(225deg, rgba(15,23,42,0.03) 25%, transparent 25%) -16px 0/32px 32px,
-                linear-gradient(315deg, rgba(15,23,42,0.03) 25%, transparent 25%) 0 0/32px 32px,
-                linear-gradient(45deg,  rgba(15,23,42,0.03) 25%, transparent 25%) 0 0/32px 32px,
-                #fbfdff;
-            color: var(--gray-500);
-            text-align: center;
-            padding: 20px;
-        }
-        .missing-stage .missing-content { max-width: 70%; line-height: 1.7; font-size: 14px; }
-        .missing-stage .missing-title { font-weight: 700; margin-bottom: 8px; color: var(--gray-700); }
         @media (max-width: 1000px) {
             .layout { grid-template-columns: 1fr; grid-template-rows: 240px 1fr; }
             .sidebar { border-right: none; border-bottom: 1px solid var(--gray-200); }
         }
+
+        /* ── 로딩 오버레이 ── */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: rgba(15, 23, 42, 0.50);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+        }
+        #loadingOverlay.visible { display: flex; }
+
+        .ld-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 24px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.10);
+            padding: 28px 32px 24px;
+            min-width: 400px;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            animation: ldSlideIn 0.2s ease-out;
+        }
+        @keyframes ldSlideIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0)    scale(1);    }
+        }
+
+        .ld-header {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+        .ld-spinner {
+            width: 20px; height: 20px;
+            border: 2.5px solid var(--blue-100);
+            border-top-color: var(--blue-600);
+            border-radius: 50%;
+            flex-shrink: 0;
+            animation: ldSpin 0.75s linear infinite;
+        }
+        @keyframes ldSpin { to { transform: rotate(360deg); } }
+        .ld-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        .ld-cancel {
+            margin-left: auto;
+            font-size: 12px;
+            color: var(--gray-400);
+            background: none;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            padding: 3px 10px;
+            cursor: pointer;
+            font-family: var(--font-ui);
+            transition: all 0.12s;
+        }
+        .ld-cancel:hover { color: var(--red-700); border-color: var(--red-700); background: var(--red-100); }
+
+        /* 단계 목록 */
+        .ld-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 4px 0;
+        }
+        .ld-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--gray-300);
+            transition: color 0.2s;
+            line-height: 1.4;
+        }
+        .ld-step.active { color: var(--gray-900); font-weight: 600; }
+        .ld-step.done   { color: var(--green-700); }
+
+        .ld-step-icon {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--gray-200);
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px;
+            transition: all 0.2s;
+            background: var(--white);
+        }
+        .ld-step.active .ld-step-icon {
+            border-color: var(--blue-600);
+            background: var(--blue-600);
+            animation: ldPulseRing 1.2s ease-in-out infinite;
+        }
+        @keyframes ldPulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.35); }
+            50%       { box-shadow: 0 0 0 4px rgba(37,99,235,0); }
+        }
+        .ld-step.active .ld-step-icon::after {
+            content: '';
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: white;
+            animation: ldDot 1s ease-in-out infinite;
+        }
+        @keyframes ldDot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+        .ld-step.done .ld-step-icon {
+            border-color: var(--green-700);
+            background: var(--green-700);
+        }
+        .ld-step.done .ld-step-icon::after {
+            content: '✓';
+            color: white;
+            font-size: 11px;
+            line-height: 1;
+        }
+        .ld-step-label { flex: 1; }
+        .ld-step-sub {
+            font-size: 11px;
+            color: var(--gray-400);
+            font-weight: 400;
+            margin-top: 1px;
+        }
+        .ld-step.active .ld-step-sub { color: var(--blue-600); font-weight: 500; }
+
+        /* 진행률 바 */
+        .ld-progress-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .ld-progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--gray-400);
+            font-family: var(--font-mono);
+        }
+        .ld-bar-bg {
+            height: 5px;
+            background: var(--gray-100);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .ld-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--blue-600), var(--blue-400));
+            border-radius: 999px;
+            transition: width 0.35s ease;
+            width: 0%;
+        }
+
+        /* 하단 세부 로그 */
+        .ld-log {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--gray-400);
+            background: var(--gray-50);
+            border: 1px solid var(--gray-100);
+            border-radius: var(--radius-sm);
+            padding: 7px 11px;
+            min-height: 28px;
+            line-height: 1.5;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
+
+<!-- ══════════════════════════════════
+     로딩 오버레이
+══════════════════════════════════ -->
+<div id="loadingOverlay">
+  <div class="ld-card">
+    <div class="ld-header">
+      <div class="ld-spinner"></div>
+      <div class="ld-title">PDF 비교 중...</div>
+      <button class="ld-cancel" id="ldCancelBtn">✕ 취소</button>
+    </div>
+
+    <div class="ld-steps">
+      <div class="ld-step" id="ldStep0">
+        <div class="ld-step-icon"></div>
+        <div class="ld-step-label">
+          <div>좌측 PDF 시그니처 생성</div>
+          <div class="ld-step-sub" id="ldStep0sub">대기 중...</div>
+        </div>
+      </div>
+      <div class="ld-step" id="ldStep1">
+        <div class="ld-step-icon"></div>
+        <div class="ld-step-label">
+          <div>우측 PDF 시그니처 생성</div>
+          <div class="ld-step-sub" id="ldStep1sub">대기 중...</div>
+        </div>
+      </div>
+      <div class="ld-step" id="ldStep2">
+        <div class="ld-step-icon"></div>
+        <div class="ld-step-label">
+          <div>페이지 순서 정렬 분석</div>
+          <div class="ld-step-sub" id="ldStep2sub">대기 중...</div>
+        </div>
+      </div>
+      <div class="ld-step" id="ldStep3">
+        <div class="ld-step-icon"></div>
+        <div class="ld-step-label">
+          <div>페이지 렌더링 &amp; 차이점 검출</div>
+          <div class="ld-step-sub" id="ldStep3sub">대기 중...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ld-progress-wrap">
+      <div class="ld-progress-labels">
+        <span id="ldProgressLabel">준비 중...</span>
+        <span id="ldProgressPct">0%</span>
+      </div>
+      <div class="ld-bar-bg">
+        <div class="ld-bar-fill" id="ldBarFill"></div>
+      </div>
+    </div>
+
+    <div class="ld-log" id="ldLog">잠시만 기다려 주세요.</div>
+  </div>
+</div>
 <div class="toolbar">
     <input type="file" id="file1" accept="application/pdf"/>
     <input type="file" id="file2" accept="application/pdf"/>
@@ -250,9 +512,9 @@
     <aside class="sidebar">
         <h2>변경 페이지 목록</h2>
         <div class="note">
-            페이지 내용을 기준으로 정렬한 뒤 비교합니다.<br>
-            중간 삽입/삭제가 있어도 이후 페이지를 자동으로 맞춰 비교합니다.<br>
-            항목을 클릭하면 해당 위치로 이동합니다.
+            전체 페이지를 한 번에 렌더링하고 비교합니다.<br>
+            목록에는 변경이 감지된 페이지만 표시됩니다.<br>
+            항목을 클릭하면 해당 페이지로 이동합니다.
         </div>
         <div id="thumbList" class="thumb-list">
             <div class="empty">비교 후 변경된 페이지 목록이 표시됩니다.</div>
@@ -265,6 +527,82 @@
 </div>
 <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    var ldOverlay   = document.getElementById("loadingOverlay");
+    var ldBarFill   = document.getElementById("ldBarFill");
+    var ldLog       = document.getElementById("ldLog");
+    var ldProgLabel = document.getElementById("ldProgressLabel");
+    var ldProgPct   = document.getElementById("ldProgressPct");
+    var ldCancelBtn = document.getElementById("ldCancelBtn");
+
+    var STEP_WEIGHTS = [25, 25, 5, 45];
+    var ldCurrentStep = -1;
+    var ldStepProgress = 0;
+
+    function ldShow() {
+        ldCurrentStep = -1;
+        ldStepProgress = 0;
+        ldBarFill.style.width = "0%";
+        ldLog.textContent = "초기화 중...";
+        ldProgLabel.textContent = "준비 중...";
+        ldProgPct.textContent = "0%";
+        [0,1,2,3].forEach(function(i) {
+            var el = document.getElementById("ldStep" + i);
+            el.classList.remove("active", "done");
+            document.getElementById("ldStep" + i + "sub").textContent = "대기 중...";
+        });
+        ldOverlay.classList.add("visible");
+    }
+
+    function ldHide() {
+        ldOverlay.classList.remove("visible");
+    }
+
+    function ldActivateStep(stepIndex, subText) {
+        if (ldCurrentStep >= 0 && ldCurrentStep < stepIndex) {
+            for (var s = ldCurrentStep; s < stepIndex; s++) {
+                var prev = document.getElementById("ldStep" + s);
+                if (prev) { prev.classList.remove("active"); prev.classList.add("done"); }
+            }
+        }
+        ldCurrentStep = stepIndex;
+        ldStepProgress = 0;
+        var el = document.getElementById("ldStep" + stepIndex);
+        if (el) { el.classList.remove("done"); el.classList.add("active"); }
+        if (subText) ldUpdateSub(stepIndex, subText);
+        ldRefreshBar();
+    }
+
+    function ldUpdateSub(stepIndex, text) {
+        var sub = document.getElementById("ldStep" + stepIndex + "sub");
+        if (sub) sub.textContent = text;
+    }
+
+    function ldSetStepProgress(ratio) {
+        ldStepProgress = Math.max(0, Math.min(1, ratio));
+        ldRefreshBar();
+    }
+
+    function ldRefreshBar() {
+        var done = 0;
+        for (var s = 0; s < ldCurrentStep; s++) done += STEP_WEIGHTS[s];
+
+        var current = ldCurrentStep >= 0 ? STEP_WEIGHTS[ldCurrentStep] * ldStepProgress : 0;
+        var total = Math.round(done + current);
+        ldBarFill.style.width = total + "%";
+        ldProgPct.textContent = total + "%";
+    }
+
+    function ldSetLog(text) {
+        ldLog.textContent = text;
+        ldProgLabel.textContent = text;
+    }
+
+    ldCancelBtn.addEventListener("click", function() {
+        renderGeneration++;
+        ldHide();
+        summaryTextEl.textContent = "비교가 취소되었습니다.";
+    });
 
     var pdfDoc1 = null;
     var pdfDoc2 = null;
@@ -333,16 +671,30 @@
         diffEntries = [];
         currentDiffIndex = -1;
 
-        var leftSignatures  = await buildAllPageSignatures(pdfDoc1, myGeneration, "좌측");
-        if (myGeneration !== renderGeneration) return;
-        var rightSignatures = await buildAllPageSignatures(pdfDoc2, myGeneration, "우측");
-        if (myGeneration !== renderGeneration) return;
+        ldShow();
 
+        ldActivateStep(0, "0 / " + pdfDoc1.numPages + " 페이지");
+        var leftSignatures  = await buildAllPageSignatures(pdfDoc1, myGeneration, "좌측");
+        if (myGeneration !== renderGeneration) { ldHide(); return; }
+
+        ldActivateStep(1, "0 / " + pdfDoc2.numPages + " 페이지");
+        var rightSignatures = await buildAllPageSignatures(pdfDoc2, myGeneration, "우측");
+        if (myGeneration !== renderGeneration) { ldHide(); return; }
+
+        ldActivateStep(2, "DP 행렬 계산 중...");
+        ldSetLog("페이지 순서 정렬 계산 중... (" + leftSignatures.length + " × " + rightSignatures.length + ")");
         summaryTextEl.textContent = "페이지 정렬 계산 중...";
         alignmentRows = alignPageSequences(leftSignatures, rightSignatures);
-        if (myGeneration !== renderGeneration) return;
+        if (myGeneration !== renderGeneration) { ldHide(); return; }
+
+        var _ins = alignmentRows.filter(function(r){return r.type==="insert";}).length;
+        var _del = alignmentRows.filter(function(r){return r.type==="delete";}).length;
+        var _mat = alignmentRows.filter(function(r){return r.type==="match";}).length;
+        ldUpdateSub(2, "매칭 " + _mat + " / 삽입 " + _ins + " / 삭제 " + _del);
+        ldSetStepProgress(1);
 
         summaryTextEl.textContent = "페이지 껍데기 생성 중...";
+        ldSetLog("페이지 레이아웃 구성 중...");
 
         for (var rowIndex = 0; rowIndex < alignmentRows.length; rowIndex++) {
             var row = alignmentRows[rowIndex];
@@ -370,13 +722,31 @@
             pageViews2.push(rightView);
         }
 
+        ldActivateStep(3, "0 / " + alignmentRows.length + " 행 처리 중");
         summaryTextEl.textContent = "정렬된 페이지 렌더링/비교 중...";
 
-        for (var i = 0; i < alignmentRows.length; i++) {
-            if (myGeneration !== renderGeneration) return;
+        var totalRows = alignmentRows.length;
+        for (var i = 0; i < totalRows; i++) {
+            if (myGeneration !== renderGeneration) { ldHide(); return; }
             var row = alignmentRows[i];
             var left  = pageViews1[i];
             var right = pageViews2[i];
+
+            ldSetStepProgress(i / totalRows);
+            var pLabel = (i + 1) + " / " + totalRows;
+            if (row.type === "match") {
+                var isSame = row.similarity >= 0.985;
+                ldUpdateSub(3, pLabel + " — 좌 " + row.leftPageNo + " ↔ 우 " + row.rightPageNo + (isSame ? " (동일, 스킵)" : " (diff 검출)"));
+                ldSetLog(isSame
+                    ? "p" + row.leftPageNo + " ↔ p" + row.rightPageNo + "  유사도 " + (row.similarity*100).toFixed(1) + "% → diff 스킵"
+                    : "p" + row.leftPageNo + " ↔ p" + row.rightPageNo + "  유사도 " + (row.similarity*100).toFixed(1) + "% → 픽셀 diff 검출 중...");
+            } else if (row.type === "insert") {
+                ldUpdateSub(3, pLabel + " — 우측 p" + row.rightPageNo + " 삽입");
+                ldSetLog("우측 페이지 " + row.rightPageNo + " 삽입 감지");
+            } else {
+                ldUpdateSub(3, pLabel + " — 좌측 p" + row.leftPageNo + " 삭제");
+                ldSetLog("좌측 페이지 " + row.leftPageNo + " 삭제 감지");
+            }
 
             if (row.type === "match") {
                 if (row.similarity >= 0.985) {
@@ -384,7 +754,7 @@
                         ensureRendered(pdfDoc1, left,  myGeneration),
                         ensureRendered(pdfDoc2, right, myGeneration)
                     ]);
-                    if (myGeneration !== renderGeneration) return;
+                    if (myGeneration !== renderGeneration) { ldHide(); return; }
                     left.isCompared  = true;
                     right.isCompared = true;
                     left.status.textContent  = "same";
@@ -405,10 +775,12 @@
             }
 
             summaryTextEl.textContent =
-                "정렬 행 " + (i+1) + " / " + alignmentRows.length + " 처리 완료 / 현재 변경 " + diffEntries.length + "건";
+                "정렬 행 " + (i+1) + " / " + totalRows + " 처리 완료 / 현재 변경 " + diffEntries.length + "건";
         }
 
         buildChangedThumbList();
+        ldSetStepProgress(1);
+        ldHide();
 
         var changedRows   = new Set(diffEntries.map(function (d) { return d.rowIndex; }));
         var insertedCount = diffEntries.filter(function (d) { return d.kind === "insert"; }).length;
@@ -427,12 +799,16 @@
         var total = pdfDoc.numPages;
         var result = new Array(total);
         var BATCH = 8;
+        var stepIndex = sideLabel === "좌측" ? 0 : 1;
 
         for (var start = 1; start <= total; start += BATCH) {
             if (generation !== renderGeneration) return result.filter(Boolean);
             var end = Math.min(start + BATCH - 1, total);
             summaryTextEl.textContent =
                 sideLabel + " PDF 시그니처 생성 중... " + start + "–" + end + " / " + total;
+            ldUpdateSub(stepIndex, start + "–" + end + " / " + total + " 페이지");
+            ldSetLog(sideLabel + " PDF 시그니처 생성 중... " + start + "–" + end + " / " + total);
+            ldSetStepProgress((start - 1) / total);
 
             var batch = [];
             for (var p = start; p <= end; p++) batch.push(buildPageSignature(pdfDoc, p));
@@ -442,6 +818,7 @@
                 result[start - 1 + k] = batchResults[k];
             }
         }
+        ldUpdateSub(stepIndex, "완료 (" + total + " 페이지)");
         return result;
     }
 
@@ -807,7 +1184,7 @@
 
         smoothBinaryGrid(cells);
 
-        var minSize = imageHeavy ? 30*dpr : 12*dpr;
+         var minSize = imageHeavy ? 30*dpr : 12*dpr;
 
         var rectsPx = connectedComponentsToRects(cells, gridSize, w, h)
             .filter(function(r) { return r.w > minSize && r.h > minSize; })
@@ -1083,7 +1460,7 @@
                         }
                     }
                     if (!samples) continue;
-                    
+
                     if (changed/samples > 0.30 && colored/samples > 0.20) cells[gy][gx]=1;
                 }
             }
