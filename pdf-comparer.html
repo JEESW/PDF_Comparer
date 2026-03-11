@@ -38,7 +38,9 @@
             --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
             --toolbar-h: 56px;
         }
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
             font-family: var(--font-ui);
             background: var(--gray-50);
@@ -47,6 +49,7 @@
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
         }
+
         .toolbar {
             height: var(--toolbar-h);
             background: var(--white);
@@ -61,6 +64,7 @@
             flex-wrap: nowrap;
             box-shadow: var(--shadow-xs);
         }
+
         .toolbar > div:not(.summary) {
             font-size: 11px;
             font-weight: 600;
@@ -70,12 +74,15 @@
             white-space: nowrap;
             flex-shrink: 0;
         }
+
         .toolbar select, .toolbar button { height: 32px; }
+
         .toolbar .select-wrap {
             position: relative;
             display: inline-block;
             flex-shrink: 0;
         }
+
         .toolbar .select-wrap select {
             width: 200px;
             padding: 0 28px 0 10px;
@@ -92,6 +99,7 @@
             transition: border-color 0.15s, box-shadow 0.15s;
             box-shadow: var(--shadow-xs);
         }
+
         .toolbar .select-wrap::after {
             content: "";
             position: absolute;
@@ -104,8 +112,10 @@
             transform: translateY(-65%) rotate(45deg);
             pointer-events: none;
         }
+
         .toolbar select:hover { border-color: var(--gray-300); }
         .toolbar select:focus { outline: none; border-color: var(--blue-400); box-shadow: 0 0 0 3px var(--blue-100); }
+
         .toolbar button {
             padding: 0 12px;
             border: 1px solid var(--gray-200);
@@ -120,10 +130,22 @@
             transition: all 0.12s;
             box-shadow: var(--shadow-xs);
         }
+
         .toolbar button:hover { background: var(--gray-50); border-color: var(--gray-300); color: var(--gray-900); }
         .toolbar button:active { background: var(--gray-100); transform: translateY(1px); box-shadow: none; }
-        #compareBtn { background: var(--blue-600); border-color: var(--blue-700); color: var(--white); box-shadow: var(--shadow-sm); }
-        #compareBtn:hover { background: var(--blue-700); border-color: var(--blue-700); color: var(--white); }
+
+        #compareBtn {
+            background: var(--blue-600);
+            border-color: var(--blue-700);
+            color: var(--white);
+            box-shadow: var(--shadow-sm);
+        }
+        #compareBtn:hover {
+            background: var(--blue-700);
+            border-color: var(--blue-700);
+            color: var(--white);
+        }
+
         .toolbar .summary {
             margin-left: auto;
             font-family: var(--font-mono);
@@ -133,11 +155,13 @@
             white-space: nowrap;
             flex-shrink: 0;
         }
+
         .layout {
             display: grid;
             grid-template-columns: 272px 1fr;
             height: calc(100vh - var(--toolbar-h));
         }
+
         .sidebar {
             background: var(--white);
             overflow: auto;
@@ -145,9 +169,11 @@
             display: flex;
             flex-direction: column;
         }
+
         .sidebar::-webkit-scrollbar { width: 4px; }
         .sidebar::-webkit-scrollbar-track { background: transparent; }
         .sidebar::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 2px; }
+
         .sidebar h2 {
             font-size: 11px;
             font-weight: 600;
@@ -161,6 +187,7 @@
             z-index: 2;
             border-bottom: 1px solid var(--gray-100);
         }
+
         .note {
             font-size: 12px;
             color: var(--gray-400);
@@ -168,7 +195,9 @@
             padding: 10px 16px 8px;
             border-bottom: 1px solid var(--gray-100);
         }
+
         .thumb-list { display: flex; flex-direction: column; gap: 3px; padding: 10px; }
+
         .thumb-item {
             border: 1px solid var(--gray-100);
             background: var(--white);
@@ -177,10 +206,33 @@
             cursor: pointer;
             transition: all 0.12s ease;
         }
-        .thumb-item:hover { border-color: var(--gray-300); background: var(--gray-50); box-shadow: var(--shadow-xs); }
-        .thumb-item.active { border-color: var(--blue-300); background: var(--blue-50); box-shadow: 0 0 0 3px var(--blue-100); }
-        .thumb-title { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-bottom: 6px; }
-        .thumb-meta { font-size: 11px; color: var(--gray-400); line-height: 1.6; white-space: pre-line; }
+
+        .thumb-item:hover {
+            border-color: var(--gray-300);
+            background: var(--gray-50);
+            box-shadow: var(--shadow-xs);
+        }
+
+        .thumb-item.active {
+            border-color: var(--blue-300);
+            background: var(--blue-50);
+            box-shadow: 0 0 0 3px var(--blue-100);
+        }
+
+        .thumb-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 6px;
+        }
+
+        .thumb-meta {
+            font-size: 11px;
+            color: var(--gray-400);
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
         .badge {
             display: inline-block;
             margin-top: 6px;
@@ -191,11 +243,23 @@
             letter-spacing: 0.05em;
             text-transform: uppercase;
         }
+
         .badge.pending { background: var(--gray-100); color: var(--gray-500); }
         .badge.same    { background: var(--green-100); color: var(--green-700); }
         .badge.changed { background: var(--red-100);   color: var(--red-700); }
-        .empty { font-size: 13px; color: var(--gray-400); padding: 20px 6px; text-align: center; line-height: 1.6; }
+        .badge.inserted,
+        .badge.deleted { background: var(--red-100); color: var(--red-700); }
+
+        .empty {
+            font-size: 13px;
+            color: var(--gray-400);
+            padding: 20px 6px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
         .main { display: flex; height: 100%; overflow: hidden; }
+
         .pdf-pane {
             width: 50%;
             overflow: auto;
@@ -203,11 +267,14 @@
             background: var(--gray-100);
             padding: 20px 16px;
         }
+
         .pdf-pane:last-child { border-right: none; }
+
         .pdf-pane::-webkit-scrollbar { width: 6px; height: 6px; }
         .pdf-pane::-webkit-scrollbar-track { background: transparent; }
         .pdf-pane::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
         .pdf-pane::-webkit-scrollbar-thumb:hover { background: var(--blue-400); }
+
         .page-wrap {
             position: relative;
             margin: 0 auto 20px;
@@ -219,7 +286,12 @@
             overflow: hidden;
             transition: box-shadow 0.2s, border-color 0.2s;
         }
-        .page-wrap:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06); border-color: var(--gray-300); }
+
+        .page-wrap:hover {
+            box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+            border-color: var(--gray-300);
+        }
+
         .page-label {
             background: var(--white);
             border-bottom: 1px solid var(--gray-100);
@@ -228,9 +300,29 @@
             color: var(--gray-400);
             padding: 7px 12px;
         }
-        .page-stage { position: relative; background: white; }
+
+        .page-body {
+            position: relative;
+            overflow: hidden;
+            background: white;
+        }
+
+        .page-stage {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: white;
+            transform-origin: top left;
+        }
+
         canvas { display: block; background: white; }
-        .overlay { position: absolute; inset: 0; pointer-events: none; }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
         .diff-box {
             position: absolute;
             border-radius: 3px;
@@ -238,17 +330,21 @@
             background: rgba(239, 68, 68, 0.08);
             transition: 0.2s ease;
         }
+
         .diff-box.current {
             border-color: rgba(37, 99, 235, 0.95) !important;
             background: rgba(59, 130, 246, 0.18) !important;
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
         }
+
         .diff-box.flash { animation: flashBox 0.9s ease-in-out 2; }
+
         @keyframes flashBox {
             0%   { transform: scale(1); }
             50%  { transform: scale(1.03); }
             100% { transform: scale(1); }
         }
+
         .page-status {
             position: absolute;
             top: 8px;
@@ -264,12 +360,43 @@
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
         }
-        @media (max-width: 1000px) {
-            .layout { grid-template-columns: 1fr; grid-template-rows: 240px 1fr; }
-            .sidebar { border-right: none; border-bottom: 1px solid var(--gray-200); }
+
+        .missing-stage {
+            background: linear-gradient(180deg, #fafafa, #f4f4f5);
         }
 
-        /* ── 로딩 오버레이 ── */
+        .missing-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            color: var(--gray-500);
+            font-size: 14px;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .missing-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 1000px) {
+            .layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 240px 1fr;
+            }
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--gray-200);
+            }
+        }
+
         #loadingOverlay {
             display: none;
             position: fixed;
@@ -281,6 +408,7 @@
             align-items: center;
             justify-content: center;
         }
+
         #loadingOverlay.visible { display: flex; }
 
         .ld-card {
@@ -295,9 +423,10 @@
             gap: 18px;
             animation: ldSlideIn 0.2s ease-out;
         }
+
         @keyframes ldSlideIn {
             from { opacity: 0; transform: translateY(12px) scale(0.98); }
-            to   { opacity: 1; transform: translateY(0)    scale(1);    }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .ld-header {
@@ -305,20 +434,25 @@
             align-items: center;
             gap: 11px;
         }
+
         .ld-spinner {
-            width: 20px; height: 20px;
+            width: 20px;
+            height: 20px;
             border: 2.5px solid var(--blue-100);
             border-top-color: var(--blue-600);
             border-radius: 50%;
             flex-shrink: 0;
             animation: ldSpin 0.75s linear infinite;
         }
+
         @keyframes ldSpin { to { transform: rotate(360deg); } }
+
         .ld-title {
             font-size: 15px;
             font-weight: 700;
             color: var(--gray-900);
         }
+
         .ld-cancel {
             margin-left: auto;
             font-size: 12px;
@@ -331,15 +465,20 @@
             font-family: var(--font-ui);
             transition: all 0.12s;
         }
-        .ld-cancel:hover { color: var(--red-700); border-color: var(--red-700); background: var(--red-100); }
 
-        /* 단계 목록 */
+        .ld-cancel:hover {
+            color: var(--red-700);
+            border-color: var(--red-700);
+            background: var(--red-100);
+        }
+
         .ld-steps {
             display: flex;
             flex-direction: column;
             gap: 6px;
             padding: 4px 0;
         }
+
         .ld-step {
             display: flex;
             align-items: center;
@@ -349,61 +488,78 @@
             transition: color 0.2s;
             line-height: 1.4;
         }
+
         .ld-step.active { color: var(--gray-900); font-weight: 600; }
         .ld-step.done   { color: var(--green-700); }
 
         .ld-step-icon {
-            width: 20px; height: 20px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             border: 2px solid var(--gray-200);
             flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 11px;
             transition: all 0.2s;
             background: var(--white);
         }
+
         .ld-step.active .ld-step-icon {
             border-color: var(--blue-600);
             background: var(--blue-600);
             animation: ldPulseRing 1.2s ease-in-out infinite;
         }
+
         @keyframes ldPulseRing {
             0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.35); }
-            50%       { box-shadow: 0 0 0 4px rgba(37,99,235,0); }
+            50%      { box-shadow: 0 0 0 4px rgba(37,99,235,0); }
         }
+
         .ld-step.active .ld-step-icon::after {
             content: '';
-            width: 7px; height: 7px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             background: white;
             animation: ldDot 1s ease-in-out infinite;
         }
-        @keyframes ldDot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+
+        @keyframes ldDot {
+            0%,100% { opacity:1; transform:scale(1); }
+            50%     { opacity:0.4; transform:scale(0.7); }
+        }
+
         .ld-step.done .ld-step-icon {
             border-color: var(--green-700);
             background: var(--green-700);
         }
+
         .ld-step.done .ld-step-icon::after {
             content: '✓';
             color: white;
             font-size: 11px;
             line-height: 1;
         }
+
         .ld-step-label { flex: 1; }
+
         .ld-step-sub {
             font-size: 11px;
             color: var(--gray-400);
             font-weight: 400;
             margin-top: 1px;
         }
+
         .ld-step.active .ld-step-sub { color: var(--blue-600); font-weight: 500; }
 
-        /* 진행률 바 */
         .ld-progress-wrap {
             display: flex;
             flex-direction: column;
             gap: 5px;
         }
+
         .ld-progress-labels {
             display: flex;
             justify-content: space-between;
@@ -411,12 +567,14 @@
             color: var(--gray-400);
             font-family: var(--font-mono);
         }
+
         .ld-bar-bg {
             height: 5px;
             background: var(--gray-100);
             border-radius: 999px;
             overflow: hidden;
         }
+
         .ld-bar-fill {
             height: 100%;
             background: linear-gradient(90deg, var(--blue-600), var(--blue-400));
@@ -425,7 +583,6 @@
             width: 0%;
         }
 
-        /* 하단 세부 로그 */
         .ld-log {
             font-family: var(--font-mono);
             font-size: 11px;
@@ -443,61 +600,59 @@
 </head>
 <body>
 
-<!-- ══════════════════════════════════
-     로딩 오버레이
-══════════════════════════════════ -->
 <div id="loadingOverlay">
-  <div class="ld-card">
-    <div class="ld-header">
-      <div class="ld-spinner"></div>
-      <div class="ld-title">PDF 비교 중...</div>
-      <button class="ld-cancel" id="ldCancelBtn">✕ 취소</button>
-    </div>
+    <div class="ld-card">
+        <div class="ld-header">
+            <div class="ld-spinner"></div>
+            <div class="ld-title">PDF 비교 중...</div>
+            <button class="ld-cancel" id="ldCancelBtn">✕ 취소</button>
+        </div>
 
-    <div class="ld-steps">
-      <div class="ld-step" id="ldStep0">
-        <div class="ld-step-icon"></div>
-        <div class="ld-step-label">
-          <div>좌측 PDF 시그니처 생성</div>
-          <div class="ld-step-sub" id="ldStep0sub">대기 중...</div>
+        <div class="ld-steps">
+            <div class="ld-step" id="ldStep0">
+                <div class="ld-step-icon"></div>
+                <div class="ld-step-label">
+                    <div>좌측 PDF 시그니처 생성</div>
+                    <div class="ld-step-sub" id="ldStep0sub">대기 중...</div>
+                </div>
+            </div>
+            <div class="ld-step" id="ldStep1">
+                <div class="ld-step-icon"></div>
+                <div class="ld-step-label">
+                    <div>우측 PDF 시그니처 생성</div>
+                    <div class="ld-step-sub" id="ldStep1sub">대기 중...</div>
+                </div>
+            </div>
+            <div class="ld-step" id="ldStep2">
+                <div class="ld-step-icon"></div>
+                <div class="ld-step-label">
+                    <div>페이지 순서 정렬 분석</div>
+                    <div class="ld-step-sub" id="ldStep2sub">대기 중...</div>
+                </div>
+            </div>
+            <div class="ld-step" id="ldStep3">
+                <div class="ld-step-icon"></div>
+                <div class="ld-step-label">
+                    <div>페이지 렌더링 &amp; 차이점 검출</div>
+                    <div class="ld-step-sub" id="ldStep3sub">대기 중...</div>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="ld-step" id="ldStep1">
-        <div class="ld-step-icon"></div>
-        <div class="ld-step-label">
-          <div>우측 PDF 시그니처 생성</div>
-          <div class="ld-step-sub" id="ldStep1sub">대기 중...</div>
-        </div>
-      </div>
-      <div class="ld-step" id="ldStep2">
-        <div class="ld-step-icon"></div>
-        <div class="ld-step-label">
-          <div>페이지 순서 정렬 분석</div>
-          <div class="ld-step-sub" id="ldStep2sub">대기 중...</div>
-        </div>
-      </div>
-      <div class="ld-step" id="ldStep3">
-        <div class="ld-step-icon"></div>
-        <div class="ld-step-label">
-          <div>페이지 렌더링 &amp; 차이점 검출</div>
-          <div class="ld-step-sub" id="ldStep3sub">대기 중...</div>
-        </div>
-      </div>
-    </div>
 
-    <div class="ld-progress-wrap">
-      <div class="ld-progress-labels">
-        <span id="ldProgressLabel">준비 중...</span>
-        <span id="ldProgressPct">0%</span>
-      </div>
-      <div class="ld-bar-bg">
-        <div class="ld-bar-fill" id="ldBarFill"></div>
-      </div>
-    </div>
+        <div class="ld-progress-wrap">
+            <div class="ld-progress-labels">
+                <span id="ldProgressLabel">준비 중...</span>
+                <span id="ldProgressPct">0%</span>
+            </div>
+            <div class="ld-bar-bg">
+                <div class="ld-bar-fill" id="ldBarFill"></div>
+            </div>
+        </div>
 
-    <div class="ld-log" id="ldLog">잠시만 기다려 주세요.</div>
-  </div>
+        <div class="ld-log" id="ldLog">잠시만 기다려 주세요.</div>
+    </div>
 </div>
+
 <div class="toolbar">
     <input type="file" id="file1" accept="application/pdf"/>
     <input type="file" id="file2" accept="application/pdf"/>
@@ -508,6 +663,7 @@
     <button id="compareBtn">다시 비교</button>
     <div class="summary" id="summaryText">PDF 2개를 선택하세요.</div>
 </div>
+
 <div class="layout">
     <aside class="sidebar">
         <h2>변경 페이지 목록</h2>
@@ -520,13 +676,16 @@
             <div class="empty">비교 후 변경된 페이지 목록이 표시됩니다.</div>
         </div>
     </aside>
+
     <div class="main">
         <div id="pdf1" class="pdf-pane"></div>
         <div id="pdf2" class="pdf-pane"></div>
     </div>
 </div>
+
 <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
     var ldOverlay   = document.getElementById("loadingOverlay");
     var ldBarFill   = document.getElementById("ldBarFill");
@@ -546,7 +705,7 @@
         ldLog.textContent = "초기화 중...";
         ldProgLabel.textContent = "준비 중...";
         ldProgPct.textContent = "0%";
-        [0,1,2,3].forEach(function(i) {
+        [0, 1, 2, 3].forEach(function(i) {
             var el = document.getElementById("ldStep" + i);
             el.classList.remove("active", "done");
             document.getElementById("ldStep" + i + "sub").textContent = "대기 중...";
@@ -562,13 +721,21 @@
         if (ldCurrentStep >= 0 && ldCurrentStep < stepIndex) {
             for (var s = ldCurrentStep; s < stepIndex; s++) {
                 var prev = document.getElementById("ldStep" + s);
-                if (prev) { prev.classList.remove("active"); prev.classList.add("done"); }
+                if (prev) {
+                    prev.classList.remove("active");
+                    prev.classList.add("done");
+                }
             }
         }
         ldCurrentStep = stepIndex;
         ldStepProgress = 0;
+
         var el = document.getElementById("ldStep" + stepIndex);
-        if (el) { el.classList.remove("done"); el.classList.add("active"); }
+        if (el) {
+            el.classList.remove("done");
+            el.classList.add("active");
+        }
+
         if (subText) ldUpdateSub(stepIndex, subText);
         ldRefreshBar();
     }
@@ -598,15 +765,12 @@
         ldProgLabel.textContent = text;
     }
 
-    ldCancelBtn.addEventListener("click", function() {
-        renderGeneration++;
-        ldHide();
-        summaryTextEl.textContent = "비교가 취소되었습니다.";
-    });
-
     var pdfDoc1 = null;
     var pdfDoc2 = null;
-    var scale = 1.15;
+
+    var renderScale = 1.15;
+    var viewScale = 1.0;
+
     var dpr = window.devicePixelRatio || 1;
 
     var pageViews1 = [];
@@ -631,11 +795,26 @@
 
     file1El.addEventListener("change", loadPDF1);
     file2El.addEventListener("change", loadPDF2);
-    document.getElementById("zoomInBtn").addEventListener("click",  function () { scale = Math.min(scale + 0.15, 3);   rerenderIfReady(); });
-    document.getElementById("zoomOutBtn").addEventListener("click", function () { scale = Math.max(scale - 0.15, 0.5); rerenderIfReady(); });
+
+    document.getElementById("zoomInBtn").addEventListener("click", function () {
+        viewScale = Math.min(viewScale + 0.15, 3);
+        applyViewScale();
+    });
+
+    document.getElementById("zoomOutBtn").addEventListener("click", function () {
+        viewScale = Math.max(viewScale - 0.15, 0.5);
+        applyViewScale();
+    });
+
     document.getElementById("prevBtn").addEventListener("click", goToPrevDiff);
     document.getElementById("nextBtn").addEventListener("click", goToNextDiff);
     document.getElementById("compareBtn").addEventListener("click", rerenderIfReady);
+
+    ldCancelBtn.addEventListener("click", function() {
+        renderGeneration++;
+        ldHide();
+        summaryTextEl.textContent = "비교가 취소되었습니다.";
+    });
 
     async function loadPDF1(e) {
         var file = e.target.files[0];
@@ -652,8 +831,60 @@
     }
 
     async function rerenderIfReady() {
-        if (!pdfDoc1 || !pdfDoc2) { summaryTextEl.textContent = "PDF 2개를 선택하세요."; return; }
+        if (!pdfDoc1 || !pdfDoc2) {
+            summaryTextEl.textContent = "PDF 2개를 선택하세요.";
+            return;
+        }
         await renderAll();
+    }
+
+    function applyViewScale() {
+        var all = pageViews1.concat(pageViews2);
+        for (var i = 0; i < all.length; i++) {
+            applyScaleToPageView(all[i]);
+        }
+
+        if (currentDiffIndex >= 0 && currentDiffIndex < diffEntries.length) {
+            highlightCurrent();
+        }
+
+        updateZoomSummary();
+    }
+
+    function updateZoomSummary() {
+        var zoomText = " / 줌 " + Math.round(viewScale * 100) + "%";
+
+        if (!alignmentRows.length) {
+            summaryTextEl.textContent = "PDF 2개를 선택하세요." + zoomText;
+            return;
+        }
+
+        var changedRows   = new Set(diffEntries.map(function (d) { return d.rowIndex; }));
+        var insertedCount = diffEntries.filter(function (d) { return d.kind === "insert"; }).length;
+        var deletedCount  = diffEntries.filter(function (d) { return d.kind === "delete"; }).length;
+        var changedCount  = diffEntries.filter(function (d) { return d.kind === "change"; }).length;
+
+        summaryTextEl.textContent =
+            "정렬 행 " + alignmentRows.length +
+            "개 / 변경 " + changedCount +
+            " / 삽입 " + insertedCount +
+            " / 삭제 " + deletedCount +
+            " / 변경 위치 " + changedRows.size + "개" +
+            zoomText;
+    }
+
+    function applyScaleToPageView(pageView) {
+        if (!pageView || !pageView.pageBody || !pageView.stage) return;
+
+        var scaledW = Math.max(1, Math.round(pageView.baseWidth * viewScale));
+        var scaledH = Math.max(1, Math.round(pageView.baseHeight * viewScale));
+
+        pageView.pageBody.style.width = scaledW + "px";
+        pageView.pageBody.style.height = scaledH + "px";
+
+        pageView.stage.style.width = pageView.baseWidth + "px";
+        pageView.stage.style.height = pageView.baseHeight + "px";
+        pageView.stage.style.transform = "scale(" + viewScale + ")";
     }
 
     async function renderAll() {
@@ -665,16 +896,18 @@
         thumbListEl.innerHTML = "";
         summaryTextEl.textContent = "페이지 정렬 준비 중...";
 
-        pageViews1 = []; pageViews2 = [];
+        pageViews1 = [];
+        pageViews2 = [];
         alignmentRows = [];
-        leftRowIndexByPageNo = {}; rightRowIndexByPageNo = {};
+        leftRowIndexByPageNo = {};
+        rightRowIndexByPageNo = {};
         diffEntries = [];
         currentDiffIndex = -1;
 
         ldShow();
 
         ldActivateStep(0, "0 / " + pdfDoc1.numPages + " 페이지");
-        var leftSignatures  = await buildAllPageSignatures(pdfDoc1, myGeneration, "좌측");
+        var leftSignatures = await buildAllPageSignatures(pdfDoc1, myGeneration, "좌측");
         if (myGeneration !== renderGeneration) { ldHide(); return; }
 
         ldActivateStep(1, "0 / " + pdfDoc2.numPages + " 페이지");
@@ -687,9 +920,9 @@
         alignmentRows = alignPageSequences(leftSignatures, rightSignatures);
         if (myGeneration !== renderGeneration) { ldHide(); return; }
 
-        var _ins = alignmentRows.filter(function(r){return r.type==="insert";}).length;
-        var _del = alignmentRows.filter(function(r){return r.type==="delete";}).length;
-        var _mat = alignmentRows.filter(function(r){return r.type==="match";}).length;
+        var _ins = alignmentRows.filter(function(r){ return r.type === "insert"; }).length;
+        var _del = alignmentRows.filter(function(r){ return r.type === "delete"; }).length;
+        var _mat = alignmentRows.filter(function(r){ return r.type === "match"; }).length;
         ldUpdateSub(2, "매칭 " + _mat + " / 삽입 " + _ins + " / 삭제 " + _del);
         ldSetStepProgress(1);
 
@@ -698,7 +931,8 @@
 
         for (var rowIndex = 0; rowIndex < alignmentRows.length; rowIndex++) {
             var row = alignmentRows[rowIndex];
-            var leftView = null, rightView = null;
+            var leftView = null;
+            var rightView = null;
 
             if (row.leftPageNo != null) {
                 var lm = await getPageMeta(pdfDoc1, row.leftPageNo);
@@ -722,24 +956,31 @@
             pageViews2.push(rightView);
         }
 
+        applyViewScale();
+
         ldActivateStep(3, "0 / " + alignmentRows.length + " 행 처리 중");
         summaryTextEl.textContent = "정렬된 페이지 렌더링/비교 중...";
 
         var totalRows = alignmentRows.length;
+
         for (var i = 0; i < totalRows; i++) {
             if (myGeneration !== renderGeneration) { ldHide(); return; }
+
             var row = alignmentRows[i];
             var left  = pageViews1[i];
             var right = pageViews2[i];
 
             ldSetStepProgress(i / totalRows);
+
             var pLabel = (i + 1) + " / " + totalRows;
             if (row.type === "match") {
                 var isSame = row.similarity >= 0.985;
                 ldUpdateSub(3, pLabel + " — 좌 " + row.leftPageNo + " ↔ 우 " + row.rightPageNo + (isSame ? " (동일, 스킵)" : " (diff 검출)"));
-                ldSetLog(isSame
-                    ? "p" + row.leftPageNo + " ↔ p" + row.rightPageNo + "  유사도 " + (row.similarity*100).toFixed(1) + "% → diff 스킵"
-                    : "p" + row.leftPageNo + " ↔ p" + row.rightPageNo + "  유사도 " + (row.similarity*100).toFixed(1) + "% → 픽셀 diff 검출 중...");
+                ldSetLog(
+                    isSame
+                        ? "p" + row.leftPageNo + " ↔ p" + row.rightPageNo + "  유사도 " + (row.similarity*100).toFixed(1) + "% → diff 스킵"
+                        : "p" + row.leftPageNo + " ↔ p" + row.rightPageNo + "  유사도 " + (row.similarity*100).toFixed(1) + "% → 픽셀 diff 검출 중..."
+                );
             } else if (row.type === "insert") {
                 ldUpdateSub(3, pLabel + " — 우측 p" + row.rightPageNo + " 삽입");
                 ldSetLog("우측 페이지 " + row.rightPageNo + " 삽입 감지");
@@ -751,17 +992,17 @@
             if (row.type === "match") {
                 if (row.similarity >= 0.985) {
                     await Promise.all([
-                        ensureRendered(pdfDoc1, left,  myGeneration),
+                        ensureRendered(pdfDoc1, left, myGeneration),
                         ensureRendered(pdfDoc2, right, myGeneration)
                     ]);
                     if (myGeneration !== renderGeneration) { ldHide(); return; }
-                    left.isCompared  = true;
+                    left.isCompared = true;
                     right.isCompared = true;
-                    left.status.textContent  = "same";
+                    left.status.textContent = "same";
                     right.status.textContent = "same";
                 } else {
                     await Promise.all([
-                        ensureRendered(pdfDoc1, left,  myGeneration),
+                        ensureRendered(pdfDoc1, left, myGeneration),
                         ensureRendered(pdfDoc2, right, myGeneration)
                     ]);
                     await maybeCompareAlignedRow(i, myGeneration);
@@ -775,24 +1016,13 @@
             }
 
             summaryTextEl.textContent =
-                "정렬 행 " + (i+1) + " / " + totalRows + " 처리 완료 / 현재 변경 " + diffEntries.length + "건";
+                "정렬 행 " + (i + 1) + " / " + totalRows + " 처리 완료 / 현재 변경 " + diffEntries.length + "건";
         }
 
         buildChangedThumbList();
         ldSetStepProgress(1);
         ldHide();
-
-        var changedRows   = new Set(diffEntries.map(function (d) { return d.rowIndex; }));
-        var insertedCount = diffEntries.filter(function (d) { return d.kind === "insert"; }).length;
-        var deletedCount  = diffEntries.filter(function (d) { return d.kind === "delete"; }).length;
-        var changedCount  = diffEntries.filter(function (d) { return d.kind === "change"; }).length;
-
-        summaryTextEl.textContent =
-            "정렬 행 " + alignmentRows.length +
-            "개 / 변경 " + changedCount +
-            " / 삽입 " + insertedCount +
-            " / 삭제 " + deletedCount +
-            " / 변경 위치 " + changedRows.size + "개";
+        updateZoomSummary();
     }
 
     async function buildAllPageSignatures(pdfDoc, generation, sideLabel) {
@@ -803,9 +1033,11 @@
 
         for (var start = 1; start <= total; start += BATCH) {
             if (generation !== renderGeneration) return result.filter(Boolean);
+
             var end = Math.min(start + BATCH - 1, total);
             summaryTextEl.textContent =
                 sideLabel + " PDF 시그니처 생성 중... " + start + "–" + end + " / " + total;
+
             ldUpdateSub(stepIndex, start + "–" + end + " / " + total + " 페이지");
             ldSetLog(sideLabel + " PDF 시그니처 생성 중... " + start + "–" + end + " / " + total);
             ldSetStepProgress((start - 1) / total);
@@ -818,6 +1050,7 @@
                 result[start - 1 + k] = batchResults[k];
             }
         }
+
         ldUpdateSub(stepIndex, "완료 (" + total + " 페이지)");
         return result;
     }
@@ -831,14 +1064,16 @@
             .map(function (item) { return (item.str || "").trim(); })
             .filter(Boolean)
             .join(" ");
+
         var normalizedText = normalizeTextForCompare(rawText);
         var textLength = normalizedText.length;
 
         var thumbScale = 0.12;
         var thumbViewport = page.getViewport({ scale: thumbScale });
         var thumbCanvas = document.createElement("canvas");
-        thumbCanvas.width  = Math.max(16, Math.floor(thumbViewport.width));
+        thumbCanvas.width = Math.max(16, Math.floor(thumbViewport.width));
         thumbCanvas.height = Math.max(16, Math.floor(thumbViewport.height));
+
         var thumbCtx = thumbCanvas.getContext("2d", { alpha: false });
         await page.render({ canvasContext: thumbCtx, viewport: thumbViewport }).promise;
 
@@ -847,31 +1082,38 @@
 
         return {
             pageNo: pageNo,
-            width:  Math.round(viewport.width),
+            width: Math.round(viewport.width),
             height: Math.round(viewport.height),
-            text:   normalizedText,
+            text: normalizedText,
             textLength: textLength,
             imageFingerprint: imageFingerprint
         };
     }
 
     function buildImageFingerprint(data, width, height, cols, rows) {
-        var cellW = width / cols, cellH = height / rows;
+        var cellW = width / cols;
+        var cellH = height / rows;
         var values = [];
+
         for (var gy = 0; gy < rows; gy++) {
             for (var gx = 0; gx < cols; gx++) {
-                var startX = Math.floor(gx * cellW), startY = Math.floor(gy * cellH);
-                var endX = Math.min(width, Math.floor((gx+1)*cellW));
-                var endY = Math.min(height, Math.floor((gy+1)*cellH));
-                var sum = 0, count = 0;
+                var startX = Math.floor(gx * cellW);
+                var startY = Math.floor(gy * cellH);
+                var endX = Math.min(width, Math.floor((gx + 1) * cellW));
+                var endY = Math.min(height, Math.floor((gy + 1) * cellH));
+
+                var sum = 0;
+                var count = 0;
+
                 for (var y = startY; y < endY; y++) {
                     for (var x = startX; x < endX; x++) {
-                        var p = (y*width+x)*4;
-                        sum += 0.299*data[p] + 0.587*data[p+1] + 0.114*data[p+2];
+                        var p = (y * width + x) * 4;
+                        sum += 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
                         count++;
                     }
                 }
-                values.push(count ? sum/count : 255);
+
+                values.push(count ? sum / count : 255);
             }
         }
         return values;
@@ -879,67 +1121,91 @@
 
     function imageFingerprintSimilarity(a, b) {
         if (!a || !b || !a.length || !b.length || a.length !== b.length) return 0;
+
         var diffSum = 0;
-        for (var i = 0; i < a.length; i++) diffSum += Math.abs(a[i]-b[i]);
-        return Math.max(0, 1 - (diffSum/a.length)/255);
+        for (var i = 0; i < a.length; i++) diffSum += Math.abs(a[i] - b[i]);
+        return Math.max(0, 1 - (diffSum / a.length) / 255);
     }
 
     function pageSimilarity(sigA, sigB) {
         if (!sigA || !sigB) return 0;
+
         var textSim = textSimilarity(sigA.text, sigB.text);
         var imgSim  = imageFingerprintSimilarity(sigA.imageFingerprint, sigB.imageFingerprint);
-        var hasTextA = sigA.textLength > 20, hasTextB = sigB.textLength > 20;
-        var score = (hasTextA && hasTextB) ? textSim*0.72 + imgSim*0.28 : textSim*0.25 + imgSim*0.75;
+        var hasTextA = sigA.textLength > 20;
+        var hasTextB = sigB.textLength > 20;
+
+        var score = (hasTextA && hasTextB)
+            ? textSim * 0.72 + imgSim * 0.28
+            : textSim * 0.25 + imgSim * 0.75;
+
         var sizePenalty = 0;
-        if (Math.abs(sigA.width-sigB.width) > 10 || Math.abs(sigA.height-sigB.height) > 10) sizePenalty += 0.08;
-        sizePenalty += Math.abs(sigA.textLength-sigB.textLength) / Math.max(1, Math.max(sigA.textLength, sigB.textLength)) * 0.12;
+        if (Math.abs(sigA.width - sigB.width) > 10 || Math.abs(sigA.height - sigB.height) > 10) sizePenalty += 0.08;
+        sizePenalty += Math.abs(sigA.textLength - sigB.textLength) / Math.max(1, Math.max(sigA.textLength, sigB.textLength)) * 0.12;
+
         var pageDistancePenalty = Math.abs(sigA.pageNo - sigB.pageNo) * 0.008;
         return Math.max(0, score - sizePenalty - pageDistancePenalty);
     }
 
     function alignPageSequences(leftSigs, rightSigs) {
-        var n = leftSigs.length, m = rightSigs.length;
+        var n = leftSigs.length;
+        var m = rightSigs.length;
         var gapPenalty = 0.43;
-        var dp   = Array.from({length: n+1}, function() { return Array(m+1).fill(0); });
-        var path = Array.from({length: n+1}, function() { return Array(m+1).fill(null); });
 
-        for (var i = 1; i <= n; i++) { dp[i][0] = dp[i-1][0] - gapPenalty; path[i][0] = "up"; }
-        for (var j = 1; j <= m; j++) { dp[0][j] = dp[0][j-1] - gapPenalty; path[0][j] = "left"; }
+        var dp = Array.from({ length: n + 1 }, function() { return Array(m + 1).fill(0); });
+        var path = Array.from({ length: n + 1 }, function() { return Array(m + 1).fill(null); });
+
+        for (var i = 1; i <= n; i++) { dp[i][0] = dp[i - 1][0] - gapPenalty; path[i][0] = "up"; }
+        for (var j = 1; j <= m; j++) { dp[0][j] = dp[0][j - 1] - gapPenalty; path[0][j] = "left"; }
 
         for (var y = 1; y <= n; y++) {
             for (var x = 1; x <= m; x++) {
-                var sim  = pageSimilarity(leftSigs[y-1], rightSigs[x-1]);
-                var diag = dp[y-1][x-1] + sim;
-                var up   = dp[y-1][x]   - gapPenalty;
-                var left = dp[y][x-1]   - gapPenalty;
-                var best = diag, dir = "diag";
-                if (up   > best) { best = up;   dir = "up"; }
+                var sim  = pageSimilarity(leftSigs[y - 1], rightSigs[x - 1]);
+                var diag = dp[y - 1][x - 1] + sim;
+                var up   = dp[y - 1][x] - gapPenalty;
+                var left = dp[y][x - 1] - gapPenalty;
+
+                var best = diag;
+                var dir = "diag";
+                if (up > best)   { best = up; dir = "up"; }
                 if (left > best) { best = left; dir = "left"; }
-                dp[y][x] = best; path[y][x] = dir;
+
+                dp[y][x] = best;
+                path[y][x] = dir;
             }
         }
 
         var result = [];
-        var i2 = n, j2 = m;
+        var i2 = n;
+        var j2 = m;
         var matchThreshold = 0.56;
 
         while (i2 > 0 || j2 > 0) {
             var dir2 = path[i2][j2];
+
             if (i2 > 0 && j2 > 0 && dir2 === "diag") {
-                var ls = leftSigs[i2-1], rs = rightSigs[j2-1];
+                var ls = leftSigs[i2 - 1];
+                var rs = rightSigs[j2 - 1];
                 var s2 = pageSimilarity(ls, rs);
+
                 if (s2 >= matchThreshold) {
-                    result.push({ type: "match", leftPageNo: ls.pageNo, rightPageNo: rs.pageNo, similarity: s2 });
+                    result.push({
+                        type: "match",
+                        leftPageNo: ls.pageNo,
+                        rightPageNo: rs.pageNo,
+                        similarity: s2
+                    });
                 } else {
-                    result.push({ type: "insert", leftPageNo: null,    rightPageNo: rs.pageNo, similarity: 0 });
-                    result.push({ type: "delete", leftPageNo: ls.pageNo, rightPageNo: null,   similarity: 0 });
+                    result.push({ type: "insert", leftPageNo: null, rightPageNo: rs.pageNo, similarity: 0 });
+                    result.push({ type: "delete", leftPageNo: ls.pageNo, rightPageNo: null, similarity: 0 });
                 }
-                i2--; j2--;
+                i2--;
+                j2--;
             } else if (i2 > 0 && (j2 === 0 || dir2 === "up")) {
-                result.push({ type: "delete", leftPageNo: leftSigs[i2-1].pageNo, rightPageNo: null, similarity: 0 });
+                result.push({ type: "delete", leftPageNo: leftSigs[i2 - 1].pageNo, rightPageNo: null, similarity: 0 });
                 i2--;
             } else {
-                result.push({ type: "insert", leftPageNo: null, rightPageNo: rightSigs[j2-1].pageNo, similarity: 0 });
+                result.push({ type: "insert", leftPageNo: null, rightPageNo: rightSigs[j2 - 1].pageNo, similarity: 0 });
                 j2--;
             }
         }
@@ -950,7 +1216,7 @@
 
     async function getPageMeta(pdf, pageNo) {
         var page = await pdf.getPage(pageNo);
-        var viewport = page.getViewport({ scale: scale });
+        var viewport = page.getViewport({ scale: renderScale });
         return { width: viewport.width, height: viewport.height };
     }
 
@@ -958,58 +1224,138 @@
         var pageWrap = document.createElement("div");
         pageWrap.className = "page-wrap";
         pageWrap.dataset.rowIndex = rowIndex;
+
         var label = document.createElement("div");
         label.className = "page-label";
         label.textContent = sideLabel + " PDF - 페이지 " + pageNo;
+
+        var pageBody = document.createElement("div");
+        pageBody.className = "page-body";
+
         var stage = document.createElement("div");
         stage.className = "page-stage";
-        stage.style.width = width + "px"; stage.style.height = height + "px";
+        stage.style.width = width + "px";
+        stage.style.height = height + "px";
+
         var overlay = document.createElement("div");
         overlay.className = "overlay";
-        overlay.style.width = width + "px"; overlay.style.height = height + "px";
+        overlay.style.width = width + "px";
+        overlay.style.height = height + "px";
+
         var status = document.createElement("div");
         status.className = "page-status";
         status.textContent = "pending";
-        stage.appendChild(overlay); stage.appendChild(status);
-        pageWrap.appendChild(label); pageWrap.appendChild(stage);
+
+        stage.appendChild(overlay);
+        stage.appendChild(status);
+        pageBody.appendChild(stage);
+
+        pageWrap.appendChild(label);
+        pageWrap.appendChild(pageBody);
         container.appendChild(pageWrap);
-        return { pageNo, rowIndex, width, height, pageWrap, stage, overlay, status,
-            canvas: null, viewport: null, textLines: [], contentBounds: null,
-            isRendered: false, isCompared: false, renderToken: 0, meta: {},
-            isMissing: false, missingType: null };
+
+        var view = {
+            pageNo: pageNo,
+            rowIndex: rowIndex,
+            width: width,
+            height: height,
+            baseWidth: width,
+            baseHeight: height,
+            pageWrap: pageWrap,
+            pageBody: pageBody,
+            stage: stage,
+            overlay: overlay,
+            status: status,
+            canvas: null,
+            viewport: null,
+            textLines: [],
+            contentBounds: null,
+            isRendered: false,
+            isCompared: false,
+            renderToken: 0,
+            meta: {},
+            isMissing: false,
+            missingType: null
+        };
+
+        applyScaleToPageView(view);
+        return view;
     }
 
     function createMissingPageShell(container, labelText, width, height, missingType, rowIndex) {
         var pageWrap = document.createElement("div");
         pageWrap.className = "page-wrap";
         pageWrap.dataset.rowIndex = rowIndex;
+
         var label = document.createElement("div");
         label.className = "page-label";
         label.textContent = labelText;
+
+        var pageBody = document.createElement("div");
+        pageBody.className = "page-body";
+
         var stage = document.createElement("div");
         stage.className = "page-stage missing-stage";
-        stage.style.width = width + "px"; stage.style.height = height + "px";
+        stage.style.width = width + "px";
+        stage.style.height = height + "px";
+
         var inner = document.createElement("div");
         inner.className = "missing-content";
         inner.innerHTML =
             '<div class="missing-title">' +
-            (missingType === "insert" ? "이 위치에는 기존 페이지가 없습니다" : "이 위치에는 새 버전 페이지가 없습니다") +
+            (missingType === "insert"
+                ? "이 위치에는 기존 페이지가 없습니다"
+                : "이 위치에는 새 버전 페이지가 없습니다") +
             '</div><div>' +
-            (missingType === "insert" ? "우측 PDF에 새 페이지가 삽입되었습니다." : "좌측 PDF의 페이지가 삭제되었습니다.") +
+            (missingType === "insert"
+                ? "우측 PDF에 새 페이지가 삽입되었습니다."
+                : "좌측 PDF의 페이지가 삭제되었습니다.") +
             '</div>';
+
         var overlay = document.createElement("div");
         overlay.className = "overlay";
-        overlay.style.width = width + "px"; overlay.style.height = height + "px";
+        overlay.style.width = width + "px";
+        overlay.style.height = height + "px";
+
         var status = document.createElement("div");
         status.className = "page-status";
         status.textContent = missingType;
-        stage.appendChild(inner); stage.appendChild(overlay); stage.appendChild(status);
-        pageWrap.appendChild(label); pageWrap.appendChild(stage);
+
+        stage.appendChild(inner);
+        stage.appendChild(overlay);
+        stage.appendChild(status);
+        pageBody.appendChild(stage);
+
+        pageWrap.appendChild(label);
+        pageWrap.appendChild(pageBody);
         container.appendChild(pageWrap);
-        return { pageNo: null, rowIndex, width, height, pageWrap, stage, overlay, status,
-            canvas: null, viewport: null, textLines: [], contentBounds: null,
-            isRendered: true, isCompared: true, renderToken: 0, meta: {},
-            isMissing: true, missingType };
+
+        var view = {
+            pageNo: null,
+            rowIndex: rowIndex,
+            width: width,
+            height: height,
+            baseWidth: width,
+            baseHeight: height,
+            pageWrap: pageWrap,
+            pageBody: pageBody,
+            stage: stage,
+            overlay: overlay,
+            status: status,
+            canvas: null,
+            viewport: null,
+            textLines: [],
+            contentBounds: null,
+            isRendered: true,
+            isCompared: true,
+            renderToken: 0,
+            meta: {},
+            isMissing: true,
+            missingType: missingType
+        };
+
+        applyScaleToPageView(view);
+        return view;
     }
 
     async function ensureRendered(pdfDoc, pageView, generation) {
@@ -1021,14 +1367,14 @@
         pageView.status.textContent = "rendering";
 
         var page = await pdfDoc.getPage(pageView.pageNo);
-        var viewport = page.getViewport({ scale: scale });
+        var viewport = page.getViewport({ scale: renderScale });
 
         if (generation !== renderGeneration || token !== pageView.renderToken) return;
 
         var canvas = document.createElement("canvas");
-        canvas.style.width  = viewport.width  + "px";
+        canvas.style.width = viewport.width + "px";
         canvas.style.height = viewport.height + "px";
-        canvas.width  = Math.floor(viewport.width  * dpr);
+        canvas.width = Math.floor(viewport.width * dpr);
         canvas.height = Math.floor(viewport.height * dpr);
 
         var ctx = canvas.getContext("2d", { alpha: false });
@@ -1036,7 +1382,7 @@
         await page.render({ canvasContext: ctx, viewport: viewport }).promise;
 
         var textContent = await page.getTextContent();
-        var textLines   = extractTextLines(textContent, viewport);
+        var textLines = extractTextLines(textContent, viewport);
         var contentBounds = detectCanvasContentBounds(canvas, textLines);
 
         if (generation !== renderGeneration || token !== pageView.renderToken) return;
@@ -1054,9 +1400,11 @@
 
     async function maybeCompareAlignedRow(rowIndex, generation) {
         if (generation !== renderGeneration) return;
+
         var left  = pageViews1[rowIndex];
         var right = pageViews2[rowIndex];
         var row   = alignmentRows[rowIndex];
+
         if (!left || !right || !row) return;
         if (row.type !== "match") return;
         if (!left.isRendered || !right.isRendered) return;
@@ -1069,20 +1417,30 @@
         var result = detectDiffRects(left, right);
 
         result.rects.forEach(function (rect, idx) {
-            var diffId = "r" + rowIndex + "-d" + (idx+1);
-            drawDiffBox(left.overlay,  rect, diffId, "change");
+            var diffId = "r" + rowIndex + "-d" + (idx + 1);
+
+            drawDiffBox(left.overlay, rect, diffId, "change");
             drawDiffBox(right.overlay, rect, diffId, "change");
+
             diffEntries.push({
-                id: diffId, kind: "change", rowIndex: rowIndex,
-                pageNo: left.pageNo, leftPageNo: left.pageNo, rightPageNo: right.pageNo,
-                leftRect: rect, rightRect: rect,
+                id: diffId,
+                kind: "change",
+                rowIndex: rowIndex,
+                pageNo: left.pageNo,
+                leftPageNo: left.pageNo,
+                rightPageNo: right.pageNo,
+                leftRect: rect,
+                rightRect: rect,
                 label: "좌 " + left.pageNo + " ↔ 우 " + right.pageNo
             });
         });
 
-        left.isCompared  = true; right.isCompared  = true;
-        left.meta = result.meta; right.meta = result.meta;
-        updatePageStatusBadge(left,  result.rects.length, "change");
+        left.isCompared = true;
+        right.isCompared = true;
+        left.meta = result.meta;
+        right.meta = result.meta;
+
+        updatePageStatusBadge(left, result.rects.length, "change");
         updatePageStatusBadge(right, result.rects.length, "change");
         sortDiffEntries();
     }
@@ -1092,17 +1450,30 @@
         var left  = pageViews1[rowIndex];
         var row   = alignmentRows[rowIndex];
         if (!right || !row) return;
-        clearPageDiffBoxes(right.overlay); clearPageDiffBoxes(left.overlay);
+
+        clearPageDiffBoxes(right.overlay);
+        clearPageDiffBoxes(left.overlay);
         removeDiffEntriesForRow(rowIndex);
+
         var diffId = "ins-r" + rowIndex;
         var rect = { x: 0, y: 0, w: right.width, h: right.height };
+
         drawDiffBox(right.overlay, rect, diffId, "insert");
-        drawDiffBox(left.overlay,  { x: 0, y: 0, w: left.width, h: left.height }, diffId, "insert");
-        diffEntries.push({ id: diffId, kind: "insert", rowIndex, pageNo: row.rightPageNo,
-            leftPageNo: null, rightPageNo: row.rightPageNo,
-            leftRect: { x:0,y:0,w:left.width,h:left.height }, rightRect: rect,
-            label: "우측 페이지 " + row.rightPageNo + " 삽입" });
-        updatePageStatusBadge(left,  1, "insert");
+        drawDiffBox(left.overlay, { x: 0, y: 0, w: left.width, h: left.height }, diffId, "insert");
+
+        diffEntries.push({
+            id: diffId,
+            kind: "insert",
+            rowIndex: rowIndex,
+            pageNo: row.rightPageNo,
+            leftPageNo: null,
+            rightPageNo: row.rightPageNo,
+            leftRect: { x: 0, y: 0, w: left.width, h: left.height },
+            rightRect: rect,
+            label: "우측 페이지 " + row.rightPageNo + " 삽입"
+        });
+
+        updatePageStatusBadge(left, 1, "insert");
         updatePageStatusBadge(right, 1, "insert");
         sortDiffEntries();
     }
@@ -1112,17 +1483,30 @@
         var right = pageViews2[rowIndex];
         var row   = alignmentRows[rowIndex];
         if (!left || !row) return;
-        clearPageDiffBoxes(left.overlay); clearPageDiffBoxes(right.overlay);
+
+        clearPageDiffBoxes(left.overlay);
+        clearPageDiffBoxes(right.overlay);
         removeDiffEntriesForRow(rowIndex);
+
         var diffId = "del-r" + rowIndex;
         var rect = { x: 0, y: 0, w: left.width, h: left.height };
-        drawDiffBox(left.overlay,  rect, diffId, "delete");
-        drawDiffBox(right.overlay, { x:0,y:0,w:right.width,h:right.height }, diffId, "delete");
-        diffEntries.push({ id: diffId, kind: "delete", rowIndex, pageNo: row.leftPageNo,
-            leftPageNo: row.leftPageNo, rightPageNo: null,
-            leftRect: rect, rightRect: { x:0,y:0,w:right.width,h:right.height },
-            label: "좌측 페이지 " + row.leftPageNo + " 삭제" });
-        updatePageStatusBadge(left,  1, "delete");
+
+        drawDiffBox(left.overlay, rect, diffId, "delete");
+        drawDiffBox(right.overlay, { x: 0, y: 0, w: right.width, h: right.height }, diffId, "delete");
+
+        diffEntries.push({
+            id: diffId,
+            kind: "delete",
+            rowIndex: rowIndex,
+            pageNo: row.leftPageNo,
+            leftPageNo: row.leftPageNo,
+            rightPageNo: null,
+            leftRect: rect,
+            rightRect: { x: 0, y: 0, w: right.width, h: right.height },
+            label: "좌측 페이지 " + row.leftPageNo + " 삭제"
+        });
+
+        updatePageStatusBadge(left, 1, "delete");
         updatePageStatusBadge(right, 1, "delete");
         sortDiffEntries();
     }
@@ -1132,9 +1516,12 @@
     }
 
     function detectDiffRects(leftView, rightView) {
-        var canvas1 = leftView.canvas, canvas2 = rightView.canvas;
-        var cssWidth = leftView.width, cssHeight = leftView.height;
-        var w = canvas1.width, h = canvas1.height;
+        var canvas1 = leftView.canvas;
+        var canvas2 = rightView.canvas;
+        var cssWidth = leftView.width;
+        var cssHeight = leftView.height;
+        var w = canvas1.width;
+        var h = canvas1.height;
 
         var img1 = canvas1.getContext("2d").getImageData(0, 0, w, h).data;
         var img2 = canvas2.getContext("2d").getImageData(0, 0, w, h).data;
@@ -1146,62 +1533,81 @@
         var alphaThresh = imageHeavy ? 40 : 25;
 
         var gridSize = Math.max(8, Math.round(10 * dpr));
-        var cols = Math.ceil(w / gridSize), rows = Math.ceil(h / gridSize);
-        var cells = Array.from({length: rows}, function() { return Array(cols).fill(0); });
+        var cols = Math.ceil(w / gridSize);
+        var rows = Math.ceil(h / gridSize);
+        var cells = Array.from({ length: rows }, function() { return Array(cols).fill(0); });
 
         for (var gy = 0; gy < rows; gy++) {
             for (var gx = 0; gx < cols; gx++) {
-                var colorScore = 0, alphaScore = 0, samples = 0;
-                var startX = gx*gridSize, startY = gy*gridSize;
-                var endX = Math.min(startX+gridSize, w), endY = Math.min(startY+gridSize, h);
+                var colorScore = 0;
+                var alphaScore = 0;
+                var samples = 0;
+                var startX = gx * gridSize;
+                var startY = gy * gridSize;
+                var endX = Math.min(startX + gridSize, w);
+                var endY = Math.min(startY + gridSize, h);
 
                 for (var y = startY; y < endY; y += 2) {
                     for (var x = startX; x < endX; x += 2) {
-                        var idx = y*w+x;
+                        var idx = y * w + x;
                         if (ignoreMask[idx]) continue;
-                        var p = idx*4;
-                        var r1=img1[p],g1=img1[p+1],b1=img1[p+2],a1=img1[p+3];
-                        var r2=img2[p],g2=img2[p+1],b2=img2[p+2],a2=img2[p+3];
-                        var dr=r1-r2,dg=g1-g2,db=b1-b2,da=a1-a2;
-                        var rgbDist = Math.sqrt(dr*dr+dg*dg+db*db);
-                        var lumGap  = Math.abs((0.299*r1+0.587*g1+0.114*b1)-(0.299*r2+0.587*g2+0.114*b2));
-                        colorScore += rgbDist*0.75 + lumGap*0.25;
+
+                        var p = idx * 4;
+                        var r1 = img1[p], g1 = img1[p + 1], b1 = img1[p + 2], a1 = img1[p + 3];
+                        var r2 = img2[p], g2 = img2[p + 1], b2 = img2[p + 2], a2 = img2[p + 3];
+
+                        var dr = r1 - r2, dg = g1 - g2, db = b1 - b2, da = a1 - a2;
+                        var rgbDist = Math.sqrt(dr * dr + dg * dg + db * db);
+                        var lumGap = Math.abs(
+                            (0.299 * r1 + 0.587 * g1 + 0.114 * b1) -
+                            (0.299 * r2 + 0.587 * g2 + 0.114 * b2)
+                        );
+
+                        colorScore += rgbDist * 0.75 + lumGap * 0.25;
                         alphaScore += Math.abs(da);
                         samples++;
                     }
                 }
 
-                var avgColor = samples ? colorScore/samples : 0;
-                var avgAlpha = samples ? alphaScore/samples : 0;
+                var avgColor = samples ? colorScore / samples : 0;
+                var avgAlpha = samples ? alphaScore / samples : 0;
+
                 if (avgColor > colorThresh || avgAlpha > alphaThresh) cells[gy][gx] = 1;
             }
         }
 
         var textRectsPx   = buildTextDiffRectsPx(leftView, rightView);
         var textBgRectsPx = buildMatchedTextBackgroundDiffRects(leftView, rightView);
-        for (var i = 0; i < textRectsPx.length;   i++) stampRectToCells(textRectsPx[i],   cells, gridSize, cols, rows);
+
+        for (var i = 0; i < textRectsPx.length; i++) stampRectToCells(textRectsPx[i], cells, gridSize, cols, rows);
         for (var j = 0; j < textBgRectsPx.length; j++) stampRectToCells(textBgRectsPx[j], cells, gridSize, cols, rows);
 
         smoothBinaryGrid(cells);
 
-         var minSize = imageHeavy ? 30*dpr : 12*dpr;
+        var minSize = imageHeavy ? 30 * dpr : 12 * dpr;
 
         var rectsPx = connectedComponentsToRects(cells, gridSize, w, h)
             .filter(function(r) { return r.w > minSize && r.h > minSize; })
-            .map(function(r) { return expandRect(r, 6*dpr, w, h); });
+            .map(function(r) { return expandRect(r, 6 * dpr, w, h); });
 
-        var merged = mergeNearbyRects(rectsPx, 20*dpr);
-        var scaleX = cssWidth/w, scaleY = cssHeight/h;
+        var merged = mergeNearbyRects(rectsPx, 20 * dpr);
+        var scaleX = cssWidth / w;
+        var scaleY = cssHeight / h;
 
         return {
             rects: merged.map(function(r) {
-                return { x: r.x*scaleX, y: r.y*scaleY, w: r.w*scaleX, h: r.h*scaleY };
+                return {
+                    x: r.x * scaleX,
+                    y: r.y * scaleY,
+                    w: r.w * scaleX,
+                    h: r.h * scaleY
+                };
             }),
             meta: {
                 ignoredTextBlocks: countMatchedTextPairs(leftView, rightView),
-                textDiffBlocks:    textRectsPx.length,
-                textBgDiffBlocks:  textBgRectsPx.length,
-                isImageHeavy:      imageHeavy
+                textDiffBlocks: textRectsPx.length,
+                textBgDiffBlocks: textBgRectsPx.length,
+                isImageHeavy: imageHeavy
             }
         };
     }
@@ -1211,56 +1617,75 @@
             .map(function(item) {
                 var str = (item.str || "").trim();
                 if (!str) return null;
+
                 var tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
-                var x = tx[4], baselineY = tx[5];
-                var h = Math.max(1, Math.abs(tx[3]) || Math.abs(item.height*viewport.scale) || 10);
+                var x = tx[4];
+                var baselineY = tx[5];
+                var h = Math.max(1, Math.abs(tx[3]) || Math.abs(item.height * viewport.scale) || 10);
                 var y = baselineY - h;
-                var w = Math.max(1, item.width*viewport.scale);
-                return { text: str, x, y, w, h, baselineY };
+                var w = Math.max(1, item.width * viewport.scale);
+
+                return { text: str, x: x, y: y, w: w, h: h, baselineY: baselineY };
             })
             .filter(Boolean)
-            .sort(function(a,b) {
-                if (Math.abs(a.baselineY-b.baselineY) > 3) return a.baselineY-b.baselineY;
-                return a.x-b.x;
+            .sort(function(a, b) {
+                if (Math.abs(a.baselineY - b.baselineY) > 3) return a.baselineY - b.baselineY;
+                return a.x - b.x;
             });
 
         var lines = [];
         for (var i = 0; i < rawItems.length; i++) {
             var item = rawItems[i];
             var targetLine = null;
+
             for (var j = 0; j < lines.length; j++) {
-                if (Math.abs(lines[j].baselineY - item.baselineY) <= Math.max(4, item.h*0.6)) {
-                    targetLine = lines[j]; break;
+                if (Math.abs(lines[j].baselineY - item.baselineY) <= Math.max(4, item.h * 0.6)) {
+                    targetLine = lines[j];
+                    break;
                 }
             }
-            if (!targetLine) { targetLine = { baselineY: item.baselineY, items: [] }; lines.push(targetLine); }
+
+            if (!targetLine) {
+                targetLine = { baselineY: item.baselineY, items: [] };
+                lines.push(targetLine);
+            }
+
             targetLine.items.push(item);
-            targetLine.baselineY = (targetLine.baselineY*(targetLine.items.length-1) + item.baselineY) / targetLine.items.length;
+            targetLine.baselineY =
+                (targetLine.baselineY * (targetLine.items.length - 1) + item.baselineY) /
+                targetLine.items.length;
         }
 
         return lines.map(function(line) {
-            line.items.sort(function(a,b) { return a.x-b.x; });
+            line.items.sort(function(a, b) { return a.x - b.x; });
+
             var text = "";
             for (var i = 0; i < line.items.length; i++) {
                 var cur = line.items[i];
                 text += cur.text;
-                if (i < line.items.length-1) {
-                    var next = line.items[i+1];
-                    if (next.x-(cur.x+cur.w) > Math.max(3, cur.h*0.25)) text += " ";
+
+                if (i < line.items.length - 1) {
+                    var next = line.items[i + 1];
+                    if (next.x - (cur.x + cur.w) > Math.max(3, cur.h * 0.25)) text += " ";
                 }
             }
+
             var minX = Math.min.apply(null, line.items.map(function(i) { return i.x; }));
             var minY = Math.min.apply(null, line.items.map(function(i) { return i.y; }));
-            var maxX = Math.max.apply(null, line.items.map(function(i) { return i.x+i.w; }));
-            var maxY = Math.max.apply(null, line.items.map(function(i) { return i.y+i.h; }));
+            var maxX = Math.max.apply(null, line.items.map(function(i) { return i.x + i.w; }));
+            var maxY = Math.max.apply(null, line.items.map(function(i) { return i.y + i.h; }));
+
             return {
                 rawText: text.trim(),
                 text: normalizeTextForCompare(text),
-                x: minX, y: minY,
-                w: Math.max(1, maxX-minX),
-                h: Math.max(1, maxY-minY)
+                x: minX,
+                y: minY,
+                w: Math.max(1, maxX - minX),
+                h: Math.max(1, maxY - minY)
             };
-        }).filter(function(line) { return line.text.length > 0; });
+        }).filter(function(line) {
+            return line.text.length > 0;
+        });
     }
 
     function normalizeTextForCompare(str) {
@@ -1275,110 +1700,149 @@
 
     function detectCanvasContentBounds(canvas, textLines) {
         textLines = textLines || [];
+
         var ctx = canvas.getContext("2d");
-        var w = canvas.width, h = canvas.height;
+        var w = canvas.width;
+        var h = canvas.height;
         var img = ctx.getImageData(0, 0, w, h).data;
-        var step = Math.max(2, Math.round(Math.min(w,h)/700));
-        var minX=w, minY=h, maxX=-1, maxY=-1;
+        var step = Math.max(2, Math.round(Math.min(w, h) / 700));
+        var minX = w, minY = h, maxX = -1, maxY = -1;
 
         for (var y = 0; y < h; y += step) {
             for (var x = 0; x < w; x += step) {
-                var p = (y*w+x)*4;
-                var lum = 0.299*img[p] + 0.587*img[p+1] + 0.114*img[p+2];
-                if (img[p+3] < 250 || lum < 246) {
-                    minX=Math.min(minX,x); minY=Math.min(minY,y);
-                    maxX=Math.max(maxX,x); maxY=Math.max(maxY,y);
+                var p = (y * w + x) * 4;
+                var lum = 0.299 * img[p] + 0.587 * img[p + 1] + 0.114 * img[p + 2];
+                if (img[p + 3] < 250 || lum < 246) {
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
                 }
             }
         }
+
         for (var i = 0; i < textLines.length; i++) {
             var line = textLines[i];
-            minX=Math.min(minX,line.x); minY=Math.min(minY,line.y);
-            maxX=Math.max(maxX,line.x+line.w); maxY=Math.max(maxY,line.y+line.h);
+            minX = Math.min(minX, line.x);
+            minY = Math.min(minY, line.y);
+            maxX = Math.max(maxX, line.x + line.w);
+            maxY = Math.max(maxY, line.y + line.h);
         }
-        if (maxX < minX || maxY < minY) return { x:0, y:0, w, h };
-        var pad = Math.max(8, Math.round(Math.min(w,h)*0.01));
-        var rx=Math.max(0,Math.floor(minX-pad)), ry=Math.max(0,Math.floor(minY-pad));
-        var right=Math.min(w,Math.ceil(maxX+pad)), bottom=Math.min(h,Math.ceil(maxY+pad));
-        return { x:rx, y:ry, w:Math.max(1,right-rx), h:Math.max(1,bottom-ry) };
+
+        if (maxX < minX || maxY < minY) return { x: 0, y: 0, w: w, h: h };
+
+        var pad = Math.max(8, Math.round(Math.min(w, h) * 0.01));
+        var rx = Math.max(0, Math.floor(minX - pad));
+        var ry = Math.max(0, Math.floor(minY - pad));
+        var right = Math.min(w, Math.ceil(maxX + pad));
+        var bottom = Math.min(h, Math.ceil(maxY + pad));
+
+        return { x: rx, y: ry, w: Math.max(1, right - rx), h: Math.max(1, bottom - ry) };
     }
 
     function normalizeLineRect(line, bounds, normW, normH) {
-        normW=normW||1000; normH=normH||1000;
+        normW = normW || 1000;
+        normH = normH || 1000;
+
         return {
-            text: line.text, rawText: line.rawText,
-            x: ((line.x-bounds.x)/bounds.w)*normW,
-            y: ((line.y-bounds.y)/bounds.h)*normH,
-            w: (line.w/bounds.w)*normW,
-            h: (line.h/bounds.h)*normH
+            text: line.text,
+            rawText: line.rawText,
+            x: ((line.x - bounds.x) / bounds.w) * normW,
+            y: ((line.y - bounds.y) / bounds.h) * normH,
+            w: (line.w / bounds.w) * normW,
+            h: (line.h / bounds.h) * normH
         };
     }
 
-    function centerY(rect) { return rect.y + rect.h/2; }
+    function centerY(rect) { return rect.y + rect.h / 2; }
 
     function levenshtein(a, b) {
-        var m=a.length, n=b.length;
-        var dp = Array.from({length:m+1}, function() { return new Array(n+1).fill(0); });
-        for (var i=0;i<=m;i++) dp[i][0]=i;
-        for (var j=0;j<=n;j++) dp[0][j]=j;
-        for (var y=1;y<=m;y++) {
-            for (var x=1;x<=n;x++) {
-                var cost = a[y-1]===b[x-1] ? 0 : 1;
-                dp[y][x] = Math.min(dp[y-1][x]+1, dp[y][x-1]+1, dp[y-1][x-1]+cost);
+        var m = a.length;
+        var n = b.length;
+        var dp = Array.from({ length: m + 1 }, function() { return new Array(n + 1).fill(0); });
+
+        for (var i = 0; i <= m; i++) dp[i][0] = i;
+        for (var j = 0; j <= n; j++) dp[0][j] = j;
+
+        for (var y = 1; y <= m; y++) {
+            for (var x = 1; x <= n; x++) {
+                var cost = a[y - 1] === b[x - 1] ? 0 : 1;
+                dp[y][x] = Math.min(
+                    dp[y - 1][x] + 1,
+                    dp[y][x - 1] + 1,
+                    dp[y - 1][x - 1] + cost
+                );
             }
         }
+
         return dp[m][n];
     }
 
     function textSimilarity(a, b) {
-        if (a===b) return 1;
-        if (!a||!b) return 0;
+        if (a === b) return 1;
+        if (!a || !b) return 0;
         var maxLen = Math.max(a.length, b.length);
-        return maxLen ? 1 - levenshtein(a,b)/maxLen : 1;
+        return maxLen ? 1 - levenshtein(a, b) / maxLen : 1;
     }
 
     function matchTextLines(leftView, rightView) {
-        var normW=1000, normH=1000;
-        var leftLines  = leftView.textLines.map(function(l)  { return normalizeLineRect(l, leftView.contentBounds,  normW, normH); });
-        var rightLines = rightView.textLines.map(function(l) { return normalizeLineRect(l, rightView.contentBounds, normW, normH); });
+        var normW = 1000;
+        var normH = 1000;
+
+        var leftLines = leftView.textLines.map(function(l) {
+            return normalizeLineRect(l, leftView.contentBounds, normW, normH);
+        });
+        var rightLines = rightView.textLines.map(function(l) {
+            return normalizeLineRect(l, rightView.contentBounds, normW, normH);
+        });
 
         var usedRight = new Set();
-        var matched=[], unmatchedLeft=[], unmatchedRight=[];
+        var matched = [];
+        var unmatchedLeft = [];
+        var unmatchedRight = [];
 
         for (var i = 0; i < leftLines.length; i++) {
             var a = leftLines[i];
-            var bestIdx=-1, bestScore=Infinity;
+            var bestIdx = -1;
+            var bestScore = Infinity;
 
             for (var j = 0; j < rightLines.length; j++) {
                 if (usedRight.has(j)) continue;
+
                 var b = rightLines[j];
-                var sim  = textSimilarity(a.text, b.text);
+                var sim = textSimilarity(a.text, b.text);
                 var yGap = Math.abs(centerY(a) - centerY(b));
                 var xGap = Math.abs(a.x - b.x);
 
                 if (sim < 0.96 && !(sim >= 0.88 && yGap <= 120)) continue;
                 if (xGap > 600) continue;
 
-                var score = (1-sim)*100 + yGap*0.8 + xGap*0.04 + Math.abs(a.w-b.w)*0.03;
-                if (score < bestScore) { bestScore=score; bestIdx=j; }
+                var score = (1 - sim) * 100 + yGap * 0.8 + xGap * 0.04 + Math.abs(a.w - b.w) * 0.03;
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestIdx = j;
+                }
             }
 
             if (bestIdx >= 0) {
                 usedRight.add(bestIdx);
                 matched.push({
-                    left:  leftView.textLines[i],
+                    left: leftView.textLines[i],
                     right: rightView.textLines[bestIdx],
-                    leftNorm:  a, rightNorm: rightLines[bestIdx],
+                    leftNorm: a,
+                    rightNorm: rightLines[bestIdx],
                     similarity: textSimilarity(a.text, rightLines[bestIdx].text)
                 });
             } else {
                 unmatchedLeft.push(leftView.textLines[i]);
             }
         }
+
         for (var k = 0; k < rightLines.length; k++) {
             if (!usedRight.has(k)) unmatchedRight.push(rightView.textLines[k]);
         }
-        return { matched, unmatchedLeft, unmatchedRight };
+
+        return { matched: matched, unmatchedLeft: unmatchedLeft, unmatchedRight: unmatchedRight };
     }
 
     function countMatchedTextPairs(leftView, rightView) {
@@ -1387,219 +1851,366 @@
 
     function buildMatchedGlyphIgnoreMask(leftView, rightView, w, h) {
         var matched = matchTextLines(leftView, rightView).matched;
-        var mask = new Uint8Array(w*h);
-        var img1 = leftView.canvas.getContext("2d").getImageData(0,0,w,h).data;
-        var img2 = rightView.canvas.getContext("2d").getImageData(0,0,w,h).data;
+        var mask = new Uint8Array(w * h);
+
+        var img1 = leftView.canvas.getContext("2d").getImageData(0, 0, w, h).data;
+        var img2 = rightView.canvas.getContext("2d").getImageData(0, 0, w, h).data;
 
         for (var i = 0; i < matched.length; i++) {
             var pair = matched[i];
-            var union = unionRect(expandRect(pair.left, 2*dpr, w, h), expandRect(pair.right, 2*dpr, w, h));
-            var x0=Math.max(0,Math.floor(union.x)), y0=Math.max(0,Math.floor(union.y));
-            var x1=Math.min(w,Math.ceil(union.x+union.w)), y1=Math.min(h,Math.ceil(union.y+union.h));
-            for (var y=y0; y<y1; y++) {
-                for (var x=x0; x<x1; x++) {
-                    var idx=y*w+x, p=idx*4;
-                    var lum1=0.299*img1[p]+0.587*img1[p+1]+0.114*img1[p+2];
-                    var lum2=0.299*img2[p]+0.587*img2[p+1]+0.114*img2[p+2];
-                    var sat1=Math.max(img1[p],img1[p+1],img1[p+2])-Math.min(img1[p],img1[p+1],img1[p+2]);
-                    var sat2=Math.max(img2[p],img2[p+1],img2[p+2])-Math.min(img2[p],img2[p+1],img2[p+2]);
-                    if ((img1[p+3]>10&&lum1<205&&sat1<70)||(img2[p+3]>10&&lum2<205&&sat2<70)) mask[idx]=1;
+            var union = unionRect(
+                expandRect(pair.left, 2 * dpr, w, h),
+                expandRect(pair.right, 2 * dpr, w, h)
+            );
+
+            var x0 = Math.max(0, Math.floor(union.x));
+            var y0 = Math.max(0, Math.floor(union.y));
+            var x1 = Math.min(w, Math.ceil(union.x + union.w));
+            var y1 = Math.min(h, Math.ceil(union.y + union.h));
+
+            for (var y = y0; y < y1; y++) {
+                for (var x = x0; x < x1; x++) {
+                    var idx = y * w + x;
+                    var p = idx * 4;
+
+                    var lum1 = 0.299 * img1[p] + 0.587 * img1[p + 1] + 0.114 * img1[p + 2];
+                    var lum2 = 0.299 * img2[p] + 0.587 * img2[p + 1] + 0.114 * img2[p + 2];
+                    var sat1 = Math.max(img1[p], img1[p + 1], img1[p + 2]) - Math.min(img1[p], img1[p + 1], img1[p + 2]);
+                    var sat2 = Math.max(img2[p], img2[p + 1], img2[p + 2]) - Math.min(img2[p], img2[p + 1], img2[p + 2]);
+
+                    if (
+                        (img1[p + 3] > 10 && lum1 < 205 && sat1 < 70) ||
+                        (img2[p + 3] > 10 && lum2 < 205 && sat2 < 70)
+                    ) {
+                        mask[idx] = 1;
+                    }
                 }
             }
         }
+
         return mask;
     }
 
     function buildTextDiffRectsPx(leftView, rightView) {
         var result = matchTextLines(leftView, rightView);
         var rects = [];
-        for (var i=0; i<result.matched.length; i++) {
+
+        for (var i = 0; i < result.matched.length; i++) {
             var pair = result.matched[i];
-            if (pair.similarity < 0.985)
-                rects.push(expandRect(unionRect(pair.left,pair.right), 8*dpr, leftView.canvas.width, leftView.canvas.height));
+            if (pair.similarity < 0.985) {
+                rects.push(expandRect(
+                    unionRect(pair.left, pair.right),
+                    8 * dpr,
+                    leftView.canvas.width,
+                    leftView.canvas.height
+                ));
+            }
         }
-        for (var j=0; j<result.unmatchedLeft.length;  j++) rects.push(expandRect(result.unmatchedLeft[j],  8*dpr, leftView.canvas.width,  leftView.canvas.height));
-        for (var k=0; k<result.unmatchedRight.length; k++) rects.push(expandRect(result.unmatchedRight[k], 8*dpr, rightView.canvas.width, rightView.canvas.height));
-        return mergeNearbyRects(rects, 12*dpr).filter(function(r) { return r.w>10*dpr && r.h>8*dpr; });
+
+        for (var j = 0; j < result.unmatchedLeft.length; j++) {
+            rects.push(expandRect(result.unmatchedLeft[j], 8 * dpr, leftView.canvas.width, leftView.canvas.height));
+        }
+
+        for (var k = 0; k < result.unmatchedRight.length; k++) {
+            rects.push(expandRect(result.unmatchedRight[k], 8 * dpr, rightView.canvas.width, rightView.canvas.height));
+        }
+
+        return mergeNearbyRects(rects, 12 * dpr)
+            .filter(function(r) { return r.w > 10 * dpr && r.h > 8 * dpr; });
     }
 
     function buildMatchedTextBackgroundDiffRects(leftView, rightView) {
         var matched = matchTextLines(leftView, rightView).matched;
         var rects = [];
-        var w = leftView.canvas.width, h = leftView.canvas.height;
-        var img1 = leftView.canvas.getContext("2d").getImageData(0,0,w,h).data;
-        var img2 = rightView.canvas.getContext("2d").getImageData(0,0,w,h).data;
-        var localGrid = Math.max(3, Math.round(4*dpr));
+        var w = leftView.canvas.width;
+        var h = leftView.canvas.height;
+        var img1 = leftView.canvas.getContext("2d").getImageData(0, 0, w, h).data;
+        var img2 = rightView.canvas.getContext("2d").getImageData(0, 0, w, h).data;
+        var localGrid = Math.max(3, Math.round(4 * dpr));
 
-        for (var i=0; i<matched.length; i++) {
+        for (var i = 0; i < matched.length; i++) {
             var pair = matched[i];
-            var rect = expandRect(unionRect(expandRect(pair.left,5*dpr,w,h), expandRect(pair.right,5*dpr,w,h)), 2*dpr, w, h);
-            var x0=Math.max(0,Math.floor(rect.x)), y0=Math.max(0,Math.floor(rect.y));
-            var x1=Math.min(w,Math.ceil(rect.x+rect.w)), y1=Math.min(h,Math.ceil(rect.y+rect.h));
-            var cols=Math.ceil((x1-x0)/localGrid), rows=Math.ceil((y1-y0)/localGrid);
-            var cells = Array.from({length:rows}, function() { return Array(cols).fill(0); });
+            var rect = expandRect(
+                unionRect(
+                    expandRect(pair.left, 5 * dpr, w, h),
+                    expandRect(pair.right, 5 * dpr, w, h)
+                ),
+                2 * dpr,
+                w,
+                h
+            );
 
-            for (var gy=0; gy<rows; gy++) {
-                for (var gx=0; gx<cols; gx++) {
-                    var sx=x0+gx*localGrid, sy=y0+gy*localGrid;
-                    var ex=Math.min(sx+localGrid,x1), ey=Math.min(sy+localGrid,y1);
-                    var changed=0, colored=0, samples=0;
-                    for (var y=sy; y<ey; y++) {
-                        for (var x=sx; x<ex; x++) {
-                            var idx=y*w+x, p=idx*4;
-                            var r1=img1[p],g1=img1[p+1],b1=img1[p+2],a1=img1[p+3];
-                            var r2=img2[p],g2=img2[p+1],b2=img2[p+2],a2=img2[p+3];
-                            var lum1=0.299*r1+0.587*g1+0.114*b1, lum2=0.299*r2+0.587*g2+0.114*b2;
-                            var sat1=Math.max(r1,g1,b1)-Math.min(r1,g1,b1), sat2=Math.max(r2,g2,b2)-Math.min(r2,g2,b2);
-                            if ((a1>10&&lum1<205&&sat1<70)||(a2>10&&lum2<205&&sat2<70)) continue;
-                            var dr=r1-r2,dg=g1-g2,db=b1-b2;
-                            var rgbDist = Math.sqrt(dr*dr+dg*dg+db*db);
+            var x0 = Math.max(0, Math.floor(rect.x));
+            var y0 = Math.max(0, Math.floor(rect.y));
+            var x1 = Math.min(w, Math.ceil(rect.x + rect.w));
+            var y1 = Math.min(h, Math.ceil(rect.y + rect.h));
+            var cols = Math.ceil((x1 - x0) / localGrid);
+            var rows = Math.ceil((y1 - y0) / localGrid);
+            var cells = Array.from({ length: rows }, function() { return Array(cols).fill(0); });
+
+            for (var gy = 0; gy < rows; gy++) {
+                for (var gx = 0; gx < cols; gx++) {
+                    var sx = x0 + gx * localGrid;
+                    var sy = y0 + gy * localGrid;
+                    var ex = Math.min(sx + localGrid, x1);
+                    var ey = Math.min(sy + localGrid, y1);
+
+                    var changed = 0;
+                    var colored = 0;
+                    var samples = 0;
+
+                    for (var y = sy; y < ey; y++) {
+                        for (var x = sx; x < ex; x++) {
+                            var idx = y * w + x;
+                            var p = idx * 4;
+
+                            var r1 = img1[p], g1 = img1[p + 1], b1 = img1[p + 2], a1 = img1[p + 3];
+                            var r2 = img2[p], g2 = img2[p + 1], b2 = img2[p + 2], a2 = img2[p + 3];
+
+                            var lum1 = 0.299 * r1 + 0.587 * g1 + 0.114 * b1;
+                            var lum2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2;
+                            var sat1 = Math.max(r1, g1, b1) - Math.min(r1, g1, b1);
+                            var sat2 = Math.max(r2, g2, b2) - Math.min(r2, g2, b2);
+
+                            if (
+                                (a1 > 10 && lum1 < 205 && sat1 < 70) ||
+                                (a2 > 10 && lum2 < 205 && sat2 < 70)
+                            ) continue;
+
+                            var dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
+                            var rgbDist = Math.sqrt(dr * dr + dg * dg + db * db);
+
                             if (rgbDist > 28) changed++;
-                            if ((lum1<248&&sat1>18)||(lum2<248&&sat2>18)) colored++;
+                            if ((lum1 < 248 && sat1 > 18) || (lum2 < 248 && sat2 > 18)) colored++;
                             samples++;
                         }
                     }
-                    if (!samples) continue;
 
-                    if (changed/samples > 0.30 && colored/samples > 0.20) cells[gy][gx]=1;
+                    if (!samples) continue;
+                    if (changed / samples > 0.30 && colored / samples > 0.20) cells[gy][gx] = 1;
                 }
             }
 
             smoothBinaryGrid(cells);
-            var localRects = connectedComponentsToRects(cells, localGrid, x1-x0, y1-y0)
-                .map(function(r) { return { x:x0+r.x, y:y0+r.y, w:r.w, h:r.h }; })
-                .filter(function(r) { return r.w>6*dpr && r.h>4*dpr; })
-                .map(function(r) { return expandRect(r, 2*dpr, w, h); });
+
+            var localRects = connectedComponentsToRects(cells, localGrid, x1 - x0, y1 - y0)
+                .map(function(r) { return { x: x0 + r.x, y: y0 + r.y, w: r.w, h: r.h }; })
+                .filter(function(r) { return r.w > 6 * dpr && r.h > 4 * dpr; })
+                .map(function(r) { return expandRect(r, 2 * dpr, w, h); });
+
             rects.push.apply(rects, localRects);
         }
-        return mergeNearbyRects(rects, 8*dpr).filter(function(r) { return r.w>10*dpr && r.h>8*dpr; });
+
+        return mergeNearbyRects(rects, 8 * dpr)
+            .filter(function(r) { return r.w > 10 * dpr && r.h > 8 * dpr; });
     }
 
     function stampRectToCells(rect, cells, gridSize, cols, rows) {
-        var startCol=Math.max(0,Math.floor(rect.x/gridSize));
-        var endCol=Math.min(cols-1,Math.floor((rect.x+rect.w)/gridSize));
-        var startRow=Math.max(0,Math.floor(rect.y/gridSize));
-        var endRow=Math.min(rows-1,Math.floor((rect.y+rect.h)/gridSize));
-        for (var gy=startRow; gy<=endRow; gy++)
-            for (var gx=startCol; gx<=endCol; gx++)
-                cells[gy][gx]=1;
+        var startCol = Math.max(0, Math.floor(rect.x / gridSize));
+        var endCol   = Math.min(cols - 1, Math.floor((rect.x + rect.w) / gridSize));
+        var startRow = Math.max(0, Math.floor(rect.y / gridSize));
+        var endRow   = Math.min(rows - 1, Math.floor((rect.y + rect.h) / gridSize));
+
+        for (var gy = startRow; gy <= endRow; gy++) {
+            for (var gx = startCol; gx <= endCol; gx++) {
+                cells[gy][gx] = 1;
+            }
+        }
     }
 
-    function clearPageDiffBoxes(overlay) { overlay.querySelectorAll(".diff-box").forEach(function(el) { el.remove(); }); }
-    function removeDiffEntriesForRow(rowIndex) { diffEntries = diffEntries.filter(function(d) { return d.rowIndex !== rowIndex; }); }
+    function clearPageDiffBoxes(overlay) {
+        overlay.querySelectorAll(".diff-box").forEach(function(el) { el.remove(); });
+    }
+
+    function removeDiffEntriesForRow(rowIndex) {
+        diffEntries = diffEntries.filter(function(d) { return d.rowIndex !== rowIndex; });
+    }
 
     function sortDiffEntries() {
-        diffEntries.sort(function(a,b) {
+        diffEntries.sort(function(a, b) {
             if (a.rowIndex !== b.rowIndex) return a.rowIndex - b.rowIndex;
+
             var ay = a.leftRect ? a.leftRect.y : (a.rightRect ? a.rightRect.y : 0);
             var by = b.leftRect ? b.leftRect.y : (b.rightRect ? b.rightRect.y : 0);
-            if (ay !== by) return ay-by;
+            if (ay !== by) return ay - by;
+
             var ax = a.leftRect ? a.leftRect.x : (a.rightRect ? a.rightRect.x : 0);
             var bx = b.leftRect ? b.leftRect.x : (b.rightRect ? b.rightRect.x : 0);
-            return ax-bx;
+            return ax - bx;
         });
     }
 
     function smoothBinaryGrid(cells) {
-        var rows=cells.length, cols=cells[0]?cells[0].length:0;
-        var copy=cells.map(function(row) { return row.slice(); });
-        for (var y=0; y<rows; y++) {
-            for (var x=0; x<cols; x++) {
-                var n=0;
-                for (var dy=-1;dy<=1;dy++) for (var dx=-1;dx<=1;dx++) {
-                    if (dx===0&&dy===0) continue;
-                    var ny=y+dy,nx=x+dx;
-                    if (ny>=0&&ny<rows&&nx>=0&&nx<cols) n+=copy[ny][nx];
+        var rows = cells.length;
+        var cols = cells[0] ? cells[0].length : 0;
+        var copy = cells.map(function(row) { return row.slice(); });
+
+        for (var y = 0; y < rows; y++) {
+            for (var x = 0; x < cols; x++) {
+                var n = 0;
+
+                for (var dy = -1; dy <= 1; dy++) {
+                    for (var dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        var ny = y + dy;
+                        var nx = x + dx;
+                        if (ny >= 0 && ny < rows && nx >= 0 && nx < cols) n += copy[ny][nx];
+                    }
                 }
-                if (copy[y][x]===0 && n>=7) cells[y][x]=1;
-                if (copy[y][x]===1 && n<=1) cells[y][x]=0;
+
+                if (copy[y][x] === 0 && n >= 7) cells[y][x] = 1;
+                if (copy[y][x] === 1 && n <= 1) cells[y][x] = 0;
             }
         }
     }
 
     function connectedComponentsToRects(cells, gridSize, maxW, maxH) {
-        var rows=cells.length, cols=cells[0]?cells[0].length:0;
-        var visited=Array.from({length:rows},function(){return Array(cols).fill(false);});
-        var rects=[];
-        var dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-        for (var y=0;y<rows;y++) {
-            for (var x=0;x<cols;x++) {
-                if (cells[y][x]!==1||visited[y][x]) continue;
-                var minX=x,maxX=x,minY=y,maxY=y;
-                var stack=[[x,y]]; visited[y][x]=true;
+        var rows = cells.length;
+        var cols = cells[0] ? cells[0].length : 0;
+        var visited = Array.from({ length: rows }, function() { return Array(cols).fill(false); });
+        var rects = [];
+        var dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+
+        for (var y = 0; y < rows; y++) {
+            for (var x = 0; x < cols; x++) {
+                if (cells[y][x] !== 1 || visited[y][x]) continue;
+
+                var minX = x, maxX = x, minY = y, maxY = y;
+                var stack = [[x, y]];
+                visited[y][x] = true;
+
                 while (stack.length) {
-                    var cur=stack.pop(), cx=cur[0], cy=cur[1];
-                    minX=Math.min(minX,cx);maxX=Math.max(maxX,cx);
-                    minY=Math.min(minY,cy);maxY=Math.max(maxY,cy);
-                    for (var i=0;i<dirs.length;i++) {
-                        var nx=cx+dirs[i][0], ny=cy+dirs[i][1];
-                        if (nx>=0&&nx<cols&&ny>=0&&ny<rows&&!visited[ny][nx]&&cells[ny][nx]===1) {
-                            visited[ny][nx]=true; stack.push([nx,ny]);
+                    var cur = stack.pop();
+                    var cx = cur[0], cy = cur[1];
+
+                    minX = Math.min(minX, cx);
+                    maxX = Math.max(maxX, cx);
+                    minY = Math.min(minY, cy);
+                    maxY = Math.max(maxY, cy);
+
+                    for (var i = 0; i < dirs.length; i++) {
+                        var nx = cx + dirs[i][0];
+                        var ny = cy + dirs[i][1];
+                        if (
+                            nx >= 0 && nx < cols &&
+                            ny >= 0 && ny < rows &&
+                            !visited[ny][nx] &&
+                            cells[ny][nx] === 1
+                        ) {
+                            visited[ny][nx] = true;
+                            stack.push([nx, ny]);
                         }
                     }
                 }
-                rects.push({ x:minX*gridSize, y:minY*gridSize,
-                    w:Math.min((maxX-minX+1)*gridSize,maxW),
-                    h:Math.min((maxY-minY+1)*gridSize,maxH) });
+
+                rects.push({
+                    x: minX * gridSize,
+                    y: minY * gridSize,
+                    w: Math.min((maxX - minX + 1) * gridSize, maxW),
+                    h: Math.min((maxY - minY + 1) * gridSize, maxH)
+                });
             }
         }
+
         return rects;
     }
 
     function mergeNearbyRects(rects, gap) {
-        gap = typeof gap==="number" ? gap : 20;
-        var merged=rects.slice(), changed=true;
+        gap = typeof gap === "number" ? gap : 20;
+        var merged = rects.slice();
+        var changed = true;
+
         while (changed) {
-            changed=false;
-            var result=[], used=Array(merged.length).fill(false);
-            for (var i=0;i<merged.length;i++) {
+            changed = false;
+            var result = [];
+            var used = Array(merged.length).fill(false);
+
+            for (var i = 0; i < merged.length; i++) {
                 if (used[i]) continue;
-                var base=Object.assign({},merged[i]);
-                for (var j=i+1;j<merged.length;j++) {
+
+                var base = Object.assign({}, merged[i]);
+
+                for (var j = i + 1; j < merged.length; j++) {
                     if (used[j]) continue;
-                    if (areRectsNear(base,merged[j],gap)) { base=unionRect(base,merged[j]); used[j]=true; changed=true; }
+                    if (areRectsNear(base, merged[j], gap)) {
+                        base = unionRect(base, merged[j]);
+                        used[j] = true;
+                        changed = true;
+                    }
                 }
-                used[i]=true; result.push(base);
+
+                used[i] = true;
+                result.push(base);
             }
-            merged=result;
+
+            merged = result;
         }
+
         return merged;
     }
 
-    function areRectsNear(a,b,gap) {
-        return !(a.x+a.w+gap<b.x || b.x+b.w+gap<a.x || a.y+a.h+gap<b.y || b.y+b.h+gap<a.y);
+    function areRectsNear(a, b, gap) {
+        return !(
+            a.x + a.w + gap < b.x ||
+            b.x + b.w + gap < a.x ||
+            a.y + a.h + gap < b.y ||
+            b.y + b.h + gap < a.y
+        );
     }
 
-    function unionRect(a,b) {
-        var x=Math.min(a.x,b.x), y=Math.min(a.y,b.y);
-        return { x, y, w:Math.max(a.x+a.w,b.x+b.w)-x, h:Math.max(a.y+a.h,b.y+b.h)-y };
+    function unionRect(a, b) {
+        var x = Math.min(a.x, b.x);
+        var y = Math.min(a.y, b.y);
+        return {
+            x: x,
+            y: y,
+            w: Math.max(a.x + a.w, b.x + b.w) - x,
+            h: Math.max(a.y + a.h, b.y + b.h) - y
+        };
     }
 
     function expandRect(rect, padding, maxW, maxH) {
-        var x=Math.max(0,rect.x-padding), y=Math.max(0,rect.y-padding);
-        return { x, y, w:Math.min(maxW,rect.x+rect.w+padding)-x, h:Math.min(maxH,rect.y+rect.h+padding)-y };
+        var x = Math.max(0, rect.x - padding);
+        var y = Math.max(0, rect.y - padding);
+        return {
+            x: x,
+            y: y,
+            w: Math.min(maxW, rect.x + rect.w + padding) - x,
+            h: Math.min(maxH, rect.y + rect.h + padding) - y
+        };
     }
 
     function drawDiffBox(overlay, rect, diffId, kind) {
         var box = document.createElement("div");
         box.className = "diff-box";
-        if (kind==="insert") box.classList.add("insert-box");
-        if (kind==="delete") box.classList.add("delete-box");
+        if (kind === "insert") box.classList.add("insert-box");
+        if (kind === "delete") box.classList.add("delete-box");
         box.dataset.diffId = diffId;
-        box.style.left=rect.x+"px"; box.style.top=rect.y+"px";
-        box.style.width=rect.w+"px"; box.style.height=rect.h+"px";
+        box.style.left = rect.x + "px";
+        box.style.top = rect.y + "px";
+        box.style.width = rect.w + "px";
+        box.style.height = rect.h + "px";
         overlay.appendChild(box);
     }
 
     function buildChangedThumbList() {
         thumbListEl.innerHTML = "";
-        var uniqueRows = Array.from(new Set(diffEntries.map(function(d) { return d.rowIndex; }))).sort(function(a,b){return a-b;});
-        if (!uniqueRows.length) { thumbListEl.innerHTML='<div class="empty">변경된 페이지가 없습니다.</div>'; return; }
 
-        for (var i=0; i<uniqueRows.length; i++) {
+        var uniqueRows = Array.from(new Set(diffEntries.map(function(d) {
+            return d.rowIndex;
+        }))).sort(function(a, b) {
+            return a - b;
+        });
+
+        if (!uniqueRows.length) {
+            thumbListEl.innerHTML = '<div class="empty">변경된 페이지가 없습니다.</div>';
+            return;
+        }
+
+        for (var i = 0; i < uniqueRows.length; i++) {
             (function(rowIndex) {
                 var row = alignmentRows[rowIndex];
-                var rowDiffs = diffEntries.filter(function(d) { return d.rowIndex===rowIndex; });
+                var rowDiffs = diffEntries.filter(function(d) { return d.rowIndex === rowIndex; });
                 var primary = rowDiffs[0];
                 var leftMeta = pageViews1[rowIndex] ? pageViews1[rowIndex].meta : {};
                 var kind = primary ? primary.kind : "change";
@@ -1610,41 +2221,50 @@
 
                 var titleDiv = document.createElement("div");
                 titleDiv.className = "thumb-title";
-                if (kind==="insert")
+
+                if (kind === "insert") {
                     titleDiv.textContent = "삽입 - 우측 페이지 " + row.rightPageNo;
-                else if (kind==="delete")
+                } else if (kind === "delete") {
                     titleDiv.textContent = "삭제 - 좌측 페이지 " + row.leftPageNo;
-                else
-                    titleDiv.textContent = "비교 - 좌 " + row.leftPageNo + " ↔ 우 " + row.rightPageNo +
+                } else {
+                    titleDiv.textContent =
+                        "비교 - 좌 " + row.leftPageNo + " ↔ 우 " + row.rightPageNo +
                         (leftMeta.isImageHeavy ? " 🖼" : "");
+                }
 
                 var metaDiv = document.createElement("div");
                 metaDiv.className = "thumb-meta";
-                if (kind==="insert") {
-                    metaDiv.textContent = "새 버전에만 존재하는 페이지입니다.\n우측 페이지 번호: " + row.rightPageNo;
-                } else if (kind==="delete") {
-                    metaDiv.textContent = "구 버전에만 존재하는 페이지입니다.\n좌측 페이지 번호: " + row.leftPageNo;
+
+                if (kind === "insert") {
+                    metaDiv.textContent =
+                        "새 버전에만 존재하는 페이지입니다.\n우측 페이지 번호: " + row.rightPageNo;
+                } else if (kind === "delete") {
+                    metaDiv.textContent =
+                        "구 버전에만 존재하는 페이지입니다.\n좌측 페이지 번호: " + row.leftPageNo;
                 } else {
                     metaDiv.textContent =
                         "변경 " + rowDiffs.length + "건\n" +
-                        "동일 텍스트 무시 " + (leftMeta.ignoredTextBlocks||0) + "줄 / " +
-                        "텍스트 변경 " + (leftMeta.textDiffBlocks||0) + "건 / " +
-                        "텍스트 배경색 변경 " + (leftMeta.textBgDiffBlocks||0) + "건\n" +
-                        "정렬 유사도 " + ((row.similarity||0)*100).toFixed(1) + "%";
+                        "동일 텍스트 무시 " + (leftMeta.ignoredTextBlocks || 0) + "줄 / " +
+                        "텍스트 변경 " + (leftMeta.textDiffBlocks || 0) + "건 / " +
+                        "텍스트 배경색 변경 " + (leftMeta.textBgDiffBlocks || 0) + "건\n" +
+                        "정렬 유사도 " + ((row.similarity || 0) * 100).toFixed(1) + "%";
                 }
 
                 var badge = document.createElement("span");
-                badge.className = "badge " + (kind==="change" ? "changed" : (kind==="insert" ? "inserted" : "deleted"));
-                badge.textContent = kind==="change" ? "changed" : (kind==="insert" ? "inserted" : "deleted");
+                badge.className = "badge " + (kind === "change" ? "changed" : (kind === "insert" ? "inserted" : "deleted"));
+                badge.textContent = kind === "change" ? "changed" : (kind === "insert" ? "inserted" : "deleted");
 
                 item.appendChild(titleDiv);
                 item.appendChild(metaDiv);
                 item.appendChild(badge);
 
                 item.addEventListener("click", function() {
-                    var firstIndex = diffEntries.findIndex(function(d) { return d.rowIndex===rowIndex; });
+                    var firstIndex = diffEntries.findIndex(function(d) { return d.rowIndex === rowIndex; });
                     if (firstIndex >= 0) goToDiff(firstIndex);
-                    else { scrollToRow(rowIndex); highlightThumbOnly(rowIndex); }
+                    else {
+                        scrollToRow(rowIndex);
+                        highlightThumbOnly(rowIndex);
+                    }
                 });
 
                 thumbListEl.appendChild(item);
@@ -1654,47 +2274,90 @@
 
     function updatePageStatusBadge(pageView, diffCount, kind) {
         if (!pageView || !pageView.status) return;
-        if (kind==="insert") { pageView.status.textContent = pageView.isMissing ? "insert gap" : "inserted"; return; }
-        if (kind==="delete") { pageView.status.textContent = pageView.isMissing ? "delete gap" : "deleted";  return; }
+
+        if (kind === "insert") {
+            pageView.status.textContent = pageView.isMissing ? "insert gap" : "inserted";
+            return;
+        }
+
+        if (kind === "delete") {
+            pageView.status.textContent = pageView.isMissing ? "delete gap" : "deleted";
+            return;
+        }
+
         pageView.status.textContent = diffCount > 0 ? ("changed " + diffCount) : "same";
     }
 
     function scrollToRow(rowIndex, smooth) {
         smooth = smooth !== false;
-        var left=pageViews1[rowIndex], right=pageViews2[rowIndex];
-        if (!left||!right) return;
+
+        var left = pageViews1[rowIndex];
+        var right = pageViews2[rowIndex];
+        if (!left || !right) return;
+
         navLockUntil = performance.now() + 500;
-        pdf1El.scrollTo({ top: Math.max(0, left.pageWrap.offsetTop-20),  behavior: smooth?"smooth":"auto" });
-        pdf2El.scrollTo({ top: Math.max(0, right.pageWrap.offsetTop-20), behavior: smooth?"smooth":"auto" });
+
+        pdf1El.scrollTo({
+            top: Math.max(0, left.pageWrap.offsetTop - 20),
+            behavior: smooth ? "smooth" : "auto"
+        });
+
+        pdf2El.scrollTo({
+            top: Math.max(0, right.pageWrap.offsetTop - 20),
+            behavior: smooth ? "smooth" : "auto"
+        });
     }
 
     function getScrollTopForRect(pageWrap, rect, container) {
-        var rectTop = rect ? rect.y : 0;
-        var targetTop = pageWrap.offsetTop + rectTop - container.clientHeight*0.35;
-        return Math.max(0, Math.min(targetTop, Math.max(0, container.scrollHeight-container.clientHeight)));
+        var rectTop = rect ? (rect.y * viewScale) : 0;
+        var targetTop = pageWrap.offsetTop + rectTop - container.clientHeight * 0.35;
+        return Math.max(
+            0,
+            Math.min(targetTop, Math.max(0, container.scrollHeight - container.clientHeight))
+        );
     }
 
     async function goToDiff(index, smooth) {
         smooth = smooth !== false;
         if (!diffEntries.length) return;
-        if (index<0) index=diffEntries.length-1;
-        if (index>=diffEntries.length) index=0;
+
+        if (index < 0) index = diffEntries.length - 1;
+        if (index >= diffEntries.length) index = 0;
+
         currentDiffIndex = index;
+
         var entry = diffEntries[index];
         highlightCurrent();
-        var leftView=pageViews1[entry.rowIndex], rightView=pageViews2[entry.rowIndex];
-        if (!leftView||!rightView) return;
+
+        var leftView = pageViews1[entry.rowIndex];
+        var rightView = pageViews2[entry.rowIndex];
+        if (!leftView || !rightView) return;
+
         navLockUntil = performance.now() + 500;
-        pdf1El.scrollTo({ top: getScrollTopForRect(leftView.pageWrap,  entry.leftRect,  pdf1El), behavior: smooth?"smooth":"auto" });
-        pdf2El.scrollTo({ top: getScrollTopForRect(rightView.pageWrap, entry.rightRect, pdf2El), behavior: smooth?"smooth":"auto" });
+
+        pdf1El.scrollTo({
+            top: getScrollTopForRect(leftView.pageWrap, entry.leftRect, pdf1El),
+            behavior: smooth ? "smooth" : "auto"
+        });
+
+        pdf2El.scrollTo({
+            top: getScrollTopForRect(rightView.pageWrap, entry.rightRect, pdf2El),
+            behavior: smooth ? "smooth" : "auto"
+        });
+
         flashCurrent(entry.id);
     }
 
-    function goToNextDiff() { if (diffEntries.length) goToDiff(currentDiffIndex+1); }
-    function goToPrevDiff() { if (diffEntries.length) goToDiff(currentDiffIndex-1); }
+    function goToNextDiff() {
+        if (diffEntries.length) goToDiff(currentDiffIndex + 1);
+    }
+
+    function goToPrevDiff() {
+        if (diffEntries.length) goToDiff(currentDiffIndex - 1);
+    }
 
     function flashCurrent(diffId) {
-        document.querySelectorAll('.diff-box[data-diff-id="'+diffId+'"]').forEach(function(el) {
+        document.querySelectorAll('.diff-box[data-diff-id="' + diffId + '"]').forEach(function(el) {
             el.classList.remove("flash");
             void el.offsetWidth;
             el.classList.add("flash");
@@ -1703,19 +2366,39 @@
     }
 
     function highlightThumbOnly(rowIndex) {
-        document.querySelectorAll(".thumb-item.active").forEach(function(el) { el.classList.remove("active"); });
-        var item = thumbListEl.querySelector('.thumb-item[data-row-index="'+rowIndex+'"]');
-        if (item) { item.classList.add("active"); item.scrollIntoView({block:"nearest",behavior:"smooth"}); }
+        document.querySelectorAll(".thumb-item.active").forEach(function(el) {
+            el.classList.remove("active");
+        });
+
+        var item = thumbListEl.querySelector('.thumb-item[data-row-index="' + rowIndex + '"]');
+        if (item) {
+            item.classList.add("active");
+            item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
     }
 
     function highlightCurrent() {
-        document.querySelectorAll(".diff-box.current").forEach(function(el) { el.classList.remove("current"); });
-        document.querySelectorAll(".thumb-item.active").forEach(function(el) { el.classList.remove("active"); });
-        if (currentDiffIndex<0||currentDiffIndex>=diffEntries.length) return;
+        document.querySelectorAll(".diff-box.current").forEach(function(el) {
+            el.classList.remove("current");
+        });
+
+        document.querySelectorAll(".thumb-item.active").forEach(function(el) {
+            el.classList.remove("active");
+        });
+
+        if (currentDiffIndex < 0 || currentDiffIndex >= diffEntries.length) return;
+
         var current = diffEntries[currentDiffIndex];
-        document.querySelectorAll('.diff-box[data-diff-id="'+current.id+'"]').forEach(function(el) { el.classList.add("current"); });
-        var item = thumbListEl.querySelector('.thumb-item[data-row-index="'+current.rowIndex+'"]');
-        if (item) { item.classList.add("active"); item.scrollIntoView({block:"nearest",behavior:"smooth"}); }
+
+        document.querySelectorAll('.diff-box[data-diff-id="' + current.id + '"]').forEach(function(el) {
+            el.classList.add("current");
+        });
+
+        var item = thumbListEl.querySelector('.thumb-item[data-row-index="' + current.rowIndex + '"]');
+        if (item) {
+            item.classList.add("active");
+            item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
     }
 
     pdf1El.addEventListener("scroll", function() { syncScroll(pdf1El, pdf2El); });
@@ -1724,14 +2407,20 @@
     function syncScroll(source, target) {
         if (syncLock) return;
         if (performance.now() < navLockUntil) return;
+
         syncLock = true;
-        var srcMaxY=Math.max(1,source.scrollHeight-source.clientHeight);
-        var tgtMaxY=Math.max(1,target.scrollHeight-target.clientHeight);
-        target.scrollTop = (source.scrollTop/srcMaxY)*tgtMaxY;
-        var srcMaxX=Math.max(1,source.scrollWidth-source.clientWidth);
-        var tgtMaxX=Math.max(1,target.scrollWidth-target.clientWidth);
-        target.scrollLeft = (source.scrollLeft/srcMaxX)*tgtMaxX;
-        requestAnimationFrame(function() { syncLock=false; });
+
+        var srcMaxY = Math.max(1, source.scrollHeight - source.clientHeight);
+        var tgtMaxY = Math.max(1, target.scrollHeight - target.clientHeight);
+        target.scrollTop = (source.scrollTop / srcMaxY) * tgtMaxY;
+
+        var srcMaxX = Math.max(1, source.scrollWidth - source.clientWidth);
+        var tgtMaxX = Math.max(1, target.scrollWidth - target.clientWidth);
+        target.scrollLeft = (source.scrollLeft / srcMaxX) * tgtMaxX;
+
+        requestAnimationFrame(function() {
+            syncLock = false;
+        });
     }
 </script>
 </body>
