@@ -379,9 +379,23 @@
             var right = pageViews2[i];
 
             if (row.type === "match") {
-                await ensureRendered(pdfDoc1, left,  myGeneration);
-                await ensureRendered(pdfDoc2, right, myGeneration);
-                await maybeCompareAlignedRow(i, myGeneration);
+                if (row.similarity >= 0.985) {
+                    await Promise.all([
+                        ensureRendered(pdfDoc1, left,  myGeneration),
+                        ensureRendered(pdfDoc2, right, myGeneration)
+                    ]);
+                    if (myGeneration !== renderGeneration) return;
+                    left.isCompared  = true;
+                    right.isCompared = true;
+                    left.status.textContent  = "same";
+                    right.status.textContent = "same";
+                } else {
+                    await Promise.all([
+                        ensureRendered(pdfDoc1, left,  myGeneration),
+                        ensureRendered(pdfDoc2, right, myGeneration)
+                    ]);
+                    await maybeCompareAlignedRow(i, myGeneration);
+                }
             } else if (row.type === "insert") {
                 await ensureRendered(pdfDoc2, right, myGeneration);
                 markInsertedRow(i);
@@ -410,11 +424,23 @@
     }
 
     async function buildAllPageSignatures(pdfDoc, generation, sideLabel) {
-        var result = [];
-        for (var i = 1; i <= pdfDoc.numPages; i++) {
-            if (generation !== renderGeneration) return result;
-            summaryTextEl.textContent = sideLabel + " PDF 시그니처 생성 중... " + i + " / " + pdfDoc.numPages;
-            result.push(await buildPageSignature(pdfDoc, i));
+        var total = pdfDoc.numPages;
+        var result = new Array(total);
+        var BATCH = 8;
+
+        for (var start = 1; start <= total; start += BATCH) {
+            if (generation !== renderGeneration) return result.filter(Boolean);
+            var end = Math.min(start + BATCH - 1, total);
+            summaryTextEl.textContent =
+                sideLabel + " PDF 시그니처 생성 중... " + start + "–" + end + " / " + total;
+
+            var batch = [];
+            for (var p = start; p <= end; p++) batch.push(buildPageSignature(pdfDoc, p));
+            var batchResults = await Promise.all(batch);
+
+            for (var k = 0; k < batchResults.length; k++) {
+                result[start - 1 + k] = batchResults[k];
+            }
         }
         return result;
     }
@@ -431,11 +457,11 @@
         var normalizedText = normalizeTextForCompare(rawText);
         var textLength = normalizedText.length;
 
-        var thumbScale = 0.18;
+        var thumbScale = 0.12;
         var thumbViewport = page.getViewport({ scale: thumbScale });
         var thumbCanvas = document.createElement("canvas");
-        thumbCanvas.width  = Math.max(24, Math.floor(thumbViewport.width));
-        thumbCanvas.height = Math.max(24, Math.floor(thumbViewport.height));
+        thumbCanvas.width  = Math.max(16, Math.floor(thumbViewport.width));
+        thumbCanvas.height = Math.max(16, Math.floor(thumbViewport.height));
         var thumbCtx = thumbCanvas.getContext("2d", { alpha: false });
         await page.render({ canvasContext: thumbCtx, viewport: thumbViewport }).promise;
 
@@ -1057,7 +1083,7 @@
                         }
                     }
                     if (!samples) continue;
-
+                    
                     if (changed/samples > 0.30 && colored/samples > 0.20) cells[gy][gx]=1;
                 }
             }
