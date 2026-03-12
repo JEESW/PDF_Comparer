@@ -7,39 +7,43 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root {
-            --white:     #ffffff;
-            --gray-50:   #f8f9fb;
-            --gray-100:  #f0f2f5;
-            --gray-200:  #e4e7ed;
-            --gray-300:  #cdd2db;
-            --gray-400:  #9aa1b0;
-            --gray-500:  #6b7280;
-            --gray-700:  #374151;
-            --gray-900:  #111827;
-            --blue-50:   #eff6ff;
-            --blue-100:  #dbeafe;
-            --blue-200:  #bfdbfe;
-            --blue-300:  #93c5fd;
-            --blue-400:  #60a5fa;
-            --blue-500:  #3b82f6;
-            --blue-600:  #2563eb;
-            --blue-700:  #1d4ed8;
-            --red-100:   #fee2e2;
-            --red-700:   #b91c1c;
+            --white: #ffffff;
+            --gray-50: #f8f9fb;
+            --gray-100: #f0f2f5;
+            --gray-200: #e4e7ed;
+            --gray-300: #cdd2db;
+            --gray-400: #9aa1b0;
+            --gray-500: #6b7280;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --blue-50: #eff6ff;
+            --blue-100: #dbeafe;
+            --blue-200: #bfdbfe;
+            --blue-300: #93c5fd;
+            --blue-400: #60a5fa;
+            --blue-500: #3b82f6;
+            --blue-600: #2563eb;
+            --blue-700: #1d4ed8;
+            --red-100: #fee2e2;
+            --red-700: #b91c1c;
             --green-100: #dcfce7;
             --green-700: #15803d;
-            --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
-            --shadow-sm: 0 1px 4px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
-            --shadow-lg: 0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);
             --radius-sm: 5px;
             --radius-md: 8px;
             --radius-lg: 12px;
-            --font-ui:   -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', '맑은 고딕', sans-serif;
+            --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', '맑은 고딕', sans-serif;
             --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
             --toolbar-h: 56px;
         }
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: var(--font-ui);
@@ -75,46 +79,9 @@
             flex-shrink: 0;
         }
 
-        .toolbar select, .toolbar button { height: 32px; }
-
-        .toolbar .select-wrap {
-            position: relative;
-            display: inline-block;
-            flex-shrink: 0;
+        .toolbar select, .toolbar button {
+            height: 32px;
         }
-
-        .toolbar .select-wrap select {
-            width: 200px;
-            padding: 0 28px 0 10px;
-            border: 1px solid var(--gray-200);
-            border-radius: var(--radius-sm);
-            background: var(--gray-50);
-            color: var(--gray-700);
-            font-family: var(--font-ui);
-            font-size: 13px;
-            cursor: pointer;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            transition: border-color 0.15s, box-shadow 0.15s;
-            box-shadow: var(--shadow-xs);
-        }
-
-        .toolbar .select-wrap::after {
-            content: "";
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            width: 8px;
-            height: 8px;
-            border-right: 1.5px solid var(--gray-400);
-            border-bottom: 1.5px solid var(--gray-400);
-            transform: translateY(-65%) rotate(45deg);
-            pointer-events: none;
-        }
-
-        .toolbar select:hover { border-color: var(--gray-300); }
-        .toolbar select:focus { outline: none; border-color: var(--blue-400); box-shadow: 0 0 0 3px var(--blue-100); }
 
         .toolbar button {
             padding: 0 12px;
@@ -131,8 +98,17 @@
             box-shadow: var(--shadow-xs);
         }
 
-        .toolbar button:hover { background: var(--gray-50); border-color: var(--gray-300); color: var(--gray-900); }
-        .toolbar button:active { background: var(--gray-100); transform: translateY(1px); box-shadow: none; }
+        .toolbar button:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-300);
+            color: var(--gray-900);
+        }
+
+        .toolbar button:active {
+            background: var(--gray-100);
+            transform: translateY(1px);
+            box-shadow: none;
+        }
 
         #compareBtn {
             background: var(--blue-600);
@@ -140,6 +116,7 @@
             color: var(--white);
             box-shadow: var(--shadow-sm);
         }
+
         #compareBtn:hover {
             background: var(--blue-700);
             border-color: var(--blue-700);
@@ -170,9 +147,18 @@
             flex-direction: column;
         }
 
-        .sidebar::-webkit-scrollbar { width: 4px; }
-        .sidebar::-webkit-scrollbar-track { background: transparent; }
-        .sidebar::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 2px; }
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--gray-200);
+            border-radius: 2px;
+        }
 
         .sidebar h2 {
             font-size: 11px;
@@ -196,7 +182,12 @@
             border-bottom: 1px solid var(--gray-100);
         }
 
-        .thumb-list { display: flex; flex-direction: column; gap: 3px; padding: 10px; }
+        .thumb-list {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding: 10px;
+        }
 
         .thumb-item {
             border: 1px solid var(--gray-100);
@@ -244,11 +235,20 @@
             text-transform: uppercase;
         }
 
-        .badge.pending { background: var(--gray-100); color: var(--gray-500); }
-        .badge.same    { background: var(--green-100); color: var(--green-700); }
-        .badge.changed { background: var(--red-100);   color: var(--red-700); }
-        .badge.inserted,
-        .badge.deleted { background: var(--red-100); color: var(--red-700); }
+        .badge.same {
+            background: var(--green-100);
+            color: var(--green-700);
+        }
+
+        .badge.changed {
+            background: var(--red-100);
+            color: var(--red-700);
+        }
+
+        .badge.inserted, .badge.deleted {
+            background: var(--red-100);
+            color: var(--red-700);
+        }
 
         .empty {
             font-size: 13px;
@@ -258,7 +258,11 @@
             line-height: 1.6;
         }
 
-        .main { display: flex; height: 100%; overflow: hidden; }
+        .main {
+            display: flex;
+            height: 100%;
+            overflow: hidden;
+        }
 
         .pdf-pane {
             width: 50%;
@@ -268,12 +272,27 @@
             padding: 20px 16px;
         }
 
-        .pdf-pane:last-child { border-right: none; }
+        .pdf-pane:last-child {
+            border-right: none;
+        }
 
-        .pdf-pane::-webkit-scrollbar { width: 6px; height: 6px; }
-        .pdf-pane::-webkit-scrollbar-track { background: transparent; }
-        .pdf-pane::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
-        .pdf-pane::-webkit-scrollbar-thumb:hover { background: var(--blue-400); }
+        .pdf-pane::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .pdf-pane::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .pdf-pane::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 3px;
+        }
+
+        .pdf-pane::-webkit-scrollbar-thumb:hover {
+            background: var(--blue-400);
+        }
 
         .page-wrap {
             position: relative;
@@ -288,7 +307,7 @@
         }
 
         .page-wrap:hover {
-            box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
             border-color: var(--gray-300);
         }
 
@@ -315,7 +334,10 @@
             transform-origin: top left;
         }
 
-        canvas { display: block; background: white; }
+        canvas {
+            display: block;
+            background: white;
+        }
 
         .overlay {
             position: absolute;
@@ -337,12 +359,20 @@
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
         }
 
-        .diff-box.flash { animation: flashBox 0.9s ease-in-out 2; }
+        .diff-box.flash {
+            animation: flashBox 0.9s ease-in-out 2;
+        }
 
         @keyframes flashBox {
-            0%   { transform: scale(1); }
-            50%  { transform: scale(1.03); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.03);
+            }
+            100% {
+                transform: scale(1);
+            }
         }
 
         .page-status {
@@ -358,7 +388,6 @@
             padding: 3px 8px;
             border-radius: 999px;
             backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
         }
 
         .missing-stage {
@@ -386,17 +415,6 @@
             margin-bottom: 8px;
         }
 
-        @media (max-width: 1000px) {
-            .layout {
-                grid-template-columns: 1fr;
-                grid-template-rows: 240px 1fr;
-            }
-            .sidebar {
-                border-right: none;
-                border-bottom: 1px solid var(--gray-200);
-            }
-        }
-
         #loadingOverlay {
             display: none;
             position: fixed;
@@ -404,17 +422,18 @@
             z-index: 999;
             background: rgba(15, 23, 42, 0.50);
             backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
             align-items: center;
             justify-content: center;
         }
 
-        #loadingOverlay.visible { display: flex; }
+        #loadingOverlay.visible {
+            display: flex;
+        }
 
         .ld-card {
             background: var(--white);
             border-radius: var(--radius-lg);
-            box-shadow: 0 24px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.10);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.10);
             padding: 28px 32px 24px;
             min-width: 400px;
             max-width: 500px;
@@ -425,8 +444,14 @@
         }
 
         @keyframes ldSlideIn {
-            from { opacity: 0; transform: translateY(12px) scale(0.98); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(12px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .ld-header {
@@ -445,7 +470,11 @@
             animation: ldSpin 0.75s linear infinite;
         }
 
-        @keyframes ldSpin { to { transform: rotate(360deg); } }
+        @keyframes ldSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
         .ld-title {
             font-size: 15px;
@@ -489,8 +518,14 @@
             line-height: 1.4;
         }
 
-        .ld-step.active { color: var(--gray-900); font-weight: 600; }
-        .ld-step.done   { color: var(--green-700); }
+        .ld-step.active {
+            color: var(--gray-900);
+            font-weight: 600;
+        }
+
+        .ld-step.done {
+            color: var(--green-700);
+        }
 
         .ld-step-icon {
             width: 20px;
@@ -513,8 +548,12 @@
         }
 
         @keyframes ldPulseRing {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.35); }
-            50%      { box-shadow: 0 0 0 4px rgba(37,99,235,0); }
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35);
+            }
+            50% {
+                box-shadow: 0 0 0 4px rgba(37, 99, 235, 0);
+            }
         }
 
         .ld-step.active .ld-step-icon::after {
@@ -527,8 +566,14 @@
         }
 
         @keyframes ldDot {
-            0%,100% { opacity:1; transform:scale(1); }
-            50%     { opacity:0.4; transform:scale(0.7); }
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.4;
+                transform: scale(0.7);
+            }
         }
 
         .ld-step.done .ld-step-icon {
@@ -543,7 +588,9 @@
             line-height: 1;
         }
 
-        .ld-step-label { flex: 1; }
+        .ld-step-label {
+            flex: 1;
+        }
 
         .ld-step-sub {
             font-size: 11px;
@@ -552,7 +599,10 @@
             margin-top: 1px;
         }
 
-        .ld-step.active .ld-step-sub { color: var(--blue-600); font-weight: 500; }
+        .ld-step.active .ld-step-sub {
+            color: var(--blue-600);
+            font-weight: 500;
+        }
 
         .ld-progress-wrap {
             display: flex;
@@ -607,7 +657,6 @@
             <div class="ld-title">PDF 비교 중...</div>
             <button class="ld-cancel" id="ldCancelBtn">✕ 취소</button>
         </div>
-
         <div class="ld-steps">
             <div class="ld-step" id="ldStep0">
                 <div class="ld-step-icon"></div>
@@ -638,7 +687,6 @@
                 </div>
             </div>
         </div>
-
         <div class="ld-progress-wrap">
             <div class="ld-progress-labels">
                 <span id="ldProgressLabel">준비 중...</span>
@@ -648,7 +696,6 @@
                 <div class="ld-bar-fill" id="ldBarFill"></div>
             </div>
         </div>
-
         <div class="ld-log" id="ldLog">잠시만 기다려 주세요.</div>
     </div>
 </div>
@@ -676,7 +723,6 @@
             <div class="empty">비교 후 변경된 페이지 목록이 표시됩니다.</div>
         </div>
     </aside>
-
     <div class="main">
         <div id="pdf1" class="pdf-pane"></div>
         <div id="pdf2" class="pdf-pane"></div>
@@ -687,11 +733,11 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc =
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-    var ldOverlay   = document.getElementById("loadingOverlay");
-    var ldBarFill   = document.getElementById("ldBarFill");
-    var ldLog       = document.getElementById("ldLog");
+    var ldOverlay = document.getElementById("loadingOverlay");
+    var ldBarFill = document.getElementById("ldBarFill");
+    var ldLog = document.getElementById("ldLog");
     var ldProgLabel = document.getElementById("ldProgressLabel");
-    var ldProgPct   = document.getElementById("ldProgressPct");
+    var ldProgPct = document.getElementById("ldProgressPct");
     var ldCancelBtn = document.getElementById("ldCancelBtn");
 
     var STEP_WEIGHTS = [25, 25, 5, 45];
@@ -705,7 +751,7 @@
         ldLog.textContent = "초기화 중...";
         ldProgLabel.textContent = "준비 중...";
         ldProgPct.textContent = "0%";
-        [0, 1, 2, 3].forEach(function(i) {
+        [0, 1, 2, 3].forEach(function (i) {
             var el = document.getElementById("ldStep" + i);
             el.classList.remove("active", "done");
             document.getElementById("ldStep" + i + "sub").textContent = "대기 중...";
@@ -729,13 +775,11 @@
         }
         ldCurrentStep = stepIndex;
         ldStepProgress = 0;
-
         var el = document.getElementById("ldStep" + stepIndex);
         if (el) {
             el.classList.remove("done");
             el.classList.add("active");
         }
-
         if (subText) ldUpdateSub(stepIndex, subText);
         ldRefreshBar();
     }
@@ -753,7 +797,6 @@
     function ldRefreshBar() {
         var done = 0;
         for (var s = 0; s < ldCurrentStep; s++) done += STEP_WEIGHTS[s];
-
         var current = ldCurrentStep >= 0 ? STEP_WEIGHTS[ldCurrentStep] * ldStepProgress : 0;
         var total = Math.round(done + current);
         ldBarFill.style.width = total + "%";
@@ -765,52 +808,40 @@
         ldProgLabel.textContent = text;
     }
 
-    var pdfDoc1 = null;
-    var pdfDoc2 = null;
-
+    var pdfDoc1 = null, pdfDoc2 = null;
     var renderScale = 1.15;
     var viewScale = 1.0;
-
     var dpr = window.devicePixelRatio || 1;
-
-    var pageViews1 = [];
-    var pageViews2 = [];
+    var pageViews1 = [], pageViews2 = [];
     var alignmentRows = [];
-    var leftRowIndexByPageNo = {};
-    var rightRowIndexByPageNo = {};
-
+    var leftRowIndexByPageNo = {}, rightRowIndexByPageNo = {};
     var diffEntries = [];
     var currentDiffIndex = -1;
     var renderGeneration = 0;
-
     var syncLock = false;
     var navLockUntil = 0;
 
     var file1El = document.getElementById("file1");
     var file2El = document.getElementById("file2");
-    var pdf1El  = document.getElementById("pdf1");
-    var pdf2El  = document.getElementById("pdf2");
-    var thumbListEl   = document.getElementById("thumbList");
+    var pdf1El = document.getElementById("pdf1");
+    var pdf2El = document.getElementById("pdf2");
+    var thumbListEl = document.getElementById("thumbList");
     var summaryTextEl = document.getElementById("summaryText");
 
     file1El.addEventListener("change", loadPDF1);
     file2El.addEventListener("change", loadPDF2);
-
     document.getElementById("zoomInBtn").addEventListener("click", function () {
         viewScale = Math.min(viewScale + 0.15, 3);
         applyViewScale();
     });
-
     document.getElementById("zoomOutBtn").addEventListener("click", function () {
         viewScale = Math.max(viewScale - 0.15, 0.5);
         applyViewScale();
     });
-
     document.getElementById("prevBtn").addEventListener("click", goToPrevDiff);
     document.getElementById("nextBtn").addEventListener("click", goToNextDiff);
     document.getElementById("compareBtn").addEventListener("click", rerenderIfReady);
-
-    ldCancelBtn.addEventListener("click", function() {
+    ldCancelBtn.addEventListener("click", function () {
         renderGeneration++;
         ldHide();
         summaryTextEl.textContent = "비교가 취소되었습니다.";
@@ -819,14 +850,14 @@
     async function loadPDF1(e) {
         var file = e.target.files[0];
         if (!file) return;
-        pdfDoc1 = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        pdfDoc1 = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
         rerenderIfReady();
     }
 
     async function loadPDF2(e) {
         var file = e.target.files[0];
         if (!file) return;
-        pdfDoc2 = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        pdfDoc2 = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
         rerenderIfReady();
     }
 
@@ -840,48 +871,41 @@
 
     function applyViewScale() {
         var all = pageViews1.concat(pageViews2);
-        for (var i = 0; i < all.length; i++) {
-            applyScaleToPageView(all[i]);
-        }
-
-        if (currentDiffIndex >= 0 && currentDiffIndex < diffEntries.length) {
-            highlightCurrent();
-        }
-
+        for (var i = 0; i < all.length; i++) applyScaleToPageView(all[i]);
+        if (currentDiffIndex >= 0 && currentDiffIndex < diffEntries.length) highlightCurrent();
         updateZoomSummary();
     }
 
     function updateZoomSummary() {
         var zoomText = " / 줌 " + Math.round(viewScale * 100) + "%";
-
         if (!alignmentRows.length) {
             summaryTextEl.textContent = "PDF 2개를 선택하세요." + zoomText;
             return;
         }
-
-        var changedRows   = new Set(diffEntries.map(function (d) { return d.rowIndex; }));
-        var insertedCount = diffEntries.filter(function (d) { return d.kind === "insert"; }).length;
-        var deletedCount  = diffEntries.filter(function (d) { return d.kind === "delete"; }).length;
-        var changedCount  = diffEntries.filter(function (d) { return d.kind === "change"; }).length;
-
+        var changedRows = new Set(diffEntries.map(function (d) {
+            return d.rowIndex;
+        }));
+        var insertedCount = diffEntries.filter(function (d) {
+            return d.kind === "insert";
+        }).length;
+        var deletedCount = diffEntries.filter(function (d) {
+            return d.kind === "delete";
+        }).length;
+        var changedCount = diffEntries.filter(function (d) {
+            return d.kind === "change";
+        }).length;
         summaryTextEl.textContent =
-            "정렬 행 " + alignmentRows.length +
-            "개 / 변경 " + changedCount +
-            " / 삽입 " + insertedCount +
-            " / 삭제 " + deletedCount +
-            " / 변경 위치 " + changedRows.size + "개" +
-            zoomText;
+            "정렬 행 " + alignmentRows.length + "개 / 변경 " + changedCount +
+            " / 삽입 " + insertedCount + " / 삭제 " + deletedCount +
+            " / 변경 위치 " + changedRows.size + "개" + zoomText;
     }
 
     function applyScaleToPageView(pageView) {
         if (!pageView || !pageView.pageBody || !pageView.stage) return;
-
         var scaledW = Math.max(1, Math.round(pageView.baseWidth * viewScale));
         var scaledH = Math.max(1, Math.round(pageView.baseHeight * viewScale));
-
         pageView.pageBody.style.width = scaledW + "px";
         pageView.pageBody.style.height = scaledH + "px";
-
         pageView.stage.style.width = pageView.baseWidth + "px";
         pageView.stage.style.height = pageView.baseHeight + "px";
         pageView.stage.style.transform = "scale(" + viewScale + ")";
@@ -895,7 +919,6 @@
         pdf2El.innerHTML = "";
         thumbListEl.innerHTML = "";
         summaryTextEl.textContent = "페이지 정렬 준비 중...";
-
         pageViews1 = [];
         pageViews2 = [];
         alignmentRows = [];
@@ -906,214 +929,218 @@
 
         ldShow();
 
-        ldActivateStep(0, "0 / " + pdfDoc1.numPages + " 페이지");
-        var leftSignatures = await buildAllPageSignatures(pdfDoc1, myGeneration, "좌측");
-        if (myGeneration !== renderGeneration) { ldHide(); return; }
-
-        ldActivateStep(1, "0 / " + pdfDoc2.numPages + " 페이지");
-        var rightSignatures = await buildAllPageSignatures(pdfDoc2, myGeneration, "우측");
-        if (myGeneration !== renderGeneration) { ldHide(); return; }
-
-        ldActivateStep(2, "DP 행렬 계산 중...");
-        ldSetLog("페이지 순서 정렬 계산 중... (" + leftSignatures.length + " × " + rightSignatures.length + ")");
-        summaryTextEl.textContent = "페이지 정렬 계산 중...";
-        alignmentRows = alignPageSequences(leftSignatures, rightSignatures);
-        if (myGeneration !== renderGeneration) { ldHide(); return; }
-
-        var _ins = alignmentRows.filter(function(r){ return r.type === "insert"; }).length;
-        var _del = alignmentRows.filter(function(r){ return r.type === "delete"; }).length;
-        var _mat = alignmentRows.filter(function(r){ return r.type === "match"; }).length;
-        ldUpdateSub(2, "매칭 " + _mat + " / 삽입 " + _ins + " / 삭제 " + _del);
-        ldSetStepProgress(1);
-
-        summaryTextEl.textContent = "페이지 껍데기 생성 중...";
-        ldSetLog("페이지 레이아웃 구성 중...");
-
-        for (var rowIndex = 0; rowIndex < alignmentRows.length; rowIndex++) {
-            var row = alignmentRows[rowIndex];
-            var leftView = null;
-            var rightView = null;
-
-            if (row.leftPageNo != null) {
-                var lm = await getPageMeta(pdfDoc1, row.leftPageNo);
-                leftView = createPageShell(pdf1El, row.leftPageNo, "좌측", lm.width, lm.height, rowIndex);
-                leftRowIndexByPageNo[row.leftPageNo] = rowIndex;
-            } else {
-                var rm2 = await getPageMeta(pdfDoc2, row.rightPageNo);
-                leftView = createMissingPageShell(pdf1El, "좌측 PDF - 없음", rm2.width, rm2.height, "insert", rowIndex);
+        try {
+            ldActivateStep(0, "0 / " + pdfDoc1.numPages + " 페이지");
+            var leftSignatures = await buildAllPageSignatures(pdfDoc1, myGeneration, "좌측");
+            if (myGeneration !== renderGeneration) {
+                ldHide();
+                return;
             }
 
-            if (row.rightPageNo != null) {
-                var rm = await getPageMeta(pdfDoc2, row.rightPageNo);
-                rightView = createPageShell(pdf2El, row.rightPageNo, "우측", rm.width, rm.height, rowIndex);
-                rightRowIndexByPageNo[row.rightPageNo] = rowIndex;
-            } else {
-                var lm2 = await getPageMeta(pdfDoc1, row.leftPageNo);
-                rightView = createMissingPageShell(pdf2El, "우측 PDF - 없음", lm2.width, lm2.height, "delete", rowIndex);
+            ldActivateStep(1, "0 / " + pdfDoc2.numPages + " 페이지");
+            var rightSignatures = await buildAllPageSignatures(pdfDoc2, myGeneration, "우측");
+            if (myGeneration !== renderGeneration) {
+                ldHide();
+                return;
             }
 
-            pageViews1.push(leftView);
-            pageViews2.push(rightView);
-        }
-
-        applyViewScale();
-
-        ldActivateStep(3, "0 / " + alignmentRows.length + " 행 처리 중");
-        summaryTextEl.textContent = "정렬된 페이지 렌더링/비교 중...";
-
-        var totalRows = alignmentRows.length;
-
-        for (var i = 0; i < totalRows; i++) {
-            if (myGeneration !== renderGeneration) { ldHide(); return; }
-
-            var row = alignmentRows[i];
-            var left  = pageViews1[i];
-            var right = pageViews2[i];
-
-            ldSetStepProgress(i / totalRows);
-
-            var pLabel = (i + 1) + " / " + totalRows;
-            if (row.type === "match") {
-                var isSame = row.similarity >= 0.985;
-                ldUpdateSub(3, pLabel + " — 좌 " + row.leftPageNo + " ↔ 우 " + row.rightPageNo + (isSame ? " (동일, 스킵)" : " (diff 검출)"));
-                ldSetLog(
-                    isSame
-                        ? "p" + row.leftPageNo + " ↔ p" + row.rightPageNo + "  유사도 " + (row.similarity*100).toFixed(1) + "% → diff 스킵"
-                        : "p" + row.leftPageNo + " ↔ p" + row.rightPageNo + "  유사도 " + (row.similarity*100).toFixed(1) + "% → 픽셀 diff 검출 중..."
-                );
-            } else if (row.type === "insert") {
-                ldUpdateSub(3, pLabel + " — 우측 p" + row.rightPageNo + " 삽입");
-                ldSetLog("우측 페이지 " + row.rightPageNo + " 삽입 감지");
-            } else {
-                ldUpdateSub(3, pLabel + " — 좌측 p" + row.leftPageNo + " 삭제");
-                ldSetLog("좌측 페이지 " + row.leftPageNo + " 삭제 감지");
+            ldActivateStep(2, "DP 행렬 계산 중...");
+            ldSetLog("페이지 순서 정렬 계산 중... (" + leftSignatures.length + " × " + rightSignatures.length + ")");
+            summaryTextEl.textContent = "페이지 정렬 계산 중...";
+            alignmentRows = alignPageSequences(leftSignatures, rightSignatures);
+            if (myGeneration !== renderGeneration) {
+                ldHide();
+                return;
             }
 
-            if (row.type === "match") {
-                if (row.similarity >= 0.985) {
-                    await Promise.all([
-                        ensureRendered(pdfDoc1, left, myGeneration),
-                        ensureRendered(pdfDoc2, right, myGeneration)
-                    ]);
-                    if (myGeneration !== renderGeneration) { ldHide(); return; }
-                    left.isCompared = true;
-                    right.isCompared = true;
-                    left.status.textContent = "same";
-                    right.status.textContent = "same";
+            var _ins = alignmentRows.filter(function (r) {
+                return r.type === "insert";
+            }).length;
+            var _del = alignmentRows.filter(function (r) {
+                return r.type === "delete";
+            }).length;
+            var _mat = alignmentRows.filter(function (r) {
+                return r.type === "match";
+            }).length;
+            ldUpdateSub(2, "매칭 " + _mat + " / 삽입 " + _ins + " / 삭제 " + _del);
+            ldSetStepProgress(1);
+
+            summaryTextEl.textContent = "페이지 껍데기 생성 중...";
+            ldSetLog("페이지 레이아웃 구성 중...");
+
+            for (var rowIndex = 0; rowIndex < alignmentRows.length; rowIndex++) {
+                var row = alignmentRows[rowIndex];
+                var leftView = null, rightView = null;
+
+                if (row.leftPageNo != null) {
+                    var lm = await getPageMeta(pdfDoc1, row.leftPageNo);
+                    leftView = createPageShell(pdf1El, row.leftPageNo, "좌측", lm.width, lm.height, rowIndex);
+                    leftRowIndexByPageNo[row.leftPageNo] = rowIndex;
                 } else {
-                    await Promise.all([
-                        ensureRendered(pdfDoc1, left, myGeneration),
-                        ensureRendered(pdfDoc2, right, myGeneration)
-                    ]);
-                    await maybeCompareAlignedRow(i, myGeneration);
+                    var rm2 = await getPageMeta(pdfDoc2, row.rightPageNo);
+                    leftView = createMissingPageShell(pdf1El, "좌측 PDF - 없음", rm2.width, rm2.height, "insert", rowIndex);
                 }
-            } else if (row.type === "insert") {
-                await ensureRendered(pdfDoc2, right, myGeneration);
-                markInsertedRow(i);
-            } else if (row.type === "delete") {
-                await ensureRendered(pdfDoc1, left, myGeneration);
-                markDeletedRow(i);
+                if (row.rightPageNo != null) {
+                    var rm = await getPageMeta(pdfDoc2, row.rightPageNo);
+                    rightView = createPageShell(pdf2El, row.rightPageNo, "우측", rm.width, rm.height, rowIndex);
+                    rightRowIndexByPageNo[row.rightPageNo] = rowIndex;
+                } else {
+                    var lm2 = await getPageMeta(pdfDoc1, row.leftPageNo);
+                    rightView = createMissingPageShell(pdf2El, "우측 PDF - 없음", lm2.width, lm2.height, "delete", rowIndex);
+                }
+
+                pageViews1.push(leftView);
+                pageViews2.push(rightView);
             }
 
-            summaryTextEl.textContent =
-                "정렬 행 " + (i + 1) + " / " + totalRows + " 처리 완료 / 현재 변경 " + diffEntries.length + "건";
-        }
+            applyViewScale();
 
-        buildChangedThumbList();
-        ldSetStepProgress(1);
-        ldHide();
-        updateZoomSummary();
+            ldActivateStep(3, "0 / " + alignmentRows.length + " 행 처리 중");
+            summaryTextEl.textContent = "정렬된 페이지 렌더링/비교 중...";
+
+            var totalRows = alignmentRows.length;
+            for (var i = 0; i < totalRows; i++) {
+                if (myGeneration !== renderGeneration) {
+                    ldHide();
+                    return;
+                }
+
+                var row = alignmentRows[i];
+                var left = pageViews1[i];
+                var right = pageViews2[i];
+
+                ldSetStepProgress(i / totalRows);
+
+                var pLabel = (i + 1) + " / " + totalRows;
+                if (row.type === "match") {
+                    ldUpdateSub(3, pLabel + " — 좌 " + row.leftPageNo + " ↔ 우 " + row.rightPageNo + " (픽셀 diff 검출)");
+                    ldSetLog("p" + row.leftPageNo + " ↔ p" + row.rightPageNo + "  유사도 " + (row.similarity * 100).toFixed(1) + "% → 픽셀 diff 검출 중...");
+                } else if (row.type === "insert") {
+                    ldUpdateSub(3, pLabel + " — 우측 p" + row.rightPageNo + " 삽입");
+                    ldSetLog("우측 페이지 " + row.rightPageNo + " 삽입 감지");
+                } else {
+                    ldUpdateSub(3, pLabel + " — 좌측 p" + row.leftPageNo + " 삭제");
+                    ldSetLog("좌측 페이지 " + row.leftPageNo + " 삭제 감지");
+                }
+
+                if (row.type === "match") {
+                    await Promise.all([ensureRendered(pdfDoc1, left, myGeneration), ensureRendered(pdfDoc2, right, myGeneration)]);
+                    await maybeCompareAlignedRow(i, myGeneration);
+                } else if (row.type === "insert") {
+                    await ensureRendered(pdfDoc2, right, myGeneration);
+                    markInsertedRow(i);
+                } else if (row.type === "delete") {
+                    await ensureRendered(pdfDoc1, left, myGeneration);
+                    markDeletedRow(i);
+                }
+
+                summaryTextEl.textContent = "정렬 행 " + (i + 1) + " / " + totalRows + " 처리 완료 / 현재 변경 " + diffEntries.length + "건";
+            }
+
+            buildChangedThumbList();
+            ldSetStepProgress(1);
+            ldHide();
+            updateZoomSummary();
+        } catch (err) {
+            console.error("renderAll error:", err);
+            ldSetLog("❌ 오류 발생: " + (err && err.message ? err.message : String(err)));
+            ldUpdateSub(0, "오류 발생 — 취소하고 다시 시도하세요");
+            summaryTextEl.textContent = "비교 중 오류가 발생했습니다: " + (err && err.message ? err.message : String(err));
+        }
     }
 
     async function buildAllPageSignatures(pdfDoc, generation, sideLabel) {
         var total = pdfDoc.numPages;
-        var result = new Array(total);
-        var BATCH = 8;
+        var result = [];
         var stepIndex = sideLabel === "좌측" ? 0 : 1;
 
-        for (var start = 1; start <= total; start += BATCH) {
-            if (generation !== renderGeneration) return result.filter(Boolean);
-
-            var end = Math.min(start + BATCH - 1, total);
-            summaryTextEl.textContent =
-                sideLabel + " PDF 시그니처 생성 중... " + start + "–" + end + " / " + total;
-
-            ldUpdateSub(stepIndex, start + "–" + end + " / " + total + " 페이지");
-            ldSetLog(sideLabel + " PDF 시그니처 생성 중... " + start + "–" + end + " / " + total);
-            ldSetStepProgress((start - 1) / total);
-
-            var batch = [];
-            for (var p = start; p <= end; p++) batch.push(buildPageSignature(pdfDoc, p));
-            var batchResults = await Promise.all(batch);
-
-            for (var k = 0; k < batchResults.length; k++) {
-                result[start - 1 + k] = batchResults[k];
-            }
+        for (var p = 1; p <= total; p++) {
+            if (generation !== renderGeneration) return result;
+            summaryTextEl.textContent = sideLabel + " PDF 시그니처 생성 중... " + p + " / " + total;
+            ldUpdateSub(stepIndex, p + " / " + total + " 페이지");
+            ldSetLog(sideLabel + " PDF 시그니처 생성 중... " + p + " / " + total);
+            ldSetStepProgress((p - 1) / total);
+            result.push(await buildPageSignature(pdfDoc, p));
         }
-
         ldUpdateSub(stepIndex, "완료 (" + total + " 페이지)");
         return result;
     }
 
     async function buildPageSignature(pdfDoc, pageNo) {
-        var page = await pdfDoc.getPage(pageNo);
-        var viewport = page.getViewport({ scale: 1.0 });
+        var page;
+        try {
+            page = await pdfDoc.getPage(pageNo);
+        } catch (e) {
+            console.error("getPage failed p" + pageNo, e);
+            ldSetLog("⚠ p" + pageNo + " getPage 실패: " + e.message);
+            return {pageNo: pageNo, width: 595, height: 842, text: "", textLength: 0, imageFingerprint: []};
+        }
 
-        var textContent = await page.getTextContent();
-        var rawText = (textContent.items || [])
-            .map(function (item) { return (item.str || "").trim(); })
-            .filter(Boolean)
-            .join(" ");
+        var viewport = page.getViewport({scale: 1.0});
 
-        var normalizedText = normalizeTextForCompare(rawText);
-        var textLength = normalizedText.length;
+        var normalizedText = "", textLength = 0;
+        try {
+            ldSetLog("  p" + pageNo + " 텍스트 추출 중...");
+            var textContent = await page.getTextContent();
+            var rawText = (textContent.items || []).map(function (item) {
+                return (item.str || "").trim();
+            }).filter(Boolean).join(" ");
+            normalizedText = normalizeTextForCompare(rawText);
+            textLength = normalizedText.length;
+        } catch (e) {
+            console.warn("getTextContent failed p" + pageNo, e);
+            ldSetLog("⚠ p" + pageNo + " 텍스트 추출 실패: " + e.message);
+        }
 
-        var thumbScale = 0.12;
-        var thumbViewport = page.getViewport({ scale: thumbScale });
-        var thumbCanvas = document.createElement("canvas");
-        thumbCanvas.width = Math.max(16, Math.floor(thumbViewport.width));
-        thumbCanvas.height = Math.max(16, Math.floor(thumbViewport.height));
+        var imageFingerprint = [];
+        try {
+            ldSetLog("  p" + pageNo + " 썸네일 렌더 중...");
+            var thumbScale = 0.12;
+            var thumbViewport = page.getViewport({scale: thumbScale});
+            var thumbCanvas = document.createElement("canvas");
+            thumbCanvas.width = Math.max(16, Math.floor(thumbViewport.width));
+            thumbCanvas.height = Math.max(16, Math.floor(thumbViewport.height));
+            var thumbCtx = thumbCanvas.getContext("2d", {alpha: false});
+            await page.render({canvasContext: thumbCtx, viewport: thumbViewport}).promise;
+            var imageData = thumbCtx.getImageData(0, 0, thumbCanvas.width, thumbCanvas.height).data;
+            imageFingerprint = buildImageFingerprint(imageData, thumbCanvas.width, thumbCanvas.height, 16, 16);
+        } catch (e) {
+            console.warn("thumbnail render failed p" + pageNo, e);
+            ldSetLog("⚠ p" + pageNo + " 썸네일 렌더 실패: " + e.message);
+        }
 
-        var thumbCtx = thumbCanvas.getContext("2d", { alpha: false });
-        await page.render({ canvasContext: thumbCtx, viewport: thumbViewport }).promise;
-
-        var imageData = thumbCtx.getImageData(0, 0, thumbCanvas.width, thumbCanvas.height).data;
-        var imageFingerprint = buildImageFingerprint(imageData, thumbCanvas.width, thumbCanvas.height, 16, 16);
-
-        return {
-            pageNo: pageNo,
-            width: Math.round(viewport.width),
-            height: Math.round(viewport.height),
-            text: normalizedText,
-            textLength: textLength,
-            imageFingerprint: imageFingerprint
-        };
+        try {
+            page.cleanup();
+        } catch (e) {
+        }
+        return {pageNo: pageNo, width: Math.round(viewport.width), height: Math.round(viewport.height), text: normalizedText, textLength: textLength, imageFingerprint: imageFingerprint};
     }
 
+    // Stores [luma, R, G, B] per cell so color-only changes (e.g. red highlight) alter the fingerprint
     function buildImageFingerprint(data, width, height, cols, rows) {
-        var cellW = width / cols;
-        var cellH = height / rows;
+        var cellW = width / cols, cellH = height / rows;
         var values = [];
-
         for (var gy = 0; gy < rows; gy++) {
             for (var gx = 0; gx < cols; gx++) {
-                var startX = Math.floor(gx * cellW);
-                var startY = Math.floor(gy * cellH);
-                var endX = Math.min(width, Math.floor((gx + 1) * cellW));
-                var endY = Math.min(height, Math.floor((gy + 1) * cellH));
-
-                var sum = 0;
-                var count = 0;
-
+                var startX = Math.floor(gx * cellW), startY = Math.floor(gy * cellH);
+                var endX = Math.min(width, Math.floor((gx + 1) * cellW)), endY = Math.min(height, Math.floor((gy + 1) * cellH));
+                var sumL = 0, sumR = 0, sumG = 0, sumB = 0, count = 0;
                 for (var y = startY; y < endY; y++) {
                     for (var x = startX; x < endX; x++) {
                         var p = (y * width + x) * 4;
-                        sum += 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+                        var r = data[p], g = data[p + 1], b = data[p + 2];
+                        sumL += 0.299 * r + 0.587 * g + 0.114 * b;
+                        sumR += r;
+                        sumG += g;
+                        sumB += b;
                         count++;
                     }
                 }
-
-                values.push(count ? sum / count : 255);
+                if (count) {
+                    values.push(sumL / count, sumR / count, sumG / count, sumB / count);
+                } else {
+                    values.push(255, 255, 255, 255);
+                }
             }
         }
         return values;
@@ -1121,7 +1148,6 @@
 
     function imageFingerprintSimilarity(a, b) {
         if (!a || !b || !a.length || !b.length || a.length !== b.length) return 0;
-
         var diffSum = 0;
         for (var i = 0; i < a.length; i++) diffSum += Math.abs(a[i] - b[i]);
         return Math.max(0, 1 - (diffSum / a.length) / 255);
@@ -1129,155 +1155,116 @@
 
     function pageSimilarity(sigA, sigB) {
         if (!sigA || !sigB) return 0;
-
         var textSim = textSimilarity(sigA.text, sigB.text);
-        var imgSim  = imageFingerprintSimilarity(sigA.imageFingerprint, sigB.imageFingerprint);
-        var hasTextA = sigA.textLength > 20;
-        var hasTextB = sigB.textLength > 20;
-
-        var score = (hasTextA && hasTextB)
-            ? textSim * 0.72 + imgSim * 0.28
-            : textSim * 0.25 + imgSim * 0.75;
-
+        var imgSim = imageFingerprintSimilarity(sigA.imageFingerprint, sigB.imageFingerprint);
+        var hasTextA = sigA.textLength > 20, hasTextB = sigB.textLength > 20;
+        // Use more balanced weights — pure text similarity is unreliable when PDFs share boilerplate text
+        var score = (hasTextA && hasTextB) ? textSim * 0.55 + imgSim * 0.45 : textSim * 0.20 + imgSim * 0.80;
         var sizePenalty = 0;
         if (Math.abs(sigA.width - sigB.width) > 10 || Math.abs(sigA.height - sigB.height) > 10) sizePenalty += 0.08;
         sizePenalty += Math.abs(sigA.textLength - sigB.textLength) / Math.max(1, Math.max(sigA.textLength, sigB.textLength)) * 0.12;
-
         var pageDistancePenalty = Math.abs(sigA.pageNo - sigB.pageNo) * 0.008;
         return Math.max(0, score - sizePenalty - pageDistancePenalty);
     }
 
     function alignPageSequences(leftSigs, rightSigs) {
-        var n = leftSigs.length;
-        var m = rightSigs.length;
+        var n = leftSigs.length, m = rightSigs.length;
         var gapPenalty = 0.43;
-
-        var dp = Array.from({ length: n + 1 }, function() { return Array(m + 1).fill(0); });
-        var path = Array.from({ length: n + 1 }, function() { return Array(m + 1).fill(null); });
-
-        for (var i = 1; i <= n; i++) { dp[i][0] = dp[i - 1][0] - gapPenalty; path[i][0] = "up"; }
-        for (var j = 1; j <= m; j++) { dp[0][j] = dp[0][j - 1] - gapPenalty; path[0][j] = "left"; }
-
+        var dp = Array.from({length: n + 1}, function () {
+            return Array(m + 1).fill(0);
+        });
+        var path = Array.from({length: n + 1}, function () {
+            return Array(m + 1).fill(null);
+        });
+        for (var i = 1; i <= n; i++) {
+            dp[i][0] = dp[i - 1][0] - gapPenalty;
+            path[i][0] = "up";
+        }
+        for (var j = 1; j <= m; j++) {
+            dp[0][j] = dp[0][j - 1] - gapPenalty;
+            path[0][j] = "left";
+        }
         for (var y = 1; y <= n; y++) {
             for (var x = 1; x <= m; x++) {
-                var sim  = pageSimilarity(leftSigs[y - 1], rightSigs[x - 1]);
-                var diag = dp[y - 1][x - 1] + sim;
-                var up   = dp[y - 1][x] - gapPenalty;
-                var left = dp[y][x - 1] - gapPenalty;
-
-                var best = diag;
-                var dir = "diag";
-                if (up > best)   { best = up; dir = "up"; }
-                if (left > best) { best = left; dir = "left"; }
-
+                var sim = pageSimilarity(leftSigs[y - 1], rightSigs[x - 1]);
+                var diag = dp[y - 1][x - 1] + sim, up = dp[y - 1][x] - gapPenalty, left = dp[y][x - 1] - gapPenalty;
+                var best = diag, dir = "diag";
+                if (up > best) {
+                    best = up;
+                    dir = "up";
+                }
+                if (left > best) {
+                    best = left;
+                    dir = "left";
+                }
                 dp[y][x] = best;
                 path[y][x] = dir;
             }
         }
-
-        var result = [];
-        var i2 = n;
-        var j2 = m;
-        var matchThreshold = 0.56;
-
+        var result = [], i2 = n, j2 = m, matchThreshold = 0.70;
         while (i2 > 0 || j2 > 0) {
             var dir2 = path[i2][j2];
-
             if (i2 > 0 && j2 > 0 && dir2 === "diag") {
-                var ls = leftSigs[i2 - 1];
-                var rs = rightSigs[j2 - 1];
+                var ls = leftSigs[i2 - 1], rs = rightSigs[j2 - 1];
                 var s2 = pageSimilarity(ls, rs);
-
                 if (s2 >= matchThreshold) {
-                    result.push({
-                        type: "match",
-                        leftPageNo: ls.pageNo,
-                        rightPageNo: rs.pageNo,
-                        similarity: s2
-                    });
+                    result.push({type: "match", leftPageNo: ls.pageNo, rightPageNo: rs.pageNo, similarity: s2});
                 } else {
-                    result.push({ type: "insert", leftPageNo: null, rightPageNo: rs.pageNo, similarity: 0 });
-                    result.push({ type: "delete", leftPageNo: ls.pageNo, rightPageNo: null, similarity: 0 });
+                    result.push({type: "insert", leftPageNo: null, rightPageNo: rs.pageNo, similarity: 0});
+                    result.push({type: "delete", leftPageNo: ls.pageNo, rightPageNo: null, similarity: 0});
                 }
                 i2--;
                 j2--;
             } else if (i2 > 0 && (j2 === 0 || dir2 === "up")) {
-                result.push({ type: "delete", leftPageNo: leftSigs[i2 - 1].pageNo, rightPageNo: null, similarity: 0 });
+                result.push({type: "delete", leftPageNo: leftSigs[i2 - 1].pageNo, rightPageNo: null, similarity: 0});
                 i2--;
             } else {
-                result.push({ type: "insert", leftPageNo: null, rightPageNo: rightSigs[j2 - 1].pageNo, similarity: 0 });
+                result.push({type: "insert", leftPageNo: null, rightPageNo: rightSigs[j2 - 1].pageNo, similarity: 0});
                 j2--;
             }
         }
-
         result.reverse();
         return result;
     }
 
     async function getPageMeta(pdf, pageNo) {
         var page = await pdf.getPage(pageNo);
-        var viewport = page.getViewport({ scale: renderScale });
-        return { width: viewport.width, height: viewport.height };
+        var viewport = page.getViewport({scale: renderScale});
+        return {width: viewport.width, height: viewport.height};
     }
 
     function createPageShell(container, pageNo, sideLabel, width, height, rowIndex) {
         var pageWrap = document.createElement("div");
         pageWrap.className = "page-wrap";
         pageWrap.dataset.rowIndex = rowIndex;
-
         var label = document.createElement("div");
         label.className = "page-label";
         label.textContent = sideLabel + " PDF - 페이지 " + pageNo;
-
         var pageBody = document.createElement("div");
         pageBody.className = "page-body";
-
         var stage = document.createElement("div");
         stage.className = "page-stage";
         stage.style.width = width + "px";
         stage.style.height = height + "px";
-
         var overlay = document.createElement("div");
         overlay.className = "overlay";
         overlay.style.width = width + "px";
         overlay.style.height = height + "px";
-
         var status = document.createElement("div");
         status.className = "page-status";
         status.textContent = "pending";
-
         stage.appendChild(overlay);
         stage.appendChild(status);
         pageBody.appendChild(stage);
-
         pageWrap.appendChild(label);
         pageWrap.appendChild(pageBody);
         container.appendChild(pageWrap);
-
         var view = {
-            pageNo: pageNo,
-            rowIndex: rowIndex,
-            width: width,
-            height: height,
-            baseWidth: width,
-            baseHeight: height,
-            pageWrap: pageWrap,
-            pageBody: pageBody,
-            stage: stage,
-            overlay: overlay,
-            status: status,
-            canvas: null,
-            viewport: null,
-            textLines: [],
-            contentBounds: null,
-            isRendered: false,
-            isCompared: false,
-            renderToken: 0,
-            meta: {},
-            isMissing: false,
-            missingType: null
+            pageNo: pageNo, rowIndex: rowIndex, width: width, height: height, baseWidth: width, baseHeight: height,
+            pageWrap: pageWrap, pageBody: pageBody, stage: stage, overlay: overlay, status: status,
+            canvas: null, viewport: null, textLines: [], contentBounds: null,
+            isRendered: false, isCompared: false, renderToken: 0, meta: {}, isMissing: false, missingType: null
         };
-
         applyScaleToPageView(view);
         return view;
     }
@@ -1286,74 +1273,38 @@
         var pageWrap = document.createElement("div");
         pageWrap.className = "page-wrap";
         pageWrap.dataset.rowIndex = rowIndex;
-
         var label = document.createElement("div");
         label.className = "page-label";
         label.textContent = labelText;
-
         var pageBody = document.createElement("div");
         pageBody.className = "page-body";
-
         var stage = document.createElement("div");
         stage.className = "page-stage missing-stage";
         stage.style.width = width + "px";
         stage.style.height = height + "px";
-
         var inner = document.createElement("div");
         inner.className = "missing-content";
-        inner.innerHTML =
-            '<div class="missing-title">' +
-            (missingType === "insert"
-                ? "이 위치에는 기존 페이지가 없습니다"
-                : "이 위치에는 새 버전 페이지가 없습니다") +
-            '</div><div>' +
-            (missingType === "insert"
-                ? "우측 PDF에 새 페이지가 삽입되었습니다."
-                : "좌측 PDF의 페이지가 삭제되었습니다.") +
-            '</div>';
-
+        inner.innerHTML = '<div class="missing-title">' + (missingType === "insert" ? "이 위치에는 기존 페이지가 없습니다" : "이 위치에는 새 버전 페이지가 없습니다") + '</div><div>' + (missingType === "insert" ? "우측 PDF에 새 페이지가 삽입되었습니다." : "좌측 PDF의 페이지가 삭제되었습니다.") + '</div>';
         var overlay = document.createElement("div");
         overlay.className = "overlay";
         overlay.style.width = width + "px";
         overlay.style.height = height + "px";
-
         var status = document.createElement("div");
         status.className = "page-status";
         status.textContent = missingType;
-
         stage.appendChild(inner);
         stage.appendChild(overlay);
         stage.appendChild(status);
         pageBody.appendChild(stage);
-
         pageWrap.appendChild(label);
         pageWrap.appendChild(pageBody);
         container.appendChild(pageWrap);
-
         var view = {
-            pageNo: null,
-            rowIndex: rowIndex,
-            width: width,
-            height: height,
-            baseWidth: width,
-            baseHeight: height,
-            pageWrap: pageWrap,
-            pageBody: pageBody,
-            stage: stage,
-            overlay: overlay,
-            status: status,
-            canvas: null,
-            viewport: null,
-            textLines: [],
-            contentBounds: null,
-            isRendered: true,
-            isCompared: true,
-            renderToken: 0,
-            meta: {},
-            isMissing: true,
-            missingType: missingType
+            pageNo: null, rowIndex: rowIndex, width: width, height: height, baseWidth: width, baseHeight: height,
+            pageWrap: pageWrap, pageBody: pageBody, stage: stage, overlay: overlay, status: status,
+            canvas: null, viewport: null, textLines: [], contentBounds: null,
+            isRendered: true, isCompared: true, renderToken: 0, meta: {}, isMissing: true, missingType: missingType
         };
-
         applyScaleToPageView(view);
         return view;
     }
@@ -1361,35 +1312,26 @@
     async function ensureRendered(pdfDoc, pageView, generation) {
         if (generation !== renderGeneration) return;
         if (!pageView || pageView.isMissing || pageView.isRendered) return;
-
         pageView.renderToken++;
         var token = pageView.renderToken;
         pageView.status.textContent = "rendering";
-
         var page = await pdfDoc.getPage(pageView.pageNo);
-        var viewport = page.getViewport({ scale: renderScale });
-
+        var viewport = page.getViewport({scale: renderScale});
         if (generation !== renderGeneration || token !== pageView.renderToken) return;
-
         var canvas = document.createElement("canvas");
         canvas.style.width = viewport.width + "px";
         canvas.style.height = viewport.height + "px";
         canvas.width = Math.floor(viewport.width * dpr);
         canvas.height = Math.floor(viewport.height * dpr);
-
-        var ctx = canvas.getContext("2d", { alpha: false });
+        var ctx = canvas.getContext("2d", {alpha: false});
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-
+        await page.render({canvasContext: ctx, viewport: viewport}).promise;
         var textContent = await page.getTextContent();
         var textLines = extractTextLines(textContent, viewport);
         var contentBounds = detectCanvasContentBounds(canvas, textLines);
-
         if (generation !== renderGeneration || token !== pageView.renderToken) return;
-
         if (!pageView.canvas) pageView.stage.insertBefore(canvas, pageView.overlay);
         else pageView.canvas.replaceWith(canvas);
-
         pageView.canvas = canvas;
         pageView.viewport = viewport;
         pageView.textLines = textLines;
@@ -1400,11 +1342,7 @@
 
     async function maybeCompareAlignedRow(rowIndex, generation) {
         if (generation !== renderGeneration) return;
-
-        var left  = pageViews1[rowIndex];
-        var right = pageViews2[rowIndex];
-        var row   = alignmentRows[rowIndex];
-
+        var left = pageViews1[rowIndex], right = pageViews2[rowIndex], row = alignmentRows[rowIndex];
         if (!left || !right || !row) return;
         if (row.type !== "match") return;
         if (!left.isRendered || !right.isRendered) return;
@@ -1414,23 +1352,17 @@
         clearPageDiffBoxes(right.overlay);
         removeDiffEntriesForRow(rowIndex);
 
-        var result = detectDiffRects(left, right);
+        var result = await detectDiffRects(left, right, generation);
+        if (generation !== renderGeneration) return;
 
         result.rects.forEach(function (rect, idx) {
             var diffId = "r" + rowIndex + "-d" + (idx + 1);
-
-            drawDiffBox(left.overlay, rect, diffId, "change");
-            drawDiffBox(right.overlay, rect, diffId, "change");
-
+            drawDiffBox(left.overlay, rect.left, diffId, "change");
+            drawDiffBox(right.overlay, rect.right, diffId, "change");
             diffEntries.push({
-                id: diffId,
-                kind: "change",
-                rowIndex: rowIndex,
-                pageNo: left.pageNo,
-                leftPageNo: left.pageNo,
-                rightPageNo: right.pageNo,
-                leftRect: rect,
-                rightRect: rect,
+                id: diffId, kind: "change", rowIndex: rowIndex,
+                pageNo: left.pageNo, leftPageNo: left.pageNo, rightPageNo: right.pageNo,
+                leftRect: rect.left, rightRect: rect.right,
                 label: "좌 " + left.pageNo + " ↔ 우 " + right.pageNo
             });
         });
@@ -1439,73 +1371,38 @@
         right.isCompared = true;
         left.meta = result.meta;
         right.meta = result.meta;
-
         updatePageStatusBadge(left, result.rects.length, "change");
         updatePageStatusBadge(right, result.rects.length, "change");
         sortDiffEntries();
     }
 
     function markInsertedRow(rowIndex) {
-        var right = pageViews2[rowIndex];
-        var left  = pageViews1[rowIndex];
-        var row   = alignmentRows[rowIndex];
+        var right = pageViews2[rowIndex], left = pageViews1[rowIndex], row = alignmentRows[rowIndex];
         if (!right || !row) return;
-
         clearPageDiffBoxes(right.overlay);
         clearPageDiffBoxes(left.overlay);
         removeDiffEntriesForRow(rowIndex);
-
         var diffId = "ins-r" + rowIndex;
-        var rect = { x: 0, y: 0, w: right.width, h: right.height };
-
+        var rect = {x: 0, y: 0, w: right.width, h: right.height};
         drawDiffBox(right.overlay, rect, diffId, "insert");
-        drawDiffBox(left.overlay, { x: 0, y: 0, w: left.width, h: left.height }, diffId, "insert");
-
-        diffEntries.push({
-            id: diffId,
-            kind: "insert",
-            rowIndex: rowIndex,
-            pageNo: row.rightPageNo,
-            leftPageNo: null,
-            rightPageNo: row.rightPageNo,
-            leftRect: { x: 0, y: 0, w: left.width, h: left.height },
-            rightRect: rect,
-            label: "우측 페이지 " + row.rightPageNo + " 삽입"
-        });
-
+        drawDiffBox(left.overlay, {x: 0, y: 0, w: left.width, h: left.height}, diffId, "insert");
+        diffEntries.push({id: diffId, kind: "insert", rowIndex: rowIndex, pageNo: row.rightPageNo, leftPageNo: null, rightPageNo: row.rightPageNo, leftRect: {x: 0, y: 0, w: left.width, h: left.height}, rightRect: rect, label: "우측 페이지 " + row.rightPageNo + " 삽입"});
         updatePageStatusBadge(left, 1, "insert");
         updatePageStatusBadge(right, 1, "insert");
         sortDiffEntries();
     }
 
     function markDeletedRow(rowIndex) {
-        var left  = pageViews1[rowIndex];
-        var right = pageViews2[rowIndex];
-        var row   = alignmentRows[rowIndex];
+        var left = pageViews1[rowIndex], right = pageViews2[rowIndex], row = alignmentRows[rowIndex];
         if (!left || !row) return;
-
         clearPageDiffBoxes(left.overlay);
         clearPageDiffBoxes(right.overlay);
         removeDiffEntriesForRow(rowIndex);
-
         var diffId = "del-r" + rowIndex;
-        var rect = { x: 0, y: 0, w: left.width, h: left.height };
-
+        var rect = {x: 0, y: 0, w: left.width, h: left.height};
         drawDiffBox(left.overlay, rect, diffId, "delete");
-        drawDiffBox(right.overlay, { x: 0, y: 0, w: right.width, h: right.height }, diffId, "delete");
-
-        diffEntries.push({
-            id: diffId,
-            kind: "delete",
-            rowIndex: rowIndex,
-            pageNo: row.leftPageNo,
-            leftPageNo: row.leftPageNo,
-            rightPageNo: null,
-            leftRect: rect,
-            rightRect: { x: 0, y: 0, w: right.width, h: right.height },
-            label: "좌측 페이지 " + row.leftPageNo + " 삭제"
-        });
-
+        drawDiffBox(right.overlay, {x: 0, y: 0, w: right.width, h: right.height}, diffId, "delete");
+        diffEntries.push({id: diffId, kind: "delete", rowIndex: rowIndex, pageNo: row.leftPageNo, leftPageNo: row.leftPageNo, rightPageNo: null, leftRect: rect, rightRect: {x: 0, y: 0, w: right.width, h: right.height}, label: "좌측 페이지 " + row.leftPageNo + " 삭제"});
         updatePageStatusBadge(left, 1, "delete");
         updatePageStatusBadge(right, 1, "delete");
         sortDiffEntries();
@@ -1515,199 +1412,232 @@
         return (leftView.textLines.length + rightView.textLines.length) < 10;
     }
 
-    function detectDiffRects(leftView, rightView) {
-        var canvas1 = leftView.canvas;
-        var canvas2 = rightView.canvas;
-        var cssWidth = leftView.width;
-        var cssHeight = leftView.height;
-        var w = canvas1.width;
-        var h = canvas1.height;
+    // ─────────────────────────────────────────────────────────────
+    // IMPROVED: getRgbToHue - hue angle (0..360) from RGB
+    // ─────────────────────────────────────────────────────────────
+    function getHue(r, g, b) {
+        var rn = r / 255, gn = g / 255, bn = b / 255;
+        var max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+        var delta = max - min;
+        if (delta < 0.001) return -1; // achromatic
+        var h;
+        if (max === rn) h = ((gn - bn) / delta) % 6;
+        else if (max === gn) h = (bn - rn) / delta + 2;
+        else h = (rn - gn) / delta + 4;
+        h = h * 60;
+        if (h < 0) h += 360;
+        return h;
+    }
+
+    function hueDiff(h1, h2) {
+        if (h1 < 0 || h2 < 0) return 0;
+        var d = Math.abs(h1 - h2);
+        return Math.min(d, 360 - d);
+    }
+
+    function getSaturation(r, g, b) {
+        var max = Math.max(r, g, b), min = Math.min(r, g, b);
+        return max === 0 ? 0 : (max - min) / max;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    function yieldToBrowser() {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, 0);
+        });
+    }
+
+    async function detectDiffRects(leftView, rightView, generation) {
+        var canvas1 = leftView.canvas, canvas2 = rightView.canvas;
+        var cssWidth = leftView.width, cssHeight = leftView.height;
+        var w = canvas1.width, h = canvas1.height;
+
+        var sampledCanvas2 = canvas2;
+        if (canvas2.width !== w || canvas2.height !== h) {
+            sampledCanvas2 = document.createElement("canvas");
+            sampledCanvas2.width = w;
+            sampledCanvas2.height = h;
+            sampledCanvas2.getContext("2d").drawImage(canvas2, 0, 0, w, h);
+        }
 
         var img1 = canvas1.getContext("2d").getImageData(0, 0, w, h).data;
-        var img2 = canvas2.getContext("2d").getImageData(0, 0, w, h).data;
+        var img2 = sampledCanvas2.getContext("2d").getImageData(0, 0, w, h).data;
 
-        var ignoreMask = buildMatchedGlyphIgnoreMask(leftView, rightView, w, h);
+        // Cache matchTextLines — avoid calling it 3 separate times
+        var matchResult = matchTextLines(leftView, rightView);
 
-        var imageHeavy = isImageHeavyPage(leftView, rightView);
-        var colorThresh = imageHeavy ? 55 : 35;
-        var alphaThresh = imageHeavy ? 40 : 25;
+        var ignoreMask = buildIgnoreMask(matchResult, leftView, rightView, img1, img2, w, h);
 
-        var gridSize = Math.max(8, Math.round(10 * dpr));
-        var cols = Math.ceil(w / gridSize);
-        var rows = Math.ceil(h / gridSize);
-        var cells = Array.from({ length: rows }, function() { return Array(cols).fill(0); });
+        var gridSize = Math.max(4, Math.round(6 * dpr));
+        var cols = Math.ceil(w / gridSize), rows = Math.ceil(h / gridSize);
+        var cells = Array.from({length: rows}, function () {
+            return Array(cols).fill(0);
+        });
+        var rgbThresh = 20;
+        var CHUNK = 24;
 
         for (var gy = 0; gy < rows; gy++) {
+            if (gy % CHUNK === 0) {
+                if (generation !== undefined && generation !== renderGeneration) return {rects: [], meta: {}};
+                await yieldToBrowser();
+            }
             for (var gx = 0; gx < cols; gx++) {
-                var colorScore = 0;
-                var alphaScore = 0;
-                var samples = 0;
-                var startX = gx * gridSize;
-                var startY = gy * gridSize;
-                var endX = Math.min(startX + gridSize, w);
-                var endY = Math.min(startY + gridSize, h);
-
-                for (var y = startY; y < endY; y += 2) {
-                    for (var x = startX; x < endX; x += 2) {
-                        var idx = y * w + x;
+                var diffCount = 0, samples = 0;
+                var sx = gx * gridSize, sy = gy * gridSize;
+                var ex = Math.min(sx + gridSize, w), ey = Math.min(sy + gridSize, h);
+                for (var py = sy; py < ey; py++) {
+                    for (var px = sx; px < ex; px++) {
+                        var idx = py * w + px;
                         if (ignoreMask[idx]) continue;
-
                         var p = idx * 4;
-                        var r1 = img1[p], g1 = img1[p + 1], b1 = img1[p + 2], a1 = img1[p + 3];
-                        var r2 = img2[p], g2 = img2[p + 1], b2 = img2[p + 2], a2 = img2[p + 3];
-
-                        var dr = r1 - r2, dg = g1 - g2, db = b1 - b2, da = a1 - a2;
-                        var rgbDist = Math.sqrt(dr * dr + dg * dg + db * db);
-                        var lumGap = Math.abs(
-                            (0.299 * r1 + 0.587 * g1 + 0.114 * b1) -
-                            (0.299 * r2 + 0.587 * g2 + 0.114 * b2)
-                        );
-
-                        colorScore += rgbDist * 0.75 + lumGap * 0.25;
-                        alphaScore += Math.abs(da);
+                        var dr = img1[p] - img2[p], dg = img1[p + 1] - img2[p + 1], db = img1[p + 2] - img2[p + 2];
+                        if (dr * dr + dg * dg + db * db > rgbThresh * rgbThresh) diffCount++;
                         samples++;
                     }
                 }
-
-                var avgColor = samples ? colorScore / samples : 0;
-                var avgAlpha = samples ? alphaScore / samples : 0;
-
-                if (avgColor > colorThresh || avgAlpha > alphaThresh) cells[gy][gx] = 1;
+                if (samples && diffCount / samples > 0.04) cells[gy][gx] = 1;
             }
         }
 
-        var textRectsPx   = buildTextDiffRectsPx(leftView, rightView);
-        var textBgRectsPx = buildMatchedTextBackgroundDiffRects(leftView, rightView);
+        var textRectsPx = buildTextDiffRectsPxCached(matchResult, leftView, rightView);
+        var textBgRectsPx = buildTextBgDiffRectsCached(matchResult, leftView, rightView, img1, img2, w, h);
 
         for (var i = 0; i < textRectsPx.length; i++) stampRectToCells(textRectsPx[i], cells, gridSize, cols, rows);
         for (var j = 0; j < textBgRectsPx.length; j++) stampRectToCells(textBgRectsPx[j], cells, gridSize, cols, rows);
 
-        smoothBinaryGrid(cells);
-
-        var minSize = imageHeavy ? 30 * dpr : 12 * dpr;
-
+        var minSize = gridSize * 2;
         var rectsPx = connectedComponentsToRects(cells, gridSize, w, h)
-            .filter(function(r) { return r.w > minSize && r.h > minSize; })
-            .map(function(r) { return expandRect(r, 6 * dpr, w, h); });
+            .filter(function (r) {
+                return r.w > minSize && r.h > minSize;
+            })
+            .map(function (r) {
+                return expandRect(r, 4 * dpr, w, h);
+            });
 
         var merged = mergeNearbyRects(rectsPx, 20 * dpr);
-        var scaleX = cssWidth / w;
-        var scaleY = cssHeight / h;
+        var scaleX = cssWidth / w, scaleY = cssHeight / h;
 
         return {
-            rects: merged.map(function(r) {
-                return {
-                    x: r.x * scaleX,
-                    y: r.y * scaleY,
-                    w: r.w * scaleX,
-                    h: r.h * scaleY
-                };
+            rects: merged.map(function (r) {
+                var cr = {x: r.x * scaleX, y: r.y * scaleY, w: r.w * scaleX, h: r.h * scaleY};
+                return {left: cr, right: cr};
             }),
             meta: {
-                ignoredTextBlocks: countMatchedTextPairs(leftView, rightView),
+                ignoredTextBlocks: matchResult.matched.length,
                 textDiffBlocks: textRectsPx.length,
                 textBgDiffBlocks: textBgRectsPx.length,
-                isImageHeavy: imageHeavy
+                isImageHeavy: isImageHeavyPage(leftView, rightView)
             }
         };
     }
 
-    function extractTextLines(textContent, viewport) {
-        var rawItems = (textContent.items || [])
-            .map(function(item) {
-                var str = (item.str || "").trim();
-                if (!str) return null;
-
-                var tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
-                var x = tx[4];
-                var baselineY = tx[5];
-                var h = Math.max(1, Math.abs(tx[3]) || Math.abs(item.height * viewport.scale) || 10);
-                var y = baselineY - h;
-                var w = Math.max(1, item.width * viewport.scale);
-
-                return { text: str, x: x, y: y, w: w, h: h, baselineY: baselineY };
-            })
-            .filter(Boolean)
-            .sort(function(a, b) {
-                if (Math.abs(a.baselineY - b.baselineY) > 3) return a.baselineY - b.baselineY;
-                return a.x - b.x;
-            });
-
-        var lines = [];
-        for (var i = 0; i < rawItems.length; i++) {
-            var item = rawItems[i];
-            var targetLine = null;
-
-            for (var j = 0; j < lines.length; j++) {
-                if (Math.abs(lines[j].baselineY - item.baselineY) <= Math.max(4, item.h * 0.6)) {
-                    targetLine = lines[j];
-                    break;
+    function buildIgnoreMask(matchResult, leftView, rightView, img1, img2, w, h) {
+        var mask = new Uint8Array(w * h);
+        var matched = matchResult.matched;
+        for (var i = 0; i < matched.length; i++) {
+            var pair = matched[i];
+            var lPx = rectCssToCanvasPx(pair.left, leftView);
+            var rPx = rectCssToCanvasPx(pair.right, rightView);
+            var union = unionRect(expandRect(lPx, 2 * dpr, w, h), expandRect(rPx, 2 * dpr, w, h));
+            var x0 = Math.max(0, Math.floor(union.x)), y0 = Math.max(0, Math.floor(union.y));
+            var x1 = Math.min(w, Math.ceil(union.x + union.w)), y1 = Math.min(h, Math.ceil(union.y + union.h));
+            for (var y = y0; y < y1; y++) {
+                for (var x = x0; x < x1; x++) {
+                    var idx = y * w + x, p = idx * 4;
+                    var lum1 = 0.299 * img1[p] + 0.587 * img1[p + 1] + 0.114 * img1[p + 2];
+                    var lum2 = 0.299 * img2[p] + 0.587 * img2[p + 1] + 0.114 * img2[p + 2];
+                    var sat1 = getSaturation(img1[p], img1[p + 1], img1[p + 2]);
+                    var sat2 = getSaturation(img2[p], img2[p + 1], img2[p + 2]);
+                    if ((img1[p + 3] > 10 && lum1 < 180 && sat1 < 0.25) && (img2[p + 3] > 10 && lum2 < 180 && sat2 < 0.25))
+                        mask[idx] = 1;
                 }
             }
-
-            if (!targetLine) {
-                targetLine = { baselineY: item.baselineY, items: [] };
-                lines.push(targetLine);
-            }
-
-            targetLine.items.push(item);
-            targetLine.baselineY =
-                (targetLine.baselineY * (targetLine.items.length - 1) + item.baselineY) /
-                targetLine.items.length;
         }
+        return mask;
+    }
 
-        return lines.map(function(line) {
-            line.items.sort(function(a, b) { return a.x - b.x; });
-
-            var text = "";
-            for (var i = 0; i < line.items.length; i++) {
-                var cur = line.items[i];
-                text += cur.text;
-
-                if (i < line.items.length - 1) {
-                    var next = line.items[i + 1];
-                    if (next.x - (cur.x + cur.w) > Math.max(3, cur.h * 0.25)) text += " ";
-                }
+    function buildTextDiffRectsPxCached(matchResult, leftView, rightView) {
+        var rects = [], maxW = leftView.canvas.width, maxH = leftView.canvas.height;
+        for (var i = 0; i < matchResult.matched.length; i++) {
+            var pair = matchResult.matched[i];
+            if (pair.similarity < 0.985) {
+                var lr = rectCssToCanvasPx(pair.left, leftView), rr = rectCssToCanvasPx(pair.right, rightView);
+                rects.push(expandRect(unionRect(lr, rr), 8 * dpr, maxW, maxH));
             }
-
-            var minX = Math.min.apply(null, line.items.map(function(i) { return i.x; }));
-            var minY = Math.min.apply(null, line.items.map(function(i) { return i.y; }));
-            var maxX = Math.max.apply(null, line.items.map(function(i) { return i.x + i.w; }));
-            var maxY = Math.max.apply(null, line.items.map(function(i) { return i.y + i.h; }));
-
-            return {
-                rawText: text.trim(),
-                text: normalizeTextForCompare(text),
-                x: minX,
-                y: minY,
-                w: Math.max(1, maxX - minX),
-                h: Math.max(1, maxY - minY)
-            };
-        }).filter(function(line) {
-            return line.text.length > 0;
+        }
+        for (var j = 0; j < matchResult.unmatchedLeft.length; j++)
+            rects.push(expandRect(rectCssToCanvasPx(matchResult.unmatchedLeft[j], leftView), 8 * dpr, maxW, maxH));
+        for (var k = 0; k < matchResult.unmatchedRight.length; k++)
+            rects.push(expandRect(rectCssToCanvasPx(matchResult.unmatchedRight[k], rightView), 8 * dpr, maxW, maxH));
+        return mergeNearbyRects(rects, 12 * dpr).filter(function (r) {
+            return r.w > 4 * dpr && r.h > 3 * dpr;
         });
     }
 
+    function buildTextBgDiffRectsCached(matchResult, leftView, rightView, img1, img2, w, h) {
+        var matched = matchResult.matched;
+        var rects = [];
+        var localGrid = Math.max(3, Math.round(4 * dpr));
+        for (var i = 0; i < matched.length; i++) {
+            var pair = matched[i];
+            var lPx = rectCssToCanvasPx(pair.left, leftView), rPx = rectCssToCanvasPx(pair.right, rightView);
+            var rect = expandRect(unionRect(expandRect(lPx, 10 * dpr, w, h), expandRect(rPx, 10 * dpr, w, h)), 4 * dpr, w, h);
+            var x0 = Math.max(0, Math.floor(rect.x)), y0 = Math.max(0, Math.floor(rect.y));
+            var x1 = Math.min(w, Math.ceil(rect.x + rect.w)), y1 = Math.min(h, Math.ceil(rect.y + rect.h));
+            var lcols = Math.ceil((x1 - x0) / localGrid), lrows = Math.ceil((y1 - y0) / localGrid);
+            var cells = Array.from({length: lrows}, function () {
+                return Array(lcols).fill(0);
+            });
+            for (var gy = 0; gy < lrows; gy++) {
+                for (var gx = 0; gx < lcols; gx++) {
+                    var sx = x0 + gx * localGrid, sy = y0 + gy * localGrid;
+                    var ex = Math.min(sx + localGrid, x1), ey = Math.min(sy + localGrid, y1);
+                    var changed = 0, samples = 0;
+                    for (var py = sy; py < ey; py++) {
+                        for (var px = sx; px < ex; px++) {
+                            var idx = py * w + px, p = idx * 4;
+                            var lum1 = 0.299 * img1[p] + 0.587 * img1[p + 1] + 0.114 * img1[p + 2];
+                            var lum2 = 0.299 * img2[p] + 0.587 * img2[p + 1] + 0.114 * img2[p + 2];
+                            var sat1 = getSaturation(img1[p], img1[p + 1], img1[p + 2]);
+                            var sat2 = getSaturation(img2[p], img2[p + 1], img2[p + 2]);
+                            if ((img1[p + 3] > 10 && lum1 < 160 && sat1 < 0.25) || (img2[p + 3] > 10 && lum2 < 160 && sat2 < 0.25)) continue;
+                            var dr = img1[p] - img2[p], dg = img1[p + 1] - img2[p + 1], db = img1[p + 2] - img2[p + 2];
+                            if (dr * dr + dg * dg + db * db > 225) changed++;
+                            samples++;
+                        }
+                    }
+                    if (samples && changed / samples > 0.15) cells[gy][gx] = 1;
+                }
+            }
+            smoothBinaryGrid(cells);
+            var localRects = connectedComponentsToRects(cells, localGrid, x1 - x0, y1 - y0)
+                .map(function (r) {
+                    return {x: x0 + r.x, y: y0 + r.y, w: r.w, h: r.h};
+                })
+                .filter(function (r) {
+                    return r.w > 5 * dpr && r.h > 3 * dpr;
+                })
+                .map(function (r) {
+                    return expandRect(r, 2 * dpr, w, h);
+                });
+            rects.push.apply(rects, localRects);
+        }
+        return mergeNearbyRects(rects, 8 * dpr).filter(function (r) {
+            return r.w > 8 * dpr && r.h > 6 * dpr;
+        });
+    }
+
+
     function normalizeTextForCompare(str) {
-        return (str || "")
-            .replace(/\s+/g, " ")
-            .replace(/[‐\-‒–—―]/g, "-")
-            .replace(/[""]/g, '"')
-            .replace(/['']/g, "'")
-            .trim()
-            .toLowerCase();
+        return (str || "").replace(/\s+/g, " ").replace(/[\u2010\-\u2012\u2013\u2014\u2015]/g, "-").replace(/[""]/g, '"').replace(/['']/g, "'").trim().toLowerCase();
     }
 
     function detectCanvasContentBounds(canvas, textLines) {
         textLines = textLines || [];
-
-        var ctx = canvas.getContext("2d");
-        var w = canvas.width;
-        var h = canvas.height;
+        var ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height;
         var img = ctx.getImageData(0, 0, w, h).data;
         var step = Math.max(2, Math.round(Math.min(w, h) / 700));
         var minX = w, minY = h, maxX = -1, maxY = -1;
-
         for (var y = 0; y < h; y += step) {
             for (var x = 0; x < w; x += step) {
                 var p = (y * w + x) * 4;
@@ -1720,7 +1650,6 @@
                 }
             }
         }
-
         for (var i = 0; i < textLines.length; i++) {
             var line = textLines[i];
             minX = Math.min(minX, line.x);
@@ -1728,53 +1657,144 @@
             maxX = Math.max(maxX, line.x + line.w);
             maxY = Math.max(maxY, line.y + line.h);
         }
-
-        if (maxX < minX || maxY < minY) return { x: 0, y: 0, w: w, h: h };
-
+        if (maxX < minX || maxY < minY) return {x: 0, y: 0, w: w, h: h};
         var pad = Math.max(8, Math.round(Math.min(w, h) * 0.01));
-        var rx = Math.max(0, Math.floor(minX - pad));
-        var ry = Math.max(0, Math.floor(minY - pad));
-        var right = Math.min(w, Math.ceil(maxX + pad));
-        var bottom = Math.min(h, Math.ceil(maxY + pad));
+        var rx = Math.max(0, Math.floor(minX - pad)), ry = Math.max(0, Math.floor(minY - pad));
+        var right = Math.min(w, Math.ceil(maxX + pad)), bottom = Math.min(h, Math.ceil(maxY + pad));
+        return {x: rx, y: ry, w: Math.max(1, right - rx), h: Math.max(1, bottom - ry)};
+    }
 
-        return { x: rx, y: ry, w: Math.max(1, right - rx), h: Math.max(1, bottom - ry) };
+    function rectCssToCanvasPx(rect, view) {
+        if (!rect || !view) return {x: 0, y: 0, w: 1, h: 1};
+        var cw = view.canvas ? view.canvas.width : view.width;
+        var ch = view.canvas ? view.canvas.height : view.height;
+        var sx = cw / view.width, sy = ch / view.height;
+        return {x: rect.x * sx, y: rect.y * sy, w: rect.w * sx, h: rect.h * sy};
+    }
+
+    function unionRect(a, b) {
+        var x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+        return {x: x, y: y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y};
+    }
+
+    function areRectsNear(a, b, gap) {
+        return !(a.x + a.w + gap < b.x || b.x + b.w + gap < a.x || a.y + a.h + gap < b.y || b.y + b.h + gap < a.y);
+    }
+
+    function mergeNearbyRects(rects, gap) {
+        gap = typeof gap === "number" ? gap : 20;
+        var merged = rects.slice(), changed = true;
+        while (changed) {
+            changed = false;
+            var result = [], used = Array(merged.length).fill(false);
+            for (var i = 0; i < merged.length; i++) {
+                if (used[i]) continue;
+                var base = Object.assign({}, merged[i]);
+                for (var j = i + 1; j < merged.length; j++) {
+                    if (used[j]) continue;
+                    if (areRectsNear(base, merged[j], gap)) {
+                        base = unionRect(base, merged[j]);
+                        used[j] = true;
+                        changed = true;
+                    }
+                }
+                used[i] = true;
+                result.push(base);
+            }
+            merged = result;
+        }
+        return merged;
+    }
+
+    function smoothBinaryGrid(cells) {
+        var rows = cells.length, cols = cells[0] ? cells[0].length : 0;
+        var copy = cells.map(function (row) {
+            return row.slice();
+        });
+        for (var y = 0; y < rows; y++) {
+            for (var x = 0; x < cols; x++) {
+                var n = 0;
+                for (var dy = -1; dy <= 1; dy++) {
+                    for (var dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        var ny = y + dy, nx = x + dx;
+                        if (ny >= 0 && ny < rows && nx >= 0 && nx < cols) n += copy[ny][nx];
+                    }
+                }
+                if (copy[y][x] === 0 && n >= 7) cells[y][x] = 1;
+                if (copy[y][x] === 1 && n <= 1) cells[y][x] = 0;
+            }
+        }
+    }
+
+    function connectedComponentsToRects(cells, gridSize, maxW, maxH) {
+        var rows = cells.length, cols = cells[0] ? cells[0].length : 0;
+        var visited = Array.from({length: rows}, function () {
+            return Array(cols).fill(false);
+        });
+        var rects = [];
+        var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+        for (var y = 0; y < rows; y++) {
+            for (var x = 0; x < cols; x++) {
+                if (cells[y][x] !== 1 || visited[y][x]) continue;
+                var minX = x, maxX = x, minY = y, maxY = y;
+                var stack = [[x, y]];
+                visited[y][x] = true;
+                while (stack.length) {
+                    var cur = stack.pop(), cx = cur[0], cy = cur[1];
+                    minX = Math.min(minX, cx);
+                    maxX = Math.max(maxX, cx);
+                    minY = Math.min(minY, cy);
+                    maxY = Math.max(maxY, cy);
+                    for (var ii = 0; ii < dirs.length; ii++) {
+                        var nx2 = cx + dirs[ii][0], ny2 = cy + dirs[ii][1];
+                        if (nx2 >= 0 && nx2 < cols && ny2 >= 0 && ny2 < rows && !visited[ny2][nx2] && cells[ny2][nx2] === 1) {
+                            visited[ny2][nx2] = true;
+                            stack.push([nx2, ny2]);
+                        }
+                    }
+                }
+                rects.push({x: minX * gridSize, y: minY * gridSize, w: Math.min((maxX - minX + 1) * gridSize, maxW), h: Math.min((maxY - minY + 1) * gridSize, maxH)});
+            }
+        }
+        return rects;
+    }
+
+    function stampRectToCells(rect, cells, gridSize, cols, rows) {
+        var startCol = Math.max(0, Math.floor(rect.x / gridSize));
+        var endCol = Math.min(cols - 1, Math.floor((rect.x + rect.w) / gridSize));
+        var startRow = Math.max(0, Math.floor(rect.y / gridSize));
+        var endRow = Math.min(rows - 1, Math.floor((rect.y + rect.h) / gridSize));
+        for (var gy = startRow; gy <= endRow; gy++) for (var gx = startCol; gx <= endCol; gx++) cells[gy][gx] = 1;
     }
 
     function normalizeLineRect(line, bounds, normW, normH) {
         normW = normW || 1000;
         normH = normH || 1000;
-
         return {
-            text: line.text,
-            rawText: line.rawText,
-            x: ((line.x - bounds.x) / bounds.w) * normW,
-            y: ((line.y - bounds.y) / bounds.h) * normH,
-            w: (line.w / bounds.w) * normW,
-            h: (line.h / bounds.h) * normH
+            text: line.text, rawText: line.rawText,
+            x: ((line.x - bounds.x) / bounds.w) * normW, y: ((line.y - bounds.y) / bounds.h) * normH,
+            w: (line.w / bounds.w) * normW, h: (line.h / bounds.h) * normH
         };
     }
 
-    function centerY(rect) { return rect.y + rect.h / 2; }
+    function centerY(rect) {
+        return rect.y + rect.h / 2;
+    }
 
     function levenshtein(a, b) {
-        var m = a.length;
-        var n = b.length;
-        var dp = Array.from({ length: m + 1 }, function() { return new Array(n + 1).fill(0); });
-
+        var m = a.length, n = b.length;
+        var dp = Array.from({length: m + 1}, function () {
+            return new Array(n + 1).fill(0);
+        });
         for (var i = 0; i <= m; i++) dp[i][0] = i;
         for (var j = 0; j <= n; j++) dp[0][j] = j;
-
         for (var y = 1; y <= m; y++) {
             for (var x = 1; x <= n; x++) {
                 var cost = a[y - 1] === b[x - 1] ? 0 : 1;
-                dp[y][x] = Math.min(
-                    dp[y - 1][x] + 1,
-                    dp[y][x - 1] + 1,
-                    dp[y - 1][x - 1] + cost
-                );
+                dp[y][x] = Math.min(dp[y - 1][x] + 1, dp[y][x - 1] + 1, dp[y - 1][x - 1] + cost);
             }
         }
-
         return dp[m][n];
     }
 
@@ -1785,399 +1805,142 @@
         return maxLen ? 1 - levenshtein(a, b) / maxLen : 1;
     }
 
+    function extractTextLines(textContent, viewport) {
+        var rawItems = (textContent.items || []).map(function (item) {
+            var str = (item.str || "").trim();
+            if (!str) return null;
+            var tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+            var x = tx[4], baselineY = tx[5];
+            var h = Math.max(1, Math.abs(tx[3]) || Math.abs(item.height * viewport.scale) || 10);
+            var y = baselineY - h;
+            var w = Math.max(1, item.width * viewport.scale);
+            return {text: str, x: x, y: y, w: w, h: h, baselineY: baselineY};
+        }).filter(Boolean).sort(function (a, b) {
+            if (Math.abs(a.baselineY - b.baselineY) > 3) return a.baselineY - b.baselineY;
+            return a.x - b.x;
+        });
+
+        var lines = [];
+        for (var i = 0; i < rawItems.length; i++) {
+            var item = rawItems[i];
+            var targetLine = null;
+            for (var j = 0; j < lines.length; j++) {
+                if (Math.abs(lines[j].baselineY - item.baselineY) <= Math.max(4, item.h * 0.6)) {
+                    targetLine = lines[j];
+                    break;
+                }
+            }
+            if (!targetLine) {
+                targetLine = {baselineY: item.baselineY, items: []};
+                lines.push(targetLine);
+            }
+            targetLine.items.push(item);
+            targetLine.baselineY = (targetLine.baselineY * (targetLine.items.length - 1) + item.baselineY) / targetLine.items.length;
+        }
+
+        return lines.map(function (line) {
+            line.items.sort(function (a, b) {
+                return a.x - b.x;
+            });
+            var text = "";
+            for (var i = 0; i < line.items.length; i++) {
+                if (i > 0 && line.items[i].x > line.items[i - 1].x + line.items[i - 1].w + 2) text += " ";
+                text += line.items[i].text;
+            }
+            var xs = line.items.map(function (it) {
+                return it.x;
+            });
+            var x = Math.min.apply(null, xs);
+            var rights = line.items.map(function (it) {
+                return it.x + it.w;
+            });
+            var right = Math.max.apply(null, rights);
+            var hs = line.items.map(function (it) {
+                return it.h;
+            });
+            var h = Math.max.apply(null, hs);
+            var y = line.baselineY - h;
+            return {text: text.trim(), x: x, y: y, w: right - x, h: h, baselineY: line.baselineY};
+        }).filter(function (l) {
+            return l.text.length > 0;
+        });
+    }
+
     function matchTextLines(leftView, rightView) {
-        var normW = 1000;
-        var normH = 1000;
+        // Use absolute CSS px coords (no contentBounds normalization)
+        // so that extra text in one PDF doesn't skew the coordinate system
+        var leftLines = leftView.textLines;
+        var rightLines = rightView.textLines;
+        var usedRight = new Set(), matched = [], unmatchedLeft = [], unmatchedRight = [];
 
-        var leftLines = leftView.textLines.map(function(l) {
-            return normalizeLineRect(l, leftView.contentBounds, normW, normH);
-        });
-        var rightLines = rightView.textLines.map(function(l) {
-            return normalizeLineRect(l, rightView.contentBounds, normW, normH);
-        });
-
-        var usedRight = new Set();
-        var matched = [];
-        var unmatchedLeft = [];
-        var unmatchedRight = [];
+        // Scale tolerance by page height so it's resolution-independent
+        var pageH = Math.max(leftView.height, rightView.height, 1);
+        var yTol = pageH * 0.015;   // ~1.5% of page height
+        var xTol = Math.max(leftView.width, rightView.width, 1) * 0.5;
 
         for (var i = 0; i < leftLines.length; i++) {
-            var a = leftLines[i];
-            var bestIdx = -1;
-            var bestScore = Infinity;
-
+            var a = leftLines[i], bestIdx = -1, bestScore = Infinity;
             for (var j = 0; j < rightLines.length; j++) {
                 if (usedRight.has(j)) continue;
-
                 var b = rightLines[j];
                 var sim = textSimilarity(a.text, b.text);
-                var yGap = Math.abs(centerY(a) - centerY(b));
+                var yGap = Math.abs((a.y + a.h / 2) - (b.y + b.h / 2));
                 var xGap = Math.abs(a.x - b.x);
 
-                if (sim < 0.96 && !(sim >= 0.88 && yGap <= 120)) continue;
-                if (xGap > 600) continue;
+                // Must be similar text OR same-ish position with decent similarity
+                if (sim < 0.96 && !(sim >= 0.85 && yGap <= yTol * 2)) continue;
+                if (xGap > xTol) continue;
 
-                var score = (1 - sim) * 100 + yGap * 0.8 + xGap * 0.04 + Math.abs(a.w - b.w) * 0.03;
+                var score = (1 - sim) * 100 + (yGap / pageH) * 80 + (xGap / xTol) * 4;
                 if (score < bestScore) {
                     bestScore = score;
                     bestIdx = j;
                 }
             }
-
             if (bestIdx >= 0) {
                 usedRight.add(bestIdx);
                 matched.push({
-                    left: leftView.textLines[i],
-                    right: rightView.textLines[bestIdx],
-                    leftNorm: a,
-                    rightNorm: rightLines[bestIdx],
-                    similarity: textSimilarity(a.text, rightLines[bestIdx].text)
+                    left: leftLines[i], right: rightLines[bestIdx],
+                    similarity: textSimilarity(leftLines[i].text, rightLines[bestIdx].text)
                 });
             } else {
-                unmatchedLeft.push(leftView.textLines[i]);
+                unmatchedLeft.push(leftLines[i]);
             }
         }
-
         for (var k = 0; k < rightLines.length; k++) {
-            if (!usedRight.has(k)) unmatchedRight.push(rightView.textLines[k]);
+            if (!usedRight.has(k)) unmatchedRight.push(rightLines[k]);
         }
-
-        return { matched: matched, unmatchedLeft: unmatchedLeft, unmatchedRight: unmatchedRight };
+        return {matched: matched, unmatchedLeft: unmatchedLeft, unmatchedRight: unmatchedRight};
     }
 
-    function countMatchedTextPairs(leftView, rightView) {
-        return matchTextLines(leftView, rightView).matched.length;
-    }
 
-    function buildMatchedGlyphIgnoreMask(leftView, rightView, w, h) {
-        var matched = matchTextLines(leftView, rightView).matched;
-        var mask = new Uint8Array(w * h);
-
-        var img1 = leftView.canvas.getContext("2d").getImageData(0, 0, w, h).data;
-        var img2 = rightView.canvas.getContext("2d").getImageData(0, 0, w, h).data;
-
-        for (var i = 0; i < matched.length; i++) {
-            var pair = matched[i];
-            var union = unionRect(
-                expandRect(pair.left, 2 * dpr, w, h),
-                expandRect(pair.right, 2 * dpr, w, h)
-            );
-
-            var x0 = Math.max(0, Math.floor(union.x));
-            var y0 = Math.max(0, Math.floor(union.y));
-            var x1 = Math.min(w, Math.ceil(union.x + union.w));
-            var y1 = Math.min(h, Math.ceil(union.y + union.h));
-
-            for (var y = y0; y < y1; y++) {
-                for (var x = x0; x < x1; x++) {
-                    var idx = y * w + x;
-                    var p = idx * 4;
-
-                    var lum1 = 0.299 * img1[p] + 0.587 * img1[p + 1] + 0.114 * img1[p + 2];
-                    var lum2 = 0.299 * img2[p] + 0.587 * img2[p + 1] + 0.114 * img2[p + 2];
-                    var sat1 = Math.max(img1[p], img1[p + 1], img1[p + 2]) - Math.min(img1[p], img1[p + 1], img1[p + 2]);
-                    var sat2 = Math.max(img2[p], img2[p + 1], img2[p + 2]) - Math.min(img2[p], img2[p + 1], img2[p + 2]);
-
-                    if (
-                        (img1[p + 3] > 10 && lum1 < 205 && sat1 < 70) ||
-                        (img2[p + 3] > 10 && lum2 < 205 && sat2 < 70)
-                    ) {
-                        mask[idx] = 1;
-                    }
-                }
-            }
-        }
-
-        return mask;
-    }
-
-    function buildTextDiffRectsPx(leftView, rightView) {
-        var result = matchTextLines(leftView, rightView);
-        var rects = [];
-
-        for (var i = 0; i < result.matched.length; i++) {
-            var pair = result.matched[i];
-            if (pair.similarity < 0.985) {
-                rects.push(expandRect(
-                    unionRect(pair.left, pair.right),
-                    8 * dpr,
-                    leftView.canvas.width,
-                    leftView.canvas.height
-                ));
-            }
-        }
-
-        for (var j = 0; j < result.unmatchedLeft.length; j++) {
-            rects.push(expandRect(result.unmatchedLeft[j], 8 * dpr, leftView.canvas.width, leftView.canvas.height));
-        }
-
-        for (var k = 0; k < result.unmatchedRight.length; k++) {
-            rects.push(expandRect(result.unmatchedRight[k], 8 * dpr, rightView.canvas.width, rightView.canvas.height));
-        }
-
-        return mergeNearbyRects(rects, 12 * dpr)
-            .filter(function(r) { return r.w > 10 * dpr && r.h > 8 * dpr; });
-    }
-
-    function buildMatchedTextBackgroundDiffRects(leftView, rightView) {
-        var matched = matchTextLines(leftView, rightView).matched;
-        var rects = [];
-        var w = leftView.canvas.width;
-        var h = leftView.canvas.height;
-        var img1 = leftView.canvas.getContext("2d").getImageData(0, 0, w, h).data;
-        var img2 = rightView.canvas.getContext("2d").getImageData(0, 0, w, h).data;
-        var localGrid = Math.max(3, Math.round(4 * dpr));
-
-        for (var i = 0; i < matched.length; i++) {
-            var pair = matched[i];
-            var rect = expandRect(
-                unionRect(
-                    expandRect(pair.left, 5 * dpr, w, h),
-                    expandRect(pair.right, 5 * dpr, w, h)
-                ),
-                2 * dpr,
-                w,
-                h
-            );
-
-            var x0 = Math.max(0, Math.floor(rect.x));
-            var y0 = Math.max(0, Math.floor(rect.y));
-            var x1 = Math.min(w, Math.ceil(rect.x + rect.w));
-            var y1 = Math.min(h, Math.ceil(rect.y + rect.h));
-            var cols = Math.ceil((x1 - x0) / localGrid);
-            var rows = Math.ceil((y1 - y0) / localGrid);
-            var cells = Array.from({ length: rows }, function() { return Array(cols).fill(0); });
-
-            for (var gy = 0; gy < rows; gy++) {
-                for (var gx = 0; gx < cols; gx++) {
-                    var sx = x0 + gx * localGrid;
-                    var sy = y0 + gy * localGrid;
-                    var ex = Math.min(sx + localGrid, x1);
-                    var ey = Math.min(sy + localGrid, y1);
-
-                    var changed = 0;
-                    var colored = 0;
-                    var samples = 0;
-
-                    for (var y = sy; y < ey; y++) {
-                        for (var x = sx; x < ex; x++) {
-                            var idx = y * w + x;
-                            var p = idx * 4;
-
-                            var r1 = img1[p], g1 = img1[p + 1], b1 = img1[p + 2], a1 = img1[p + 3];
-                            var r2 = img2[p], g2 = img2[p + 1], b2 = img2[p + 2], a2 = img2[p + 3];
-
-                            var lum1 = 0.299 * r1 + 0.587 * g1 + 0.114 * b1;
-                            var lum2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2;
-                            var sat1 = Math.max(r1, g1, b1) - Math.min(r1, g1, b1);
-                            var sat2 = Math.max(r2, g2, b2) - Math.min(r2, g2, b2);
-
-                            if (
-                                (a1 > 10 && lum1 < 205 && sat1 < 70) ||
-                                (a2 > 10 && lum2 < 205 && sat2 < 70)
-                            ) continue;
-
-                            var dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
-                            var rgbDist = Math.sqrt(dr * dr + dg * dg + db * db);
-
-                            if (rgbDist > 28) changed++;
-                            if ((lum1 < 248 && sat1 > 18) || (lum2 < 248 && sat2 > 18)) colored++;
-                            samples++;
-                        }
-                    }
-
-                    if (!samples) continue;
-                    if (changed / samples > 0.30 && colored / samples > 0.20) cells[gy][gx] = 1;
-                }
-            }
-
-            smoothBinaryGrid(cells);
-
-            var localRects = connectedComponentsToRects(cells, localGrid, x1 - x0, y1 - y0)
-                .map(function(r) { return { x: x0 + r.x, y: y0 + r.y, w: r.w, h: r.h }; })
-                .filter(function(r) { return r.w > 6 * dpr && r.h > 4 * dpr; })
-                .map(function(r) { return expandRect(r, 2 * dpr, w, h); });
-
-            rects.push.apply(rects, localRects);
-        }
-
-        return mergeNearbyRects(rects, 8 * dpr)
-            .filter(function(r) { return r.w > 10 * dpr && r.h > 8 * dpr; });
-    }
-
-    function stampRectToCells(rect, cells, gridSize, cols, rows) {
-        var startCol = Math.max(0, Math.floor(rect.x / gridSize));
-        var endCol   = Math.min(cols - 1, Math.floor((rect.x + rect.w) / gridSize));
-        var startRow = Math.max(0, Math.floor(rect.y / gridSize));
-        var endRow   = Math.min(rows - 1, Math.floor((rect.y + rect.h) / gridSize));
-
-        for (var gy = startRow; gy <= endRow; gy++) {
-            for (var gx = startCol; gx <= endCol; gx++) {
-                cells[gy][gx] = 1;
-            }
-        }
+    function expandRect(rect, padding, maxW, maxH) {
+        var x = Math.max(0, rect.x - padding), y = Math.max(0, rect.y - padding);
+        return {x: x, y: y, w: Math.min(maxW, rect.x + rect.w + padding) - x, h: Math.min(maxH, rect.y + rect.h + padding) - y};
     }
 
     function clearPageDiffBoxes(overlay) {
-        overlay.querySelectorAll(".diff-box").forEach(function(el) { el.remove(); });
+        overlay.querySelectorAll(".diff-box").forEach(function (el) {
+            el.remove();
+        });
     }
 
     function removeDiffEntriesForRow(rowIndex) {
-        diffEntries = diffEntries.filter(function(d) { return d.rowIndex !== rowIndex; });
+        diffEntries = diffEntries.filter(function (d) {
+            return d.rowIndex !== rowIndex;
+        });
     }
 
     function sortDiffEntries() {
-        diffEntries.sort(function(a, b) {
+        diffEntries.sort(function (a, b) {
             if (a.rowIndex !== b.rowIndex) return a.rowIndex - b.rowIndex;
-
             var ay = a.leftRect ? a.leftRect.y : (a.rightRect ? a.rightRect.y : 0);
             var by = b.leftRect ? b.leftRect.y : (b.rightRect ? b.rightRect.y : 0);
             if (ay !== by) return ay - by;
-
             var ax = a.leftRect ? a.leftRect.x : (a.rightRect ? a.rightRect.x : 0);
             var bx = b.leftRect ? b.leftRect.x : (b.rightRect ? b.rightRect.x : 0);
             return ax - bx;
         });
-    }
-
-    function smoothBinaryGrid(cells) {
-        var rows = cells.length;
-        var cols = cells[0] ? cells[0].length : 0;
-        var copy = cells.map(function(row) { return row.slice(); });
-
-        for (var y = 0; y < rows; y++) {
-            for (var x = 0; x < cols; x++) {
-                var n = 0;
-
-                for (var dy = -1; dy <= 1; dy++) {
-                    for (var dx = -1; dx <= 1; dx++) {
-                        if (dx === 0 && dy === 0) continue;
-                        var ny = y + dy;
-                        var nx = x + dx;
-                        if (ny >= 0 && ny < rows && nx >= 0 && nx < cols) n += copy[ny][nx];
-                    }
-                }
-
-                if (copy[y][x] === 0 && n >= 7) cells[y][x] = 1;
-                if (copy[y][x] === 1 && n <= 1) cells[y][x] = 0;
-            }
-        }
-    }
-
-    function connectedComponentsToRects(cells, gridSize, maxW, maxH) {
-        var rows = cells.length;
-        var cols = cells[0] ? cells[0].length : 0;
-        var visited = Array.from({ length: rows }, function() { return Array(cols).fill(false); });
-        var rects = [];
-        var dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-
-        for (var y = 0; y < rows; y++) {
-            for (var x = 0; x < cols; x++) {
-                if (cells[y][x] !== 1 || visited[y][x]) continue;
-
-                var minX = x, maxX = x, minY = y, maxY = y;
-                var stack = [[x, y]];
-                visited[y][x] = true;
-
-                while (stack.length) {
-                    var cur = stack.pop();
-                    var cx = cur[0], cy = cur[1];
-
-                    minX = Math.min(minX, cx);
-                    maxX = Math.max(maxX, cx);
-                    minY = Math.min(minY, cy);
-                    maxY = Math.max(maxY, cy);
-
-                    for (var i = 0; i < dirs.length; i++) {
-                        var nx = cx + dirs[i][0];
-                        var ny = cy + dirs[i][1];
-                        if (
-                            nx >= 0 && nx < cols &&
-                            ny >= 0 && ny < rows &&
-                            !visited[ny][nx] &&
-                            cells[ny][nx] === 1
-                        ) {
-                            visited[ny][nx] = true;
-                            stack.push([nx, ny]);
-                        }
-                    }
-                }
-
-                rects.push({
-                    x: minX * gridSize,
-                    y: minY * gridSize,
-                    w: Math.min((maxX - minX + 1) * gridSize, maxW),
-                    h: Math.min((maxY - minY + 1) * gridSize, maxH)
-                });
-            }
-        }
-
-        return rects;
-    }
-
-    function mergeNearbyRects(rects, gap) {
-        gap = typeof gap === "number" ? gap : 20;
-        var merged = rects.slice();
-        var changed = true;
-
-        while (changed) {
-            changed = false;
-            var result = [];
-            var used = Array(merged.length).fill(false);
-
-            for (var i = 0; i < merged.length; i++) {
-                if (used[i]) continue;
-
-                var base = Object.assign({}, merged[i]);
-
-                for (var j = i + 1; j < merged.length; j++) {
-                    if (used[j]) continue;
-                    if (areRectsNear(base, merged[j], gap)) {
-                        base = unionRect(base, merged[j]);
-                        used[j] = true;
-                        changed = true;
-                    }
-                }
-
-                used[i] = true;
-                result.push(base);
-            }
-
-            merged = result;
-        }
-
-        return merged;
-    }
-
-    function areRectsNear(a, b, gap) {
-        return !(
-            a.x + a.w + gap < b.x ||
-            b.x + b.w + gap < a.x ||
-            a.y + a.h + gap < b.y ||
-            b.y + b.h + gap < a.y
-        );
-    }
-
-    function unionRect(a, b) {
-        var x = Math.min(a.x, b.x);
-        var y = Math.min(a.y, b.y);
-        return {
-            x: x,
-            y: y,
-            w: Math.max(a.x + a.w, b.x + b.w) - x,
-            h: Math.max(a.y + a.h, b.y + b.h) - y
-        };
-    }
-
-    function expandRect(rect, padding, maxW, maxH) {
-        var x = Math.max(0, rect.x - padding);
-        var y = Math.max(0, rect.y - padding);
-        return {
-            x: x,
-            y: y,
-            w: Math.min(maxW, rect.x + rect.w + padding) - x,
-            h: Math.min(maxH, rect.y + rect.h + padding) - y
-        };
     }
 
     function drawDiffBox(overlay, rect, diffId, kind) {
@@ -2195,22 +1958,22 @@
 
     function buildChangedThumbList() {
         thumbListEl.innerHTML = "";
-
-        var uniqueRows = Array.from(new Set(diffEntries.map(function(d) {
+        var uniqueRows = Array.from(new Set(diffEntries.map(function (d) {
             return d.rowIndex;
-        }))).sort(function(a, b) {
+        }))).sort(function (a, b) {
             return a - b;
         });
-
         if (!uniqueRows.length) {
             thumbListEl.innerHTML = '<div class="empty">변경된 페이지가 없습니다.</div>';
             return;
         }
 
         for (var i = 0; i < uniqueRows.length; i++) {
-            (function(rowIndex) {
+            (function (rowIndex) {
                 var row = alignmentRows[rowIndex];
-                var rowDiffs = diffEntries.filter(function(d) { return d.rowIndex === rowIndex; });
+                var rowDiffs = diffEntries.filter(function (d) {
+                    return d.rowIndex === rowIndex;
+                });
                 var primary = rowDiffs[0];
                 var leftMeta = pageViews1[rowIndex] ? pageViews1[rowIndex].meta : {};
                 var kind = primary ? primary.kind : "change";
@@ -2218,37 +1981,17 @@
                 var item = document.createElement("div");
                 item.className = "thumb-item";
                 item.dataset.rowIndex = rowIndex;
-
                 var titleDiv = document.createElement("div");
                 titleDiv.className = "thumb-title";
-
-                if (kind === "insert") {
-                    titleDiv.textContent = "삽입 - 우측 페이지 " + row.rightPageNo;
-                } else if (kind === "delete") {
-                    titleDiv.textContent = "삭제 - 좌측 페이지 " + row.leftPageNo;
-                } else {
-                    titleDiv.textContent =
-                        "비교 - 좌 " + row.leftPageNo + " ↔ 우 " + row.rightPageNo +
-                        (leftMeta.isImageHeavy ? " 🖼" : "");
-                }
+                if (kind === "insert") titleDiv.textContent = "삽입 - 우측 페이지 " + row.rightPageNo;
+                else if (kind === "delete") titleDiv.textContent = "삭제 - 좌측 페이지 " + row.leftPageNo;
+                else titleDiv.textContent = "비교 - 좌 " + row.leftPageNo + " ↔ 우 " + row.rightPageNo + (leftMeta.isImageHeavy ? " 🖼" : "");
 
                 var metaDiv = document.createElement("div");
                 metaDiv.className = "thumb-meta";
-
-                if (kind === "insert") {
-                    metaDiv.textContent =
-                        "새 버전에만 존재하는 페이지입니다.\n우측 페이지 번호: " + row.rightPageNo;
-                } else if (kind === "delete") {
-                    metaDiv.textContent =
-                        "구 버전에만 존재하는 페이지입니다.\n좌측 페이지 번호: " + row.leftPageNo;
-                } else {
-                    metaDiv.textContent =
-                        "변경 " + rowDiffs.length + "건\n" +
-                        "동일 텍스트 무시 " + (leftMeta.ignoredTextBlocks || 0) + "줄 / " +
-                        "텍스트 변경 " + (leftMeta.textDiffBlocks || 0) + "건 / " +
-                        "텍스트 배경색 변경 " + (leftMeta.textBgDiffBlocks || 0) + "건\n" +
-                        "정렬 유사도 " + ((row.similarity || 0) * 100).toFixed(1) + "%";
-                }
+                if (kind === "insert") metaDiv.textContent = "새 버전에만 존재하는 페이지입니다.\n우측 페이지 번호: " + row.rightPageNo;
+                else if (kind === "delete") metaDiv.textContent = "구 버전에만 존재하는 페이지입니다.\n좌측 페이지 번호: " + row.leftPageNo;
+                else metaDiv.textContent = "변경 " + rowDiffs.length + "건\n동일 텍스트 무시 " + (leftMeta.ignoredTextBlocks || 0) + "줄 / 텍스트 변경 " + (leftMeta.textDiffBlocks || 0) + "건 / 텍스트 배경색 변경 " + (leftMeta.textBgDiffBlocks || 0) + "건";
 
                 var badge = document.createElement("span");
                 badge.className = "badge " + (kind === "change" ? "changed" : (kind === "insert" ? "inserted" : "deleted"));
@@ -2257,16 +2000,16 @@
                 item.appendChild(titleDiv);
                 item.appendChild(metaDiv);
                 item.appendChild(badge);
-
-                item.addEventListener("click", function() {
-                    var firstIndex = diffEntries.findIndex(function(d) { return d.rowIndex === rowIndex; });
+                item.addEventListener("click", function () {
+                    var firstIndex = diffEntries.findIndex(function (d) {
+                        return d.rowIndex === rowIndex;
+                    });
                     if (firstIndex >= 0) goToDiff(firstIndex);
                     else {
                         scrollToRow(rowIndex);
                         highlightThumbOnly(rowIndex);
                     }
                 });
-
                 thumbListEl.appendChild(item);
             })(uniqueRows[i]);
         }
@@ -2274,77 +2017,45 @@
 
     function updatePageStatusBadge(pageView, diffCount, kind) {
         if (!pageView || !pageView.status) return;
-
         if (kind === "insert") {
             pageView.status.textContent = pageView.isMissing ? "insert gap" : "inserted";
             return;
         }
-
         if (kind === "delete") {
             pageView.status.textContent = pageView.isMissing ? "delete gap" : "deleted";
             return;
         }
-
         pageView.status.textContent = diffCount > 0 ? ("changed " + diffCount) : "same";
     }
 
     function scrollToRow(rowIndex, smooth) {
         smooth = smooth !== false;
-
-        var left = pageViews1[rowIndex];
-        var right = pageViews2[rowIndex];
+        var left = pageViews1[rowIndex], right = pageViews2[rowIndex];
         if (!left || !right) return;
-
         navLockUntil = performance.now() + 500;
-
-        pdf1El.scrollTo({
-            top: Math.max(0, left.pageWrap.offsetTop - 20),
-            behavior: smooth ? "smooth" : "auto"
-        });
-
-        pdf2El.scrollTo({
-            top: Math.max(0, right.pageWrap.offsetTop - 20),
-            behavior: smooth ? "smooth" : "auto"
-        });
+        pdf1El.scrollTo({top: Math.max(0, left.pageWrap.offsetTop - 20), behavior: smooth ? "smooth" : "auto"});
+        pdf2El.scrollTo({top: Math.max(0, right.pageWrap.offsetTop - 20), behavior: smooth ? "smooth" : "auto"});
     }
 
     function getScrollTopForRect(pageWrap, rect, container) {
         var rectTop = rect ? (rect.y * viewScale) : 0;
         var targetTop = pageWrap.offsetTop + rectTop - container.clientHeight * 0.35;
-        return Math.max(
-            0,
-            Math.min(targetTop, Math.max(0, container.scrollHeight - container.clientHeight))
-        );
+        return Math.max(0, Math.min(targetTop, Math.max(0, container.scrollHeight - container.clientHeight)));
     }
 
     async function goToDiff(index, smooth) {
         smooth = smooth !== false;
         if (!diffEntries.length) return;
-
         if (index < 0) index = diffEntries.length - 1;
         if (index >= diffEntries.length) index = 0;
-
         currentDiffIndex = index;
-
         var entry = diffEntries[index];
         highlightCurrent();
-
-        var leftView = pageViews1[entry.rowIndex];
-        var rightView = pageViews2[entry.rowIndex];
+        var leftView = pageViews1[entry.rowIndex], rightView = pageViews2[entry.rowIndex];
         if (!leftView || !rightView) return;
-
         navLockUntil = performance.now() + 500;
-
-        pdf1El.scrollTo({
-            top: getScrollTopForRect(leftView.pageWrap, entry.leftRect, pdf1El),
-            behavior: smooth ? "smooth" : "auto"
-        });
-
-        pdf2El.scrollTo({
-            top: getScrollTopForRect(rightView.pageWrap, entry.rightRect, pdf2El),
-            behavior: smooth ? "smooth" : "auto"
-        });
-
+        pdf1El.scrollTo({top: getScrollTopForRect(leftView.pageWrap, entry.leftRect, pdf1El), behavior: smooth ? "smooth" : "auto"});
+        pdf2El.scrollTo({top: getScrollTopForRect(rightView.pageWrap, entry.rightRect, pdf2El), behavior: smooth ? "smooth" : "auto"});
         flashCurrent(entry.id);
     }
 
@@ -2357,68 +2068,63 @@
     }
 
     function flashCurrent(diffId) {
-        document.querySelectorAll('.diff-box[data-diff-id="' + diffId + '"]').forEach(function(el) {
+        document.querySelectorAll('.diff-box[data-diff-id="' + diffId + '"]').forEach(function (el) {
             el.classList.remove("flash");
             void el.offsetWidth;
             el.classList.add("flash");
-            setTimeout(function() { el.classList.remove("flash"); }, 1000);
+            setTimeout(function () {
+                el.classList.remove("flash");
+            }, 1000);
         });
     }
 
     function highlightThumbOnly(rowIndex) {
-        document.querySelectorAll(".thumb-item.active").forEach(function(el) {
+        document.querySelectorAll(".thumb-item.active").forEach(function (el) {
             el.classList.remove("active");
         });
-
         var item = thumbListEl.querySelector('.thumb-item[data-row-index="' + rowIndex + '"]');
         if (item) {
             item.classList.add("active");
-            item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            item.scrollIntoView({block: "nearest", behavior: "smooth"});
         }
     }
 
     function highlightCurrent() {
-        document.querySelectorAll(".diff-box.current").forEach(function(el) {
+        document.querySelectorAll(".diff-box.current").forEach(function (el) {
             el.classList.remove("current");
         });
-
-        document.querySelectorAll(".thumb-item.active").forEach(function(el) {
+        document.querySelectorAll(".thumb-item.active").forEach(function (el) {
             el.classList.remove("active");
         });
-
         if (currentDiffIndex < 0 || currentDiffIndex >= diffEntries.length) return;
-
         var current = diffEntries[currentDiffIndex];
-
-        document.querySelectorAll('.diff-box[data-diff-id="' + current.id + '"]').forEach(function(el) {
+        document.querySelectorAll('.diff-box[data-diff-id="' + current.id + '"]').forEach(function (el) {
             el.classList.add("current");
         });
-
         var item = thumbListEl.querySelector('.thumb-item[data-row-index="' + current.rowIndex + '"]');
         if (item) {
             item.classList.add("active");
-            item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            item.scrollIntoView({block: "nearest", behavior: "smooth"});
         }
     }
 
-    pdf1El.addEventListener("scroll", function() { syncScroll(pdf1El, pdf2El); });
-    pdf2El.addEventListener("scroll", function() { syncScroll(pdf2El, pdf1El); });
+    pdf1El.addEventListener("scroll", function () {
+        syncScroll(pdf1El, pdf2El);
+    });
+    pdf2El.addEventListener("scroll", function () {
+        syncScroll(pdf2El, pdf1El);
+    });
 
     function syncScroll(source, target) {
-        if (syncLock) return;
-        if (performance.now() < navLockUntil) return;
-
+        if (syncLock || performance.now() < navLockUntil) return;
         syncLock = true;
-
         var srcMaxY = Math.max(1, source.scrollHeight - source.clientHeight);
         var tgtMaxY = Math.max(1, target.scrollHeight - target.clientHeight);
         target.scrollTop = (source.scrollTop / srcMaxY) * tgtMaxY;
-
         var srcMaxX = Math.max(1, source.scrollWidth - source.clientWidth);
         var tgtMaxX = Math.max(1, target.scrollWidth - target.clientWidth);
         target.scrollLeft = (source.scrollLeft / srcMaxX) * tgtMaxX;
-
-        requestAnimationFrame(function() {
+        requestAnimationFrame(function () {
             syncLock = false;
         });
     }
