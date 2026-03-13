@@ -947,7 +947,7 @@
             ldActivateStep(2, "DP 행렬 계산 중...");
             ldSetLog("페이지 순서 정렬 계산 중... (" + leftSignatures.length + " × " + rightSignatures.length + ")");
             summaryTextEl.textContent = "페이지 정렬 계산 중...";
-            alignmentRows = alignPageSequences(leftSignatures, rightSignatures);
+            alignmentRows = await alignPageSequences(leftSignatures, rightSignatures);
             if (myGeneration !== renderGeneration) {
                 ldHide();
                 return;
@@ -1116,7 +1116,6 @@
         return {pageNo: pageNo, width: Math.round(viewport.width), height: Math.round(viewport.height), text: normalizedText, textLength: textLength, imageFingerprint: imageFingerprint};
     }
 
-    // Stores [luma, R, G, B] per cell so color-only changes (e.g. red highlight) alter the fingerprint
     function buildImageFingerprint(data, width, height, cols, rows) {
         var cellW = width / cols, cellH = height / rows;
         var values = [];
@@ -1158,7 +1157,7 @@
         var textSim = textSimilarity(sigA.text, sigB.text);
         var imgSim = imageFingerprintSimilarity(sigA.imageFingerprint, sigB.imageFingerprint);
         var hasTextA = sigA.textLength > 20, hasTextB = sigB.textLength > 20;
-        // Use more balanced weights — pure text similarity is unreliable when PDFs share boilerplate text
+        
         var score = (hasTextA && hasTextB) ? textSim * 0.55 + imgSim * 0.45 : textSim * 0.20 + imgSim * 0.80;
         var sizePenalty = 0;
         if (Math.abs(sigA.width - sigB.width) > 10 || Math.abs(sigA.height - sigB.height) > 10) sizePenalty += 0.08;
@@ -1167,9 +1166,11 @@
         return Math.max(0, score - sizePenalty - pageDistancePenalty);
     }
 
-    function alignPageSequences(leftSigs, rightSigs) {
+    async function alignPageSequences(leftSigs, rightSigs) {
         var n = leftSigs.length, m = rightSigs.length;
         var gapPenalty = 0.43;
+        var CHUNK = 8;
+
         var dp = Array.from({length: n + 1}, function () {
             return Array(m + 1).fill(0);
         });
@@ -1185,6 +1186,14 @@
             path[0][j] = "left";
         }
         for (var y = 1; y <= n; y++) {
+            if (y % CHUNK === 0) {
+                var pct = y / n;
+                ldSetStepProgress(pct);
+                ldUpdateSub(2, "DP 계산 중... " + y + " / " + n + " 행");
+                ldSetLog("페이지 순서 정렬 계산 중... " + y + " / " + n);
+                await yieldToBrowser();
+            }
+
             for (var x = 1; x <= m; x++) {
                 var sim = pageSimilarity(leftSigs[y - 1], rightSigs[x - 1]);
                 var diag = dp[y - 1][x - 1] + sim, up = dp[y - 1][x] - gapPenalty, left = dp[y][x - 1] - gapPenalty;
@@ -1412,14 +1421,11 @@
         return (leftView.textLines.length + rightView.textLines.length) < 10;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // IMPROVED: getRgbToHue - hue angle (0..360) from RGB
-    // ─────────────────────────────────────────────────────────────
     function getHue(r, g, b) {
         var rn = r / 255, gn = g / 255, bn = b / 255;
         var max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
         var delta = max - min;
-        if (delta < 0.001) return -1; // achromatic
+        if (delta < 0.001) return -1;
         var h;
         if (max === rn) h = ((gn - bn) / delta) % 6;
         else if (max === gn) h = (bn - rn) / delta + 2;
@@ -1440,7 +1446,6 @@
         return max === 0 ? 0 : (max - min) / max;
     }
 
-    // ─────────────────────────────────────────────────────────────
     function yieldToBrowser() {
         return new Promise(function (resolve) {
             setTimeout(resolve, 0);
@@ -1463,7 +1468,6 @@
         var img1 = canvas1.getContext("2d").getImageData(0, 0, w, h).data;
         var img2 = sampledCanvas2.getContext("2d").getImageData(0, 0, w, h).data;
 
-        // Cache matchTextLines — avoid calling it 3 separate times
         var matchResult = matchTextLines(leftView, rightView);
 
         var ignoreMask = buildIgnoreMask(matchResult, leftView, rightView, img1, img2, w, h);
@@ -1867,15 +1871,12 @@
     }
 
     function matchTextLines(leftView, rightView) {
-        // Use absolute CSS px coords (no contentBounds normalization)
-        // so that extra text in one PDF doesn't skew the coordinate system
         var leftLines = leftView.textLines;
         var rightLines = rightView.textLines;
         var usedRight = new Set(), matched = [], unmatchedLeft = [], unmatchedRight = [];
 
-        // Scale tolerance by page height so it's resolution-independent
         var pageH = Math.max(leftView.height, rightView.height, 1);
-        var yTol = pageH * 0.015;   // ~1.5% of page height
+        var yTol = pageH * 0.015;
         var xTol = Math.max(leftView.width, rightView.width, 1) * 0.5;
 
         for (var i = 0; i < leftLines.length; i++) {
@@ -1887,7 +1888,6 @@
                 var yGap = Math.abs((a.y + a.h / 2) - (b.y + b.h / 2));
                 var xGap = Math.abs(a.x - b.x);
 
-                // Must be similar text OR same-ish position with decent similarity
                 if (sim < 0.96 && !(sim >= 0.85 && yGap <= yTol * 2)) continue;
                 if (xGap > xTol) continue;
 
