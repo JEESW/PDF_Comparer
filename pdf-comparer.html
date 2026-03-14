@@ -83,6 +83,20 @@
             height: 32px;
         }
 
+        .toolbar select {
+            padding: 0 8px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            background: var(--white);
+            color: var(--gray-700);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: var(--shadow-xs);
+            flex-shrink: 0;
+        }
+
         .toolbar button {
             padding: 0 12px;
             border: 1px solid var(--gray-200);
@@ -703,6 +717,11 @@
 <div class="toolbar">
     <input type="file" id="file1" accept="application/pdf"/>
     <input type="file" id="file2" accept="application/pdf"/>
+    <select id="compareMode" title="비교 모드">
+        <option value="default">Default</option>
+        <option value="text">Text Only</option>
+        <option value="pixel">Pixel Only</option>
+    </select>
     <button id="zoomOutBtn">Zoom -</button>
     <button id="zoomInBtn">Zoom +</button>
     <button id="prevBtn">이전 변경</button>
@@ -827,9 +846,15 @@
     var pdf2El = document.getElementById("pdf2");
     var thumbListEl = document.getElementById("thumbList");
     var summaryTextEl = document.getElementById("summaryText");
+    var compareModeEl = document.getElementById("compareMode");
+    var compareMode = "default";
 
     file1El.addEventListener("change", loadPDF1);
     file2El.addEventListener("change", loadPDF2);
+    compareModeEl.addEventListener("change", function () {
+        compareMode = compareModeEl.value;
+        recompareOnly();
+    });
     document.getElementById("zoomInBtn").addEventListener("click", function () {
         viewScale = Math.min(viewScale + 0.15, 3);
         applyViewScale();
@@ -867,6 +892,42 @@
             return;
         }
         await renderAll();
+    }
+
+    async function recompareOnly() {
+        if (!alignmentRows.length) return;
+
+        renderGeneration++;
+        var myGeneration = renderGeneration;
+
+        diffEntries = [];
+        currentDiffIndex = -1;
+        thumbListEl.innerHTML = "";
+
+        for (var i = 0; i < alignmentRows.length; i++) {
+            var left = pageViews1[i], right = pageViews2[i];
+            if (left) { left.isCompared = false; clearPageDiffBoxes(left.overlay); }
+            if (right) { right.isCompared = false; clearPageDiffBoxes(right.overlay); }
+        }
+
+        summaryTextEl.textContent = "모드 변경 후 재비교 중...";
+
+        var totalRows = alignmentRows.length;
+        for (var i = 0; i < totalRows; i++) {
+            if (myGeneration !== renderGeneration) return;
+            var row = alignmentRows[i];
+            if (row.type === "match") {
+                await maybeCompareAlignedRow(i, myGeneration);
+            } else if (row.type === "insert") {
+                markInsertedRow(i);
+            } else if (row.type === "delete") {
+                markDeletedRow(i);
+            }
+        }
+
+        if (myGeneration !== renderGeneration) return;
+        buildChangedThumbList();
+        updateZoomSummary();
     }
 
     function applyViewScale() {
@@ -1470,41 +1531,47 @@
 
         var matchResult = matchTextLines(leftView, rightView);
 
-        var ignoreMask = buildIgnoreMask(matchResult, leftView, rightView, img1, img2, w, h);
-
         var gridSize = Math.max(4, Math.round(6 * dpr));
         var cols = Math.ceil(w / gridSize), rows = Math.ceil(h / gridSize);
         var cells = Array.from({length: rows}, function () {
             return Array(cols).fill(0);
         });
-        var rgbThresh = 20;
-        var CHUNK = 24;
 
-        for (var gy = 0; gy < rows; gy++) {
-            if (gy % CHUNK === 0) {
-                if (generation !== undefined && generation !== renderGeneration) return {rects: [], meta: {}};
-                await yieldToBrowser();
-            }
-            for (var gx = 0; gx < cols; gx++) {
-                var diffCount = 0, samples = 0;
-                var sx = gx * gridSize, sy = gy * gridSize;
-                var ex = Math.min(sx + gridSize, w), ey = Math.min(sy + gridSize, h);
-                for (var py = sy; py < ey; py++) {
-                    for (var px = sx; px < ex; px++) {
-                        var idx = py * w + px;
-                        if (ignoreMask[idx]) continue;
-                        var p = idx * 4;
-                        var dr = img1[p] - img2[p], dg = img1[p + 1] - img2[p + 1], db = img1[p + 2] - img2[p + 2];
-                        if (dr * dr + dg * dg + db * db > rgbThresh * rgbThresh) diffCount++;
-                        samples++;
-                    }
+        if (compareMode !== "text") {
+            var ignoreMask = compareMode === "pixel"
+                ? new Uint8Array(w * h)
+                : buildIgnoreMask(matchResult, leftView, rightView, img1, img2, w, h);
+            var rgbThresh = 20;
+            var CHUNK = 24;
+
+            for (var gy = 0; gy < rows; gy++) {
+                if (gy % CHUNK === 0) {
+                    if (generation !== undefined && generation !== renderGeneration) return {rects: [], meta: {}};
+                    await yieldToBrowser();
                 }
-                if (samples && diffCount / samples > 0.04) cells[gy][gx] = 1;
+                for (var gx = 0; gx < cols; gx++) {
+                    var diffCount = 0, samples = 0;
+                    var sx = gx * gridSize, sy = gy * gridSize;
+                    var ex = Math.min(sx + gridSize, w), ey = Math.min(sy + gridSize, h);
+                    for (var py = sy; py < ey; py++) {
+                        for (var px = sx; px < ex; px++) {
+                            var idx = py * w + px;
+                            if (ignoreMask[idx]) continue;
+                            var p = idx * 4;
+                            var dr = img1[p] - img2[p], dg = img1[p + 1] - img2[p + 1], db = img1[p + 2] - img2[p + 2];
+                            if (dr * dr + dg * dg + db * db > rgbThresh * rgbThresh) diffCount++;
+                            samples++;
+                        }
+                    }
+                    if (samples && diffCount / samples > 0.04) cells[gy][gx] = 1;
+                }
             }
+        } else {
+            await yieldToBrowser();
         }
 
-        var textRectsPx = buildTextDiffRectsPxCached(matchResult, leftView, rightView);
-        var textBgRectsPx = buildTextBgDiffRectsCached(matchResult, leftView, rightView, img1, img2, w, h);
+        var textRectsPx = compareMode !== "pixel" ? buildTextDiffRectsPxCached(matchResult, leftView, rightView) : [];
+        var textBgRectsPx = compareMode !== "pixel" ? buildTextBgDiffRectsCached(matchResult, leftView, rightView, img1, img2, w, h) : [];
 
         for (var i = 0; i < textRectsPx.length; i++) stampRectToCells(textRectsPx[i], cells, gridSize, cols, rows);
         for (var j = 0; j < textBgRectsPx.length; j++) stampRectToCells(textBgRectsPx[j], cells, gridSize, cols, rows);
