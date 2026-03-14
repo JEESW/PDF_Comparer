@@ -83,17 +83,17 @@
             height: 32px;
         }
 
-        .toolbar select {
-            padding: 0 8px;
-            border: 1px solid var(--gray-200);
-            border-radius: var(--radius-sm);
-            background: var(--white);
-            color: var(--gray-700);
-            font-family: var(--font-ui);
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            box-shadow: var(--shadow-xs);
+        .toolbar select {                                                                                                                                                                                                          
+            padding: 0 8px;                                                                                                                                                                                                        
+            border: 1px solid var(--gray-200);                                                                                                                                                                                     
+            border-radius: var(--radius-sm);                                                                                                                                                                                       
+            background: var(--white);                                                                                                                                                                                              
+            color: var(--gray-700);                                                                                                                                                                                                
+            font-family: var(--font-ui);                                                                                                                                                                                           
+            font-size: 13px;                                                                                                                                                                                                       
+            font-weight: 500;                                                                                                                                                                                                      
+            cursor: pointer;                                                                                                                                                                                                       
+            box-shadow: var(--shadow-xs);                                                                                                                                                                                          
             flex-shrink: 0;
         }
 
@@ -719,8 +719,8 @@
     <input type="file" id="file2" accept="application/pdf"/>
     <select id="compareMode" title="비교 모드">
         <option value="default">Default</option>
-        <option value="text">Text Only</option>
         <option value="pixel">Pixel Only</option>
+        <option value="text">Text Only</option>
     </select>
     <button id="zoomOutBtn">Zoom -</button>
     <button id="zoomInBtn">Zoom +</button>
@@ -846,14 +846,13 @@
     var pdf2El = document.getElementById("pdf2");
     var thumbListEl = document.getElementById("thumbList");
     var summaryTextEl = document.getElementById("summaryText");
-    var compareModeEl = document.getElementById("compareMode");
+    var compareModeEl = document.getElementById("compareMode");                                                                                                                                                                    
     var compareMode = "default";
 
     file1El.addEventListener("change", loadPDF1);
     file2El.addEventListener("change", loadPDF2);
-    compareModeEl.addEventListener("change", function () {
-        compareMode = compareModeEl.value;
-        recompareOnly();
+    compareModeEl.addEventListener("change", function() {
+        compareMode = compareModeE1.value;
     });
     document.getElementById("zoomInBtn").addEventListener("click", function () {
         viewScale = Math.min(viewScale + 0.15, 3);
@@ -892,42 +891,6 @@
             return;
         }
         await renderAll();
-    }
-
-    async function recompareOnly() {
-        if (!alignmentRows.length) return;
-
-        renderGeneration++;
-        var myGeneration = renderGeneration;
-
-        diffEntries = [];
-        currentDiffIndex = -1;
-        thumbListEl.innerHTML = "";
-
-        for (var i = 0; i < alignmentRows.length; i++) {
-            var left = pageViews1[i], right = pageViews2[i];
-            if (left) { left.isCompared = false; clearPageDiffBoxes(left.overlay); }
-            if (right) { right.isCompared = false; clearPageDiffBoxes(right.overlay); }
-        }
-
-        summaryTextEl.textContent = "모드 변경 후 재비교 중...";
-
-        var totalRows = alignmentRows.length;
-        for (var i = 0; i < totalRows; i++) {
-            if (myGeneration !== renderGeneration) return;
-            var row = alignmentRows[i];
-            if (row.type === "match") {
-                await maybeCompareAlignedRow(i, myGeneration);
-            } else if (row.type === "insert") {
-                markInsertedRow(i);
-            } else if (row.type === "delete") {
-                markDeletedRow(i);
-            }
-        }
-
-        if (myGeneration !== renderGeneration) return;
-        buildChangedThumbList();
-        updateZoomSummary();
     }
 
     function applyViewScale() {
@@ -1422,7 +1385,15 @@
         clearPageDiffBoxes(right.overlay);
         removeDiffEntriesForRow(rowIndex);
 
-        var result = await detectDiffRects(left, right, generation);
+        var result;
+        if (compareMode === "text") {
+            result = await detectDiffRects_TextOnly(left, right, generation);
+        } else if (compareMode === "pixel") {
+            result = await detectDiffRects_PixelOnly(left, right, generation);
+        } else {
+            result = await detectDiffRects_Default(left, right, generation);
+        }
+
         if (generation !== renderGeneration) return;
 
         result.rects.forEach(function (rect, idx) {
@@ -1513,7 +1484,7 @@
         });
     }
 
-    async function detectDiffRects(leftView, rightView, generation) {
+    async function detectDiffRects_Default(leftView, rightView, generation) {
         var canvas1 = leftView.canvas, canvas2 = rightView.canvas;
         var cssWidth = leftView.width, cssHeight = leftView.height;
         var w = canvas1.width, h = canvas1.height;
@@ -1531,47 +1502,41 @@
 
         var matchResult = matchTextLines(leftView, rightView);
 
+        var ignoreMask = buildIgnoreMask(matchResult, leftView, rightView, img1, img2, w, h);
+
         var gridSize = Math.max(4, Math.round(6 * dpr));
         var cols = Math.ceil(w / gridSize), rows = Math.ceil(h / gridSize);
         var cells = Array.from({length: rows}, function () {
             return Array(cols).fill(0);
         });
+        var rgbThresh = 20;
+        var CHUNK = 24;
 
-        if (compareMode !== "text") {
-            var ignoreMask = compareMode === "pixel"
-                ? new Uint8Array(w * h)
-                : buildIgnoreMask(matchResult, leftView, rightView, img1, img2, w, h);
-            var rgbThresh = 20;
-            var CHUNK = 24;
-
-            for (var gy = 0; gy < rows; gy++) {
-                if (gy % CHUNK === 0) {
-                    if (generation !== undefined && generation !== renderGeneration) return {rects: [], meta: {}};
-                    await yieldToBrowser();
-                }
-                for (var gx = 0; gx < cols; gx++) {
-                    var diffCount = 0, samples = 0;
-                    var sx = gx * gridSize, sy = gy * gridSize;
-                    var ex = Math.min(sx + gridSize, w), ey = Math.min(sy + gridSize, h);
-                    for (var py = sy; py < ey; py++) {
-                        for (var px = sx; px < ex; px++) {
-                            var idx = py * w + px;
-                            if (ignoreMask[idx]) continue;
-                            var p = idx * 4;
-                            var dr = img1[p] - img2[p], dg = img1[p + 1] - img2[p + 1], db = img1[p + 2] - img2[p + 2];
-                            if (dr * dr + dg * dg + db * db > rgbThresh * rgbThresh) diffCount++;
-                            samples++;
-                        }
-                    }
-                    if (samples && diffCount / samples > 0.04) cells[gy][gx] = 1;
-                }
+        for (var gy = 0; gy < rows; gy++) {
+            if (gy % CHUNK === 0) {
+                if (generation !== undefined && generation !== renderGeneration) return {rects: [], meta: {}};
+                await yieldToBrowser();
             }
-        } else {
-            await yieldToBrowser();
+            for (var gx = 0; gx < cols; gx++) {
+                var diffCount = 0, samples = 0;
+                var sx = gx * gridSize, sy = gy * gridSize;
+                var ex = Math.min(sx + gridSize, w), ey = Math.min(sy + gridSize, h);
+                for (var py = sy; py < ey; py++) {
+                    for (var px = sx; px < ex; px++) {
+                        var idx = py * w + px;
+                        if (ignoreMask[idx]) continue;
+                        var p = idx * 4;
+                        var dr = img1[p] - img2[p], dg = img1[p + 1] - img2[p + 1], db = img1[p + 2] - img2[p + 2];
+                        if (dr * dr + dg * dg + db * db > rgbThresh * rgbThresh) diffCount++;
+                        samples++;
+                    }
+                }
+                if (samples && diffCount / samples > 0.04) cells[gy][gx] = 1;
+            }
         }
 
-        var textRectsPx = compareMode !== "pixel" ? buildTextDiffRectsPxCached(matchResult, leftView, rightView) : [];
-        var textBgRectsPx = compareMode !== "pixel" ? buildTextBgDiffRectsCached(matchResult, leftView, rightView, img1, img2, w, h) : [];
+        var textRectsPx = buildTextDiffRectsPxCached(matchResult, leftView, rightView);
+        var textBgRectsPx = buildTextBgDiffRectsCached(matchResult, leftView, rightView, img1, img2, w, h);
 
         for (var i = 0; i < textRectsPx.length; i++) stampRectToCells(textRectsPx[i], cells, gridSize, cols, rows);
         for (var j = 0; j < textBgRectsPx.length; j++) stampRectToCells(textBgRectsPx[j], cells, gridSize, cols, rows);
@@ -1599,6 +1564,139 @@
                 textBgDiffBlocks: textBgRectsPx.length,
                 isImageHeavy: isImageHeavyPage(leftView, rightView)
             }
+        };
+    }
+
+    // Text Only Mode: 텍스트 레이어만 비교
+    async function detectDiffRects_TextOnly(leftView, rightView, generation) {
+        await yieldToBrowser();
+        if (generation !== undefined && generation !== renderGeneration) return {rects: [], meta: {}};
+
+        var cssWidth  = leftView.width,  cssHeight  = leftView.height;
+        var matchResult = matchTextLines(leftView, rightView);
+
+        var rects = [];
+
+        matchResult.matched.forEach(function (pair) {
+            if (pair.similarity < 1.0) {
+                rects.push({
+                    left:  expandRectCss(pair.left,  4, cssWidth, cssHeight),
+                    right: expandRectCss(pair.right, 4, cssWidth, cssHeight)
+                });
+            }
+        });
+
+        matchResult.unmatchedLeft.forEach(function (line) {
+            var r = expandRectCss(line, 4, cssWidth, cssHeight);
+            rects.push({left: r, right: r});
+        });
+
+        matchResult.unmatchedRight.forEach(function (line) {
+            var r = expandRectCss(line, 4, cssWidth, cssHeight);
+            rects.push({left: r, right: r});
+        });
+
+        var leftRects  = rects.map(function (r) { return r.left;  });
+        var rightRects = rects.map(function (r) { return r.right; });
+        var mergedLeft  = mergeNearbyRects(leftRects,  8);
+        var mergedRight = mergeNearbyRects(rightRects, 8);
+        var count = Math.max(mergedLeft.length, mergedRight.length);
+        var merged = [];
+        for (var i = 0; i < count; i++) {
+            merged.push({
+                left:  mergedLeft[i]  || mergedRight[i],
+                right: mergedRight[i] || mergedLeft[i]
+            });
+        }
+
+        return {
+            rects: merged,
+            meta: {
+                ignoredTextBlocks: matchResult.matched.filter(function (p) { return p.similarity >= 0.985; }).length,
+                textDiffBlocks:    matchResult.matched.filter(function (p) { return p.similarity <  0.985; }).length,
+                textBgDiffBlocks:  0,
+                isImageHeavy:      false,
+                mode: "text"
+            }
+        };
+    }
+
+    // Pixel Only Mode: 순수 픽셀 diff (ignore mask 없음)
+    async function detectDiffRects_PixelOnly(leftView, rightView, generation) {
+        var canvas1 = leftView.canvas, canvas2 = rightView.canvas;
+        var cssWidth = leftView.width, cssHeight = leftView.height;
+        var w = canvas1.width, h = canvas1.height;
+
+        var sampledCanvas2 = canvas2;
+        if (canvas2.width !== w || canvas2.height !== h) {
+            sampledCanvas2 = document.createElement("canvas");
+            sampledCanvas2.width  = w; sampledCanvas2.height = h;
+            sampledCanvas2.getContext("2d").drawImage(canvas2, 0, 0, w, h);
+        }
+
+        var img1 = canvas1.getContext("2d").getImageData(0, 0, w, h).data;
+        var img2 = sampledCanvas2.getContext("2d").getImageData(0, 0, w, h).data;
+
+        var gridSize = Math.max(4, Math.round(6 * dpr));
+        var cols = Math.ceil(w / gridSize), rows = Math.ceil(h / gridSize);
+        var cells = Array.from({length: rows}, function () { return Array(cols).fill(0); });
+        var rgbThresh = 30;
+        var CHUNK = 24;
+
+        for (var gy = 0; gy < rows; gy++) {
+            if (gy % CHUNK === 0) {
+                if (generation !== undefined && generation !== renderGeneration)
+                    return {rects: [], meta: {}};
+                await yieldToBrowser();
+            }
+            for (var gx = 0; gx < cols; gx++) {
+                var diffCount = 0, samples = 0;
+                var sx = gx * gridSize, sy = gy * gridSize;
+                var ex = Math.min(sx + gridSize, w), ey = Math.min(sy + gridSize, h);
+                for (var py = sy; py < ey; py++) {
+                    for (var px = sx; px < ex; px++) {
+                        var idx = py * w + px;
+                        var p = idx * 4;
+                        var dr = img1[p] - img2[p], dg = img1[p+1] - img2[p+1], db = img1[p+2] - img2[p+2];
+                        if (dr*dr + dg*dg + db*db > rgbThresh * rgbThresh) diffCount++;
+                        samples++;
+                    }
+                }
+
+                if (samples && diffCount / samples > 0.06) cells[gy][gx] = 1;
+            }
+        }
+
+        var minSize = gridSize * 2;
+        var rectsPx = connectedComponentsToRects(cells, gridSize, w, h)
+            .filter(function (r) { return r.w > minSize && r.h > minSize; })
+            .map(function (r)    { return expandRect(r, 4 * dpr, w, h); });
+
+        var merged = mergeNearbyRects(rectsPx, 20 * dpr);
+        var scaleX = cssWidth / w, scaleY = cssHeight / h;
+
+        return {
+            rects: merged.map(function (r) {
+                var cr = {x: r.x * scaleX, y: r.y * scaleY, w: r.w * scaleX, h: r.h * scaleY};
+                return {left: cr, right: cr};
+            }),
+            meta: {
+                ignoredTextBlocks: 0,
+                textDiffBlocks:    0,
+                textBgDiffBlocks:  0,
+                isImageHeavy:      isImageHeavyPage(leftView, rightView),
+                mode: "pixel"
+            }
+        };
+    }
+
+    // Text Only 전용 CSS 좌표 rect 확장 헬퍼
+    function expandRectCss(rect, pad, maxW, maxH) {
+        var x = Math.max(0, rect.x - pad), y = Math.max(0, rect.y - pad);
+        return {
+            x: x, y: y,
+            w: Math.min(maxW, rect.x + rect.w + pad) - x,
+            h: Math.min(maxH, rect.y + rect.h + pad) - y
         };
     }
 
