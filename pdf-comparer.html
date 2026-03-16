@@ -242,6 +242,35 @@
       white-space: pre-line;
     }
 
+    .diff-snippet {
+      margin-top: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .diff-snippet-del,
+    .diff-snippet-ins {
+      font-size: 11px;
+      font-family: monospace;
+      border-radius: 3px;
+      padding: 2px 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .diff-snippet-del {
+      color: #b91c1c;
+      background: #fef2f2;
+    }
+
+    .diff-snippet-ins {
+      color: #15803d;
+      background: #f0fdf4;
+    }
+
     .badge {
       display: inline-block;
       margin-top: 6px;
@@ -750,8 +779,8 @@
       <h2>변경 페이지 목록</h2>
       <div class="note">
         전체 페이지를 한 번에 렌더링하고 비교합니다.<br>
-        목록에는 변경이 감지된 페이지만 표시됩니다.<br>
-        항목을 클릭하면 해당 페이지로 이동합니다.
+        <span id="thumbListNote">목록에는 변경이 감지된 페이지만 표시됩니다.<br>
+        항목을 클릭하면 해당 페이지로 이동합니다.</span>
       </div>
       <div id="thumbList" class="thumb-list">
         <div class="empty">비교 후 변경된 페이지 목록이 표시됩니다.</div>
@@ -1246,6 +1275,9 @@
         if (leftRowIdx === null) leftRowIdx = rightRowIdx != null ? Math.min(rightRowIdx, pageViews1.length - 1) : 0;
         if (rightRowIdx === null) rightRowIdx = leftRowIdx != null ? Math.min(leftRowIdx, pageViews2.length - 1) : 0;
 
+        var leftText = block.leftLines.map(function (e) { return e.line.text; }).join(" / ");
+        var rightText = block.rightLines.map(function (e) { return e.line.text; }).join(" / ");
+
         diffEntries.push({
           id: diffId,
           kind: "change",
@@ -1256,6 +1288,8 @@
           rightPageNo: primaryRightPageNo,
           leftRect: firstLeftRect,
           rightRect: firstRightRect,
+          leftText: leftText,
+          rightText: rightText,
           label: "변경 " + (primaryLeftPageNo ? "좌 p" + primaryLeftPageNo : "") + (primaryRightPageNo ? " ↔ 우 p" + primaryRightPageNo : "")
         });
       }
@@ -2750,8 +2784,16 @@
         return;
       }
       if (compareMode === "text") {
+        var noteEl = document.getElementById("thumbListNote");
+        if (noteEl) {
+          noteEl.textContent = "변경점 목록입니다. 클릭하면 해당 위치로 좌우 이동합니다.";
+        }
         buildChangedThumbList_TextOnly();
         return;
+      }
+      var noteEl = document.getElementById("thumbListNote");
+      if (noteEl) {
+        noteEl.innerHTML = "목록에는 변경이 감지된 페이지만 표시됩니다.<br>항목을 클릭하면 해당 페이지로 이동합니다.";
       }
       var uniqueRows = Array.from(new Set(diffEntries.map(function (d) {
         return d.rowIndex;
@@ -2820,45 +2862,53 @@
     }
 
     function buildChangedThumbList_TextOnly() {
-      var uniqueLeftRows = Array.from(new Set(diffEntries.map(function (d) {
-        return d.rowIndex;
-      }))).sort(function (a, b) { return a - b; });
-
-      for (var i = 0; i < uniqueLeftRows.length; i++) {
-        (function (rowIndex) {
-          var rowDiffs = diffEntries.filter(function (d) { return d.rowIndex === rowIndex; });
-          var fi = diffEntries.findIndex(function (d) { return d.rowIndex === rowIndex; });
-          var leftPageNo = rowIndex + 1;
-          var rightPageNos = Array.from(new Set(
-            rowDiffs.map(function (d) { return d.rightPageNo; }).filter(function (p) { return p != null; })
-          )).sort(function (a, b) { return a - b; });
-
-          var item = document.createElement("div");
-          item.className = "thumb-item";
-          item.dataset.rowIndex = rowIndex;
-
-          var titleDiv = document.createElement("div");
-          titleDiv.className = "thumb-title";
-          titleDiv.textContent = "[텍스트 전용] 좌 p" + leftPageNo
-            + (rightPageNos.length ? " ↔ 우 p" + rightPageNos.join(", p") : "");
-
-          var metaDiv = document.createElement("div");
-          metaDiv.className = "thumb-meta";
-          metaDiv.textContent = "변경 블록 " + rowDiffs.length + "건 / Myers diff";
-
-          var badge = document.createElement("span");
-          badge.className = "badge changed";
-          badge.textContent = "changed";
-
-          item.appendChild(titleDiv);
-          item.appendChild(metaDiv);
-          item.appendChild(badge);
-          item.addEventListener("click", function () {
-            if (fi >= 0) goToDiff(fi);
-          });
-          thumbListEl.appendChild(item);
-        })(uniqueLeftRows[i]);
+      function trunc(str, max) {
+        str = (str || "").trim();
+        return str.length > max ? str.slice(0, max) + "…" : str;
       }
+
+      diffEntries.forEach(function (entry, idx) {
+        var item = document.createElement("div");
+        item.className = "thumb-item";
+        item.dataset.diffIndex = idx;
+
+        var titleDiv = document.createElement("div");
+        titleDiv.className = "thumb-title";
+        var pageInfo = "";
+        if (entry.leftPageNo && entry.rightPageNo) {
+          pageInfo = " — 좌 p" + entry.leftPageNo + " ↔ 우 p" + entry.rightPageNo;
+        } else if (entry.leftPageNo) {
+          pageInfo = " — 좌 p" + entry.leftPageNo;
+        } else if (entry.rightPageNo) {
+          pageInfo = " — 우 p" + entry.rightPageNo;
+        }
+        titleDiv.textContent = "변경 #" + (idx + 1) + pageInfo;
+
+        var snippetDiv = document.createElement("div");
+        snippetDiv.className = "diff-snippet";
+
+        if (entry.leftText) {
+          var del = document.createElement("span");
+          del.className = "diff-snippet-del";
+          del.title = entry.leftText;
+          del.textContent = "- " + trunc(entry.leftText, 55);
+          snippetDiv.appendChild(del);
+        }
+        if (entry.rightText) {
+          var ins = document.createElement("span");
+          ins.className = "diff-snippet-ins";
+          ins.title = entry.rightText;
+          ins.textContent = "+ " + trunc(entry.rightText, 55);
+          snippetDiv.appendChild(ins);
+        }
+
+        item.appendChild(titleDiv);
+        item.appendChild(snippetDiv);
+        item.addEventListener("click", function () {
+          goToDiff(idx);
+        });
+        thumbListEl.appendChild(item);
+      });
     }
 
     function updatePageStatusBadge(pv, diffCount, kind) {
@@ -2975,7 +3025,9 @@
       document.querySelectorAll('.diff-box[data-diff-id="' + cur.id + '"]').forEach(function (el) {
         el.classList.add("current");
       });
-      var item = thumbListEl.querySelector('.thumb-item[data-row-index="' + cur.rowIndex + '"]');
+      var item = compareMode === "text"
+        ? thumbListEl.querySelector('.thumb-item[data-diff-index="' + currentDiffIndex + '"]')
+        : thumbListEl.querySelector('.thumb-item[data-row-index="' + cur.rowIndex + '"]');
       if (item) {
         item.classList.add("active");
         item.scrollIntoView({ block: "nearest", behavior: "smooth" });
