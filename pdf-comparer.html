@@ -1140,11 +1140,11 @@
 
       // Step 2: 정렬 건너뜀
       ldActivateStep(2, "텍스트 전용 - 정렬 건너뜀");
-      ldUpdateSub(2, "전체 텍스트 Myers diff 적용");
+      ldUpdateSub(2, "전체 텍스트 Histogram diff 적용");
       alignmentRows = [];
       ldSetStepProgress(1);
 
-      // Step 3: 렌더링 + 텍스트 추출 + Myers diff
+      // Step 3: 렌더링 + 텍스트 추출 + Histogram diff
       ldActivateStep(3, "0 / " + (n + m) + " 페이지 렌더링");
       var total = n + m;
       for (var i = 0; i < n; i++) {
@@ -1167,8 +1167,8 @@
       globalTextLines1 = collectAllTextLines(pageViews1);
       globalTextLines2 = collectAllTextLines(pageViews2);
 
-      ldSetLog("Myers diff 계산 중... " + globalTextLines1.length + " vs " + globalTextLines2.length + " 줄");
-      summaryTextEl.textContent = "Myers diff 계산 중...";
+      ldSetLog("Histogram diff 계산 중... " + globalTextLines1.length + " vs " + globalTextLines2.length + " 줄");
+      summaryTextEl.textContent = "Histogram diff 계산 중...";
       await yieldToBrowser();
 
       if (myGen !== renderGeneration) { ldHide(); return; }
@@ -2843,7 +2843,7 @@
 
           var metaDiv = document.createElement("div");
           metaDiv.className = "thumb-meta";
-          metaDiv.textContent = "변경 블록 " + rowDiffs.length + "건 / Myers diff";
+          metaDiv.textContent = "변경 블록 " + rowDiffs.length + "건 / Histogram diff";
 
           var badge = document.createElement("span");
           badge.className = "badge changed";
