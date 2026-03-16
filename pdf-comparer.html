@@ -1140,11 +1140,11 @@
 
       // Step 2: 정렬 건너뜀
       ldActivateStep(2, "텍스트 전용 - 정렬 건너뜀");
-      ldUpdateSub(2, "전체 텍스트 Histogram diff 적용");
+      ldUpdateSub(2, "전체 텍스트 Myers diff 적용");
       alignmentRows = [];
       ldSetStepProgress(1);
 
-      // Step 3: 렌더링 + 텍스트 추출 + Histogram diff
+      // Step 3: 렌더링 + 텍스트 추출 + Myers diff
       ldActivateStep(3, "0 / " + (n + m) + " 페이지 렌더링");
       var total = n + m;
       for (var i = 0; i < n; i++) {
@@ -1164,16 +1164,16 @@
 
       if (myGen !== renderGeneration) { ldHide(); return; }
 
-      globalTextLines1 = collectAllTextLines(pageViews1);
-      globalTextLines2 = collectAllTextLines(pageViews2);
+      globalTextLines1 = collectAllRowItems(pageViews1);
+      globalTextLines2 = collectAllRowItems(pageViews2);
 
-      ldSetLog("Histogram diff 계산 중... " + globalTextLines1.length + " vs " + globalTextLines2.length + " 줄");
-      summaryTextEl.textContent = "Histogram diff 계산 중...";
+      ldSetLog("Myers diff 계산 중... " + globalTextLines1.length + " vs " + globalTextLines2.length + " 토큰");
+      summaryTextEl.textContent = "Myers diff 계산 중...";
       await yieldToBrowser();
 
       if (myGen !== renderGeneration) { ldHide(); return; }
 
-      var diffOps = computeHistogramDiff(globalTextLines1, globalTextLines2);
+      var diffOps = postProcessDiffOps(computeWordsDiff(globalTextLines1, globalTextLines2));
       buildTextOnlyDiffEntries(diffOps);
 
       buildChangedThumbList();
@@ -1183,7 +1183,6 @@
     }
 
     function buildTextOnlyDiffEntries(diffOps) {
-      // Group consecutive non-equal ops into change blocks
       var blocks = [];
       var cur = null;
       for (var i = 0; i < diffOps.length; i++) {
@@ -1202,7 +1201,6 @@
         var block = blocks[bi];
         var diffId = "text-d" + bi;
 
-        // Group lines by page
         var leftByPage = {}, rightByPage = {};
         block.leftLines.forEach(function (entry) {
           var pg = entry.pageNo;
@@ -1221,7 +1219,6 @@
         var primaryLeftPageNo = leftPageNos[0] || null;
         var primaryRightPageNo = rightPageNos[0] || null;
 
-        // Draw boxes on each affected left page
         var firstLeftRect = null;
         leftPageNos.forEach(function (pg) {
           var pv = pageViews1[pg - 1];
@@ -1233,7 +1230,6 @@
           if (pg === primaryLeftPageNo && rects.length) firstLeftRect = rects[0];
         });
 
-        // Draw boxes on each affected right page
         var firstRightRect = null;
         rightPageNos.forEach(function (pg) {
           var pv = pageViews2[pg - 1];
@@ -1245,7 +1241,6 @@
           if (pg === primaryRightPageNo && rects.length) firstRightRect = rects[0];
         });
 
-        // Determine scroll targets (rowIndex = left view index, rightRowIndex = right view index)
         var leftRowIdx = primaryLeftPageNo != null ? primaryLeftPageNo - 1 : null;
         var rightRowIdx = primaryRightPageNo != null ? primaryRightPageNo - 1 : null;
         if (leftRowIdx === null) leftRowIdx = rightRowIdx != null ? Math.min(rightRowIdx, pageViews1.length - 1) : 0;
@@ -1266,186 +1261,172 @@
       }
     }
 
-    async function extractAllTextLines(pdfDoc, myGen, label, totalRows) {
-      var result = [];
-      var total = pdfDoc.numPages;
-      for (var p = 1; p <= total; p++) {
-        if (myGen !== renderGeneration) {
-          return result;
-        }
-        ldSetLog(label + " PDF 텍스트+렌더 중... p" + p + " / " + total);
-        var page = await pdfDoc.getPage(p);
-        var viewport = page.getViewport({ scale: renderScale });
+    function computeWordsDiff(leftEntries, rightEntries) {
+      var oldTokens = leftEntries;
+      var newTokens = rightEntries;
+      var oldLen = oldTokens.length;
+      var newLen = newTokens.length;
 
-        var canvas = document.createElement("canvas");
-        canvas.style.width = viewport.width + "px";
-        canvas.style.height = viewport.height + "px";
-        canvas.width = Math.floor(viewport.width * dpr);
-        canvas.height = Math.floor(viewport.height * dpr);
-        var ctx = canvas.getContext("2d", { alpha: false });
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-
-        var tc = await page.getTextContent();
-        var lines = extractTextLines(tc, viewport);
-
-        var rowIdx = (label === "좌측") ? leftRowIndexByPageNo[p] : rightRowIndexByPageNo[p];
-        if (rowIdx !== undefined) {
-          var pv = (label === "좌측") ? pageViews1[rowIdx] : pageViews2[rowIdx];
-          if (pv) {
-            if (!pv.canvas) {
-              pv.stage.insertBefore(canvas, pv.overlay);
-            } else {
-              pv.canvas.replaceWith(canvas);
-            }
-            pv.canvas = canvas;
-            pv.viewport = viewport;
-            pv.textLines = lines;
-            pv.isRendered = true;
-            pv.status.textContent = "ready";
-          }
-        }
-
-        lines.forEach(function (ln) {
-          result.push({ pageNo: p, line: ln });
-        });
-        try {
-          page.cleanup();
-        } catch (e) {
-        }
-      }
-      return result;
-    }
-
-    function computeLineDiff(leftEntries, rightEntries) {
-      var n = leftEntries.length, m = rightEntries.length;
-
-      function key(entry) {
+      function entryKey(entry) {
         return normalizeTextForCompare(entry.line.text);
       }
+      function entryEquals(a, b) {
+        var ka = entryKey(a), kb = entryKey(b);
+        if (ka === kb) return true;
+        if (Math.abs(ka.length - kb.length) > Math.ceil(Math.max(ka.length, kb.length) * 0.1)) return false;
+        return textSimilarity(ka, kb) >= 0.99;
+      }
 
-      var dp = new Array(m + 1).fill(0);
+      function addToPath(path, added, removed, oldPosInc) {
+        var last = path.lastComponent;
+        if (last && last.added === added && last.removed === removed) {
+          return {
+            oldPos: path.oldPos + oldPosInc,
+            lastComponent: { count: last.count + 1, added: added, removed: removed, previousComponent: last.previousComponent }
+          };
+        }
+        return {
+          oldPos: path.oldPos + oldPosInc,
+          lastComponent: { count: 1, added: added, removed: removed, previousComponent: last }
+        };
+      }
 
-      var table = Array.from({ length: n + 1 }, function () {
-        return new Array(m + 1).fill(0);
+      function extractCommon(basePath, diagonalPath) {
+        var op = basePath.oldPos, np = op - diagonalPath, commonCount = 0;
+        while (np + 1 < newLen && op + 1 < oldLen && entryEquals(oldTokens[op + 1], newTokens[np + 1])) {
+          np++; op++; commonCount++;
+        }
+        if (commonCount) {
+          basePath.lastComponent = { count: commonCount, previousComponent: basePath.lastComponent, added: false, removed: false };
+        }
+        basePath.oldPos = op;
+        return np;
+      }
+
+      function buildOps(lastComponent) {
+        var components = [];
+        var nc;
+        while (lastComponent) {
+          components.push(lastComponent);
+          nc = lastComponent.previousComponent;
+          delete lastComponent.previousComponent;
+          lastComponent = nc;
+        }
+        components.reverse();
+
+        var ops = [], np = 0, op = 0;
+        for (var i = 0; i < components.length; i++) {
+          var c = components[i];
+          if (c.removed) {
+            for (var k = 0; k < c.count; k++) ops.push({ op: "-", leftEntry: oldTokens[op++], rightEntry: null });
+          } else if (c.added) {
+            for (var k = 0; k < c.count; k++) ops.push({ op: "+", leftEntry: null, rightEntry: newTokens[np++] });
+          } else {
+            for (var k = 0; k < c.count; k++) ops.push({ op: "=", leftEntry: oldTokens[op++], rightEntry: newTokens[np++] });
+          }
+        }
+        return ops;
+      }
+
+      var bestPath = [{ oldPos: -1, lastComponent: undefined }];
+      var newPos = extractCommon(bestPath[0], 0);
+
+      if (bestPath[0].oldPos + 1 >= oldLen && newPos + 1 >= newLen) {
+        return buildOps(bestPath[0].lastComponent);
+      }
+
+      var editLength = 1;
+      var maxEditLength = oldLen + newLen;
+      var minDiag = -Infinity, maxDiag = Infinity;
+
+      while (editLength <= maxEditLength) {
+        for (var diag = Math.max(minDiag, -editLength); diag <= Math.min(maxDiag, editLength); diag += 2) {
+          var removePath = bestPath[diag - 1], addPath = bestPath[diag + 1];
+          if (removePath) bestPath[diag - 1] = undefined;
+          var canAdd = !!(addPath && (addPath.oldPos - diag) >= 0 && (addPath.oldPos - diag) < newLen);
+          var canRemove = !!(removePath && removePath.oldPos + 1 < oldLen);
+          if (!canAdd && !canRemove) { bestPath[diag] = undefined; continue; }
+          var basePath;
+          if (!canRemove || (canAdd && removePath.oldPos < addPath.oldPos)) {
+            basePath = addToPath(addPath, true, false, 0);
+          } else {
+            basePath = addToPath(removePath, false, true, 1);
+          }
+          newPos = extractCommon(basePath, diag);
+          if (basePath.oldPos + 1 >= oldLen && newPos + 1 >= newLen) {
+            return buildOps(basePath.lastComponent);
+          }
+          bestPath[diag] = basePath;
+          if (basePath.oldPos + 1 >= oldLen) maxDiag = Math.min(maxDiag, diag - 1);
+          if (newPos + 1 >= newLen) minDiag = Math.max(minDiag, diag + 1);
+        }
+        editLength++;
+      }
+      return [];
+    }
+
+    function postProcessDiffOps(ops) {
+      var PROXIMITY = 4;
+
+      var delsByText = {};
+      var insByText = {};
+      for (var i = 0; i < ops.length; i++) {
+        var op = ops[i];
+        if (op.op === "-") {
+          var k = normalizeTextForCompare(op.leftEntry.line.text);
+          if (!delsByText[k]) delsByText[k] = [];
+          delsByText[k].push({ i: i, entry: op.leftEntry });
+        } else if (op.op === "+") {
+          var k = normalizeTextForCompare(op.rightEntry.line.text);
+          if (!insByText[k]) insByText[k] = [];
+          insByText[k].push({ i: i, entry: op.rightEntry });
+        }
+      }
+
+      var rematchedDelIdx = {};
+      var usedInsIdx = new Set();
+
+      Object.keys(delsByText).forEach(function (text) {
+        if (!insByText[text]) return;
+        var dels = delsByText[text];
+        var ins = insByText[text];
+
+        dels.forEach(function (del) {
+          var delEntry = del.entry;
+          var bestIi = -1, bestDist = Infinity;
+
+          ins.forEach(function (ins_) {
+            if (usedInsIdx.has(ins_.i)) return;
+            var insEntry = ins_.entry;
+            var dist = Math.abs(delEntry.globalRowIndex - insEntry.globalRowIndex);
+
+            var nearBoundary = delEntry.pageNo !== insEntry.pageNo && (
+              delEntry.rowIndexInPage >= delEntry.pageRowCount - 2 ||
+              insEntry.rowIndexInPage <= 1
+            );
+
+            if ((dist <= PROXIMITY || nearBoundary) && dist < bestDist) {
+              bestDist = dist;
+              bestIi = ins_.i;
+            }
+          });
+
+          if (bestIi >= 0) {
+            rematchedDelIdx[del.i] = ops[bestIi].rightEntry;
+            usedInsIdx.add(bestIi);
+          }
+        });
       });
 
-      for (var i = 1; i <= n; i++) {
-        for (var j = 1; j <= m; j++) {
-          if (key(leftEntries[i - 1]) === key(rightEntries[j - 1])) {
-            table[i][j] = table[i - 1][j - 1] + 1;
-          } else {
-            table[i][j] = Math.max(table[i - 1][j], table[i][j - 1]);
-          }
-        }
-      }
-
-      var ops = [];
-      var ii = n, jj = m;
-      while (ii > 0 || jj > 0) {
-        if (ii > 0 && jj > 0 && key(leftEntries[ii - 1]) === key(rightEntries[jj - 1])) {
-          ops.push({ op: "=", leftEntry: leftEntries[ii - 1], rightEntry: rightEntries[jj - 1] });
-          ii--;
-          jj--;
-        } else if (jj > 0 && (ii === 0 || table[ii][jj - 1] >= table[ii - 1][jj])) {
-          ops.push({ op: "+", leftEntry: null, rightEntry: rightEntries[jj - 1] });
-          jj--;
-        } else {
-          ops.push({ op: "-", leftEntry: leftEntries[ii - 1], rightEntry: null });
-          ii--;
-        }
-      }
-      ops.reverse();
-      return ops;
-    }
-
-    function computeHistogramDiff(leftEntries, rightEntries) {
-      var a = leftEntries, b = rightEntries;
       var result = [];
-
-      function key(entry) {
-        return normalizeTextForCompare(entry.line.text);
-      }
-
-      function recurse(lLo, lHi, rLo, rHi, depth) {
-        // 공통 접두사 제거
-        while (lLo < lHi && rLo < rHi && key(a[lLo]) === key(b[rLo])) {
-          result.push({ op: "=", leftEntry: a[lLo], rightEntry: b[rLo] });
-          lLo++; rLo++;
-        }
-
-        // 공통 접미사 저장 (나중에 붙임)
-        var suffix = [];
-        while (lHi > lLo && rHi > rLo && key(a[lHi - 1]) === key(b[rHi - 1])) {
-          lHi--; rHi--;
-          suffix.push({ op: "=", leftEntry: a[lHi], rightEntry: b[rHi] });
-        }
-
-        function flushSuffix() {
-          for (var s = suffix.length - 1; s >= 0; s--) result.push(suffix[s]);
-        }
-
-        // 기저 조건
-        if (lLo >= lHi) {
-          for (var i = rLo; i < rHi; i++) result.push({ op: "+", leftEntry: null, rightEntry: b[i] });
-          flushSuffix(); return;
-        }
-        if (rLo >= rHi) {
-          for (var i = lLo; i < lHi; i++) result.push({ op: "-", leftEntry: a[i], rightEntry: null });
-          flushSuffix(); return;
-        }
-
-        // 좌측 구간 히스토그램 빌드
-        var hist = {};
-        for (var i = lLo; i < lHi; i++) {
-          var k = key(a[i]);
-          hist[k] = (hist[k] || 0) + 1;
-        }
-
-        // 양쪽 공통 줄 중 가장 드문 빈도 탐색
-        var minCount = Infinity;
-        for (var j = rLo; j < rHi; j++) {
-          var k = key(b[j]);
-          if (hist[k] !== undefined && hist[k] < minCount) minCount = hist[k];
-        }
-
-        // 공통 줄 없거나 퇴화 케이스: 전부 삭제+삽입으로 처리
-        var regionSize = (lHi - lLo) + (rHi - rLo);
-        if (minCount === Infinity || depth > 100 || (minCount > 8 && regionSize > 200)) {
-          for (var i = lLo; i < lHi; i++) result.push({ op: "-", leftEntry: a[i], rightEntry: null });
-          for (var j = rLo; j < rHi; j++) result.push({ op: "+", leftEntry: null, rightEntry: b[j] });
-          flushSuffix(); return;
-        }
-
-        // 가장 드문 줄 중 앵커 후보 탐색 — 앞뒤 스네이크 길이가 최대인 쌍 선택
-        var bestLi = -1, bestRj = -1, bestScore = -1;
-        for (var j = rLo; j < rHi; j++) {
-          var rk = key(b[j]);
-          if (hist[rk] !== minCount) continue;
-          for (var i = lLo; i < lHi; i++) {
-            if (key(a[i]) !== rk) continue;
-            var sb = 0, ib = i - 1, jb = j - 1;
-            while (ib >= lLo && jb >= rLo && key(a[ib]) === key(b[jb])) { sb++; ib--; jb--; }
-            var sa = 0, ia = i + 1, ja = j + 1;
-            while (ia < lHi && ja < rHi && key(a[ia]) === key(b[ja])) { sa++; ia++; ja++; }
-            if (sb + sa > bestScore) { bestScore = sb + sa; bestLi = i; bestRj = j; }
-          }
-        }
-
-        if (bestLi < 0) {
-          // 앵커 없음: 폴백
-          for (var i = lLo; i < lHi; i++) result.push({ op: "-", leftEntry: a[i], rightEntry: null });
-          for (var j = rLo; j < rHi; j++) result.push({ op: "+", leftEntry: null, rightEntry: b[j] });
+      for (var i = 0; i < ops.length; i++) {
+        if (usedInsIdx.has(i)) continue;
+        if (rematchedDelIdx[i] !== undefined) {
+          result.push({ op: "=", leftEntry: ops[i].leftEntry, rightEntry: rematchedDelIdx[i] });
         } else {
-          // 앵커 기준으로 앞뒤 재귀
-          recurse(lLo, bestLi, rLo, bestRj, depth + 1);
-          result.push({ op: "=", leftEntry: a[bestLi], rightEntry: b[bestRj] });
-          recurse(bestLi + 1, lHi, bestRj + 1, rHi, depth + 1);
+          result.push(ops[i]);
         }
-        flushSuffix();
       }
-
-      recurse(0, a.length, 0, b.length, 0);
       return result;
     }
 
@@ -1684,11 +1665,11 @@
       }
 
       if (!globalTextLines1.length || !globalTextLines2.length) {
-        globalTextLines1 = collectAllTextLines(pageViews1);
-        globalTextLines2 = collectAllTextLines(pageViews2);
+        globalTextLines1 = collectAllRowItems(pageViews1);
+        globalTextLines2 = collectAllRowItems(pageViews2);
       }
 
-      var diffOps = computeLineDiff(globalTextLines1, globalTextLines2);
+      var diffOps = postProcessDiffOps(computeWordsDiff(globalTextLines1, globalTextLines2));
 
       var lDiffs = [], rDiffs = [];
       diffOps.forEach(function (op) {
@@ -1743,6 +1724,27 @@
         }
         pv.textLines.forEach(function (ln) {
           result.push({ pageNo: pv.pageNo, line: ln });
+        });
+      }
+      return result;
+    }
+
+    function collectAllRowItems(pageViews) {
+      var result = [];
+      var globalRowIndex = 0;
+      for (var i = 0; i < pageViews.length; i++) {
+        var pv = pageViews[i];
+        if (!pv || pv.isMissing || !pv.textLines) continue;
+        var pageRowCount = pv.textLines.length;
+        pv.textLines.forEach(function (ln, rowIndexInPage) {
+          result.push({
+            pageNo: pv.pageNo,
+            rowIndexInPage: rowIndexInPage,
+            pageRowCount: pageRowCount,
+            globalRowIndex: globalRowIndex,
+            line: ln
+          });
+          globalRowIndex++;
         });
       }
       return result;
@@ -2561,6 +2563,8 @@
     }
 
     function extractTextLines(textContent, viewport) {
+      var LINE_MERGE_PX = 6;
+
       var rawItems = (textContent.items || [])
         .map(function (item) {
           var str = (item.str || "").trim();
@@ -2577,7 +2581,7 @@
         })
         .filter(Boolean)
         .sort(function (a, b) {
-          if (Math.abs(a.baselineY - b.baselineY) > 3) {
+          if (Math.abs(a.baselineY - b.baselineY) > LINE_MERGE_PX) {
             return a.baselineY - b.baselineY;
           }
           return a.x - b.x;
@@ -2586,8 +2590,7 @@
       for (var i = 0; i < rawItems.length; i++) {
         var item = rawItems[i], tgt = null;
         for (var j = 0; j < lines.length; j++) {
-          if (Math.abs(lines[j].baselineY - item.baselineY)
-            <= Math.max(4, item.h * 0.6)) {
+          if (Math.abs(lines[j].baselineY - item.baselineY) <= LINE_MERGE_PX) {
             tgt = lines[j];
             break;
           }
@@ -2597,8 +2600,6 @@
           lines.push(tgt);
         }
         tgt.items.push(item);
-        tgt.baselineY = (tgt.baselineY * (tgt.items.length - 1) + item.baselineY)
-          / tgt.items.length;
       }
       return lines.map(function (line) {
         line.items.sort(function (a, b) {
@@ -2629,7 +2630,8 @@
           y: line.baselineY - h,
           w: right - x,
           h: h,
-          baselineY: line.baselineY
+          baselineY: line.baselineY,
+          items: line.items
         };
       }).filter(function (l) {
         return l.text.length > 0;
@@ -2818,7 +2820,6 @@
     }
 
     function buildChangedThumbList_TextOnly() {
-      // Group by left page (rowIndex)
       var uniqueLeftRows = Array.from(new Set(diffEntries.map(function (d) {
         return d.rowIndex;
       }))).sort(function (a, b) { return a - b; });
@@ -2843,7 +2844,7 @@
 
           var metaDiv = document.createElement("div");
           metaDiv.className = "thumb-meta";
-          metaDiv.textContent = "변경 블록 " + rowDiffs.length + "건 / Histogram diff";
+          metaDiv.textContent = "변경 블록 " + rowDiffs.length + "건 / Myers diff";
 
           var badge = document.createElement("span");
           badge.className = "badge changed";
