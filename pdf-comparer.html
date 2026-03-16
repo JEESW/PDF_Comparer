@@ -1274,7 +1274,7 @@
         var ka = entryKey(a), kb = entryKey(b);
         if (ka === kb) return true;
         if (Math.abs(ka.length - kb.length) > Math.ceil(Math.max(ka.length, kb.length) * 0.1)) return false;
-        return textSimilarity(ka, kb) >= 1.0;
+        return textSimilarity(ka, kb) >= 0.99;
       }
 
       function addToPath(path, added, removed, oldPosInc) {
