@@ -876,6 +876,7 @@
 
     var pdfDoc1 = null, pdfDoc2 = null;
     var renderScale = 1.15;
+    var renderOversample = 4.0;
     var viewScale = 1.0;
     var dpr = window.devicePixelRatio || 1;
     var pageViews1 = [], pageViews2 = [];
@@ -1614,6 +1615,7 @@
       var canvas1 = leftView.canvas, canvas2 = rightView.canvas;
       var cssWidth = leftView.width, cssHeight = leftView.height;
       var w = canvas1.width, h = canvas1.height;
+
       var sampledCanvas2 = canvas2;
       if (canvas2.width !== w || canvas2.height !== h) {
         sampledCanvas2 = document.createElement("canvas");
@@ -1621,62 +1623,34 @@
         sampledCanvas2.height = h;
         sampledCanvas2.getContext("2d").drawImage(canvas2, 0, 0, w, h);
       }
+
       var img1 = canvas1.getContext("2d").getImageData(0, 0, w, h).data;
       var img2 = sampledCanvas2.getContext("2d").getImageData(0, 0, w, h).data;
-      var gridSize = Math.max(4, Math.round(6 * dpr));
-      var cols = Math.ceil(w / gridSize),
-        rows = Math.ceil(h / gridSize);
-      var cells = Array.from({ length: rows }, function () {
-        return Array(cols).fill(0);
+
+      if (generation !== undefined && generation !== renderGeneration) return { rects: [], meta: {} };
+      await yieldToBrowser();
+
+      var mask = pixelOnlyDiffMask(img1, img2, w, h, 25);
+
+      if (generation !== undefined && generation !== renderGeneration) return { rects: [], meta: {} };
+      await yieldToBrowser();
+
+      var components = pixelOnlyCCL(mask, w, h);
+
+      var minDensity  = 0.15;
+      var minBboxArea = Math.max(60 * dpr * dpr, 60);
+      var filtered = components.filter(function (c) {
+        var bboxArea = c.w * c.h;
+        return bboxArea >= minBboxArea && (c.area / bboxArea) >= minDensity;
       });
-      var rgbThresh = 30,
-        CHUNK = 24;
-      for (var gy = 0; gy < rows; gy++) {
-        if (gy % CHUNK === 0) {
-          if (generation !== undefined && generation !== renderGeneration) {
-            return {
-              rects: [],
-              meta: {}
-            };
-          }
-          await yieldToBrowser();
-        }
-        for (var gx = 0; gx < cols; gx++) {
-          var diffCount = 0,
-            samples = 0;
-          var sx = gx * gridSize,
-            sy = gy * gridSize;
-          var ex = Math.min(sx + gridSize, w),
-            ey = Math.min(sy + gridSize, h);
-          for (var py = sy; py < ey; py++) {
-            for (var px = sx; px < ex; px++) {
-              var idx = py * w + px,
-                p = idx * 4;
-              var dr = img1[p] - img2[p],
-                dg = img1[p + 1] - img2[p + 1],
-                db = img1[p + 2] - img2[p + 2];
-              if (dr * dr + dg * dg + db * db > rgbThresh * rgbThresh) {
-                diffCount++;
-              }
-              samples++;
-            }
-          }
-          if (samples && diffCount / samples > 0.06) {
-            cells[gy][gx] = 1;
-          }
-        }
-      }
-      var minSize = gridSize * 2;
-      var rectsPx = connectedComponentsToRects(cells, gridSize, w, h)
-        .filter(function (r) {
-          return r.w > minSize && r.h > minSize;
-        })
-        .map(function (r) {
-          return expandRect(r, 4 * dpr, w, h);
-        });
+
+      var pad = Math.max(3, Math.round(3 * dpr));
+      var rectsPx = filtered.map(function (c) {
+        return expandRect({ x: c.x, y: c.y, w: c.w, h: c.h }, pad, w, h);
+      });
       var merged = mergeNearbyRects(rectsPx, 20 * dpr);
-      var scaleX = cssWidth / w,
-        scaleY = cssHeight / h;
+
+      var scaleX = cssWidth / w, scaleY = cssHeight / h;
       return {
         rects: merged.map(function (r) {
           var cr = { x: r.x * scaleX, y: r.y * scaleY, w: r.w * scaleX, h: r.h * scaleY };
@@ -1687,9 +1661,89 @@
           textDiffBlocks: 0,
           textBgDiffBlocks: 0,
           isImageHeavy: isImageHeavyPage(leftView, rightView),
-          mode: "pixel"
+          mode: "pixel",
+          rawDiffRects: components.length,
+          finalDiffRects: merged.length
         }
       };
+    }
+
+    function pixelOnlyDiffMask(img1, img2, w, h, threshold) {
+      var mask = new Uint8Array(w * h);
+      for (var i = 0, n = w * h; i < n; i++) {
+        var p = i * 4;
+        var r1 = img1[p], g1 = img1[p+1], b1 = img1[p+2];
+        var r2 = img2[p], g2 = img2[p+1], b2 = img2[p+2];
+        if (r1 > 245 && g1 > 245 && b1 > 245 && r2 > 245 && g2 > 245 && b2 > 245) continue;
+        if (Math.abs(r1-r2) > threshold || Math.abs(g1-g2) > threshold || Math.abs(b1-b2) > threshold) {
+          mask[i] = 1;
+        }
+      }
+      return mask;
+    }
+
+    function pixelOnlyCCL(mask, w, h) {
+      var labels = new Int32Array(w * h);
+      var parent = [0];
+      var nextLabel = 1;
+
+      function find(x) {
+        while (parent[x] !== x) {
+          parent[x] = parent[parent[x]];
+          x = parent[x];
+        }
+        return x;
+      }
+      function union(a, b) {
+        a = find(a); b = find(b);
+        if (a !== b) parent[a] = b;
+      }
+
+      for (var y = 0; y < h; y++) {
+        for (var x = 0; x < w; x++) {
+          var idx = y * w + x;
+          if (!mask[idx]) continue;
+
+          var neighbors = [];
+          if (x > 0   && labels[idx - 1])       neighbors.push(labels[idx - 1]);
+          if (y > 0   && labels[idx - w])       neighbors.push(labels[idx - w]);
+          if (x > 0   && y > 0 && labels[idx - w - 1]) neighbors.push(labels[idx - w - 1]);
+          if (x < w-1 && y > 0 && labels[idx - w + 1]) neighbors.push(labels[idx - w + 1]);
+
+          if (neighbors.length === 0) {
+            labels[idx] = nextLabel;
+            parent.push(nextLabel);
+            nextLabel++;
+          } else {
+            var first = neighbors[0];
+            labels[idx] = first;
+            for (var k = 1; k < neighbors.length; k++) union(first, neighbors[k]);
+          }
+        }
+      }
+
+      var stats = {};
+      for (var y = 0; y < h; y++) {
+        for (var x = 0; x < w; x++) {
+          var idx = y * w + x;
+          if (!labels[idx]) continue;
+          var root = find(labels[idx]);
+          if (!stats[root]) {
+            stats[root] = { minX: x, minY: y, maxX: x, maxY: y, area: 0 };
+          } else {
+            var s = stats[root];
+            if (x < s.minX) s.minX = x;
+            if (y < s.minY) s.minY = y;
+            if (x > s.maxX) s.maxX = x;
+            if (y > s.maxY) s.maxY = y;
+          }
+          stats[root].area++;
+        }
+      }
+
+      return Object.values(stats).map(function(s) {
+        return { x: s.minX, y: s.minY, w: s.maxX - s.minX + 1, h: s.maxY - s.minY + 1, area: s.area };
+      });
     }
 
     async function detectDiffRects_TextOnly(leftView, rightView, generation) {
@@ -2134,20 +2188,22 @@
       var token = pageView.renderToken;
       pageView.status.textContent = "rendering";
       var page = await pdfDoc.getPage(pageView.pageNo);
-      var viewport = page.getViewport({ scale: renderScale });
+      var displayViewport = page.getViewport({ scale: renderScale });
+      var renderViewport  = page.getViewport({ scale: renderScale * renderOversample });
       if (generation !== renderGeneration || token !== pageView.renderToken) {
         return;
       }
       var canvas = document.createElement("canvas");
-      canvas.style.width = viewport.width + "px";
-      canvas.style.height = viewport.height + "px";
-      canvas.width = Math.floor(viewport.width * dpr);
-      canvas.height = Math.floor(viewport.height * dpr);
+      canvas.style.width  = displayViewport.width  + "px";
+      canvas.style.height = displayViewport.height + "px";
+      canvas.width  = Math.floor(renderViewport.width  * dpr);
+      canvas.height = Math.floor(renderViewport.height * dpr);
       var ctx = canvas.getContext("2d", { alpha: false });
+      ctx.imageSmoothingEnabled = false;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+      await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
       var tc = await page.getTextContent();
-      var textLines = extractTextLines(tc, viewport);
+      var textLines = extractTextLines(tc, displayViewport);
       var contentBounds = detectCanvasContentBounds(canvas, textLines);
       if (generation !== renderGeneration || token !== pageView.renderToken) {
         return;
@@ -2158,7 +2214,8 @@
         pageView.canvas.replaceWith(canvas);
       }
       pageView.canvas = canvas;
-      pageView.viewport = viewport;
+      pageView.viewport = displayViewport;
+      pageView.renderViewport = renderViewport;
       pageView.textLines = textLines;
       pageView.contentBounds = contentBounds;
       pageView.isRendered = true;
