@@ -387,6 +387,11 @@
       background: white;
     }
 
+    .canvas-placeholder {
+      display: block;
+      background: #fafafa;
+    }
+
     .overlay {
       position: absolute;
       inset: 0;
@@ -875,9 +880,9 @@
 
     var pdfDoc1 = null, pdfDoc2 = null;
     var renderScale = 1.15;
-    var renderOversample = 3.0;
+    var renderOversample = 2.0;
     var viewScale = 1.0;
-    var dpr = window.devicePixelRatio || 1;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
     var pageViews1 = [], pageViews2 = [];
     var alignmentRows = [];
     var leftRowIndexByPageNo = {}, rightRowIndexByPageNo = {};
@@ -889,6 +894,13 @@
 
     var globalTextLines1 = [];
     var globalTextLines2 = [];
+
+    var MAX_CONCURRENT_RENDERS = 4;
+    var activeRenders = 0;
+    var renderQueue = [];
+
+    var _virtualizationObserver = null;
+    var _releaseTimers = {};
 
     var file1El = document.getElementById("file1");
     var file2El = document.getElementById("file2");
@@ -997,6 +1009,15 @@
     async function renderAll() {
       renderGeneration++;
       var myGen = renderGeneration;
+
+      if (_virtualizationObserver) {
+        _virtualizationObserver.disconnect();
+        _virtualizationObserver = null;
+      }
+      Object.keys(_releaseTimers).forEach(function(k) { clearTimeout(_releaseTimers[k]); });
+      _releaseTimers = {};
+      activeRenders = 0;
+      renderQueue = [];
 
       pdf1El.innerHTML = "";
       pdf2El.innerHTML = "";
@@ -1108,10 +1129,12 @@
             ldUpdateSub(3, pl + " — 우측 p" + row.rightPageNo + " 삽입");
             await ensureRendered(pdfDoc2, right, myGen);
             markInsertedRow(i);
+            downscaleCanvasToDisplay(right);
           } else {
             ldUpdateSub(3, pl + " — 좌측 p" + row.leftPageNo + " 삭제");
             await ensureRendered(pdfDoc1, left, myGen);
             markDeletedRow(i);
+            downscaleCanvasToDisplay(left);
           }
           summaryTextEl.textContent = "정렬 행 " + (i + 1) + " / " + totalRows + " 처리 완료 / 현재 변경 "
             + diffEntries.length + "건";
@@ -1121,6 +1144,7 @@
         ldSetStepProgress(1);
         ldHide();
         updateZoomSummary();
+        setTimeout(setupCanvasVirtualization, 1000);
 
       } catch (err) {
         console.error("renderAll error:", err);
@@ -1205,10 +1229,14 @@
       var diffOps = postProcessDiffOps(computeWordsDiff(globalTextLines1, globalTextLines2));
       buildTextOnlyDiffEntries(diffOps);
 
+      pageViews1.forEach(downscaleCanvasToDisplay);
+      pageViews2.forEach(downscaleCanvasToDisplay);
+
       buildChangedThumbList();
       ldSetStepProgress(1);
       ldHide();
       updateZoomSummary();
+      setTimeout(setupCanvasVirtualization, 1000);
     }
 
     function buildTextOnlyDiffEntries(diffOps) {
@@ -1510,12 +1538,15 @@
       updatePageStatusBadge(left, result.rects.length, "change");
       updatePageStatusBadge(right, result.rects.length, "change");
       sortDiffEntries();
+      downscaleCanvasToDisplay(left);
+      downscaleCanvasToDisplay(right);
     }
 
     async function detectDiffRects_PixelOnly(leftView, rightView, generation) {
       var canvas1 = leftView.canvas, canvas2 = rightView.canvas;
       var cssWidth = leftView.width, cssHeight = leftView.height;
       var w = canvas1.width, h = canvas1.height;
+      var effectiveScale = renderOversample * dpr;
 
       var sampledCanvas2 = canvas2;
       if (canvas2.width !== w || canvas2.height !== h) {
@@ -1531,29 +1562,33 @@
       if (generation !== undefined && generation !== renderGeneration) return { rects: [], meta: {} };
       await yieldToBrowser();
 
-      var mask = pixelOnlyDiffMask(img1, img2, w, h, 40);
+      var mask = pixelOnlyDiffMask_LowContrastFilter(img1, img2, w, h);
 
       if (generation !== undefined && generation !== renderGeneration) return { rects: [], meta: {} };
       await yieldToBrowser();
 
       var components = pixelOnlyCCL(mask, w, h);
 
-      var minDensity = 0.25;
-      var minBboxArea = Math.max(200 * dpr * dpr, 200);
+      var minDensity = 0.15;
+      var minBboxArea = Math.max(60 * effectiveScale, 60);
+      var minLinePixels = Math.max(600 * effectiveScale, 600);
+      var minLineBbox   = Math.max(2500 * effectiveScale, 2500);
       var filtered = components.filter(function (c) {
         var bboxArea = c.w * c.h;
-        return bboxArea >= minBboxArea && (c.area / bboxArea) >= minDensity;
+        if (bboxArea < minBboxArea) return false;
+        if ((c.area / bboxArea) >= minDensity) return true;
+        return bboxArea >= minLineBbox && c.area >= minLinePixels;
       });
 
-      var pad = Math.max(8, Math.round(10 * dpr));
+      var pad = Math.max(6, Math.round(8 * effectiveScale / 3));
       var rectsPx = filtered.map(function (c) {
         return expandRect({ x: c.x, y: c.y, w: c.w, h: c.h }, pad, w, h);
       });
 
-      var merged = mergeNearbyRects(rectsPx, 60 * dpr);
-      merged = mergeNearbyRects(merged, 40 * dpr);
+      var merged = mergeNearbyRects(rectsPx, Math.round(50 * effectiveScale / 3));
+      merged = mergeNearbyRects(merged, Math.round(30 * effectiveScale / 3));
 
-      var minFinalArea = Math.max(2000 * dpr * dpr, 2000);
+      var minFinalArea = Math.max(500 * effectiveScale, 500);
       merged = merged.filter(function (r) { return r.w * r.h >= minFinalArea; });
 
       var scaleX = cssWidth / w, scaleY = cssHeight / h;
@@ -1584,6 +1619,37 @@
         if (Math.abs(r1-r2) > threshold || Math.abs(g1-g2) > threshold || Math.abs(b1-b2) > threshold) {
           mask[i] = 1;
         }
+      }
+      return mask;
+    }
+
+    function pixelOnlyDiffMask_LowContrastFilter(img1, img2, w, h) {
+      var LOW_DIFF  = 35;
+      var HIGH_DIFF = 80;
+
+      var LUM_LO = 40, LUM_HI = 215;
+
+      var mask = new Uint8Array(w * h);
+      for (var i = 0, n = w * h; i < n; i++) {
+        var p = i * 4;
+        var r1 = img1[p], g1 = img1[p+1], b1 = img1[p+2];
+        var r2 = img2[p], g2 = img2[p+1], b2 = img2[p+2];
+
+        if (r1 > 245 && g1 > 245 && b1 > 245 && r2 > 245 && g2 > 245 && b2 > 245) continue;
+
+        var dr = Math.abs(r1-r2), dg = Math.abs(g1-g2), db = Math.abs(b1-b2);
+        var maxDiff = dr > dg ? (dr > db ? dr : db) : (dg > db ? dg : db);
+
+        if (maxDiff <= LOW_DIFF) continue;
+
+        if (maxDiff > HIGH_DIFF) { mask[i] = 1; continue; }
+
+        var lum1 = (r1 * 77 + g1 * 150 + b1 * 29) >> 8;
+        var lum2 = (r2 * 77 + g2 * 150 + b2 * 29) >> 8;
+
+        if (lum1 >= LUM_LO && lum1 <= LUM_HI && lum2 >= LUM_LO && lum2 <= LUM_HI) continue;
+
+        mask[i] = 1;
       }
       return mask;
     }
@@ -2093,17 +2159,24 @@
       var ctx = canvas.getContext("2d", { alpha: false });
       ctx.imageSmoothingEnabled = false;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
+
+      await acquireRenderSlot();
+      try {
+        await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
+      } finally {
+        releaseRenderSlot();
+      }
       var tc = await page.getTextContent();
       var textLines = extractTextLines(tc, displayViewport);
       var contentBounds = detectCanvasContentBounds(canvas, textLines);
       if (generation !== renderGeneration || token !== pageView.renderToken) {
         return;
       }
-      if (!pageView.canvas) {
-        pageView.stage.insertBefore(canvas, pageView.overlay);
+      var existing = pageView.stage.querySelector('canvas, .canvas-placeholder');
+      if (existing) {
+        existing.replaceWith(canvas);
       } else {
-        pageView.canvas.replaceWith(canvas);
+        pageView.stage.insertBefore(canvas, pageView.overlay);
       }
       pageView.canvas = canvas;
       pageView.viewport = displayViewport;
@@ -2176,6 +2249,106 @@
 
     function isImageHeavyPage(lv, rv) {
       return (lv.textLines.length + rv.textLines.length) < 10;
+    }
+
+    function acquireRenderSlot() {
+      return new Promise(function (resolve) {
+        if (activeRenders < MAX_CONCURRENT_RENDERS) {
+          activeRenders++;
+          resolve();
+        } else {
+          renderQueue.push(resolve);
+        }
+      });
+    }
+
+    function releaseRenderSlot() {
+      activeRenders = Math.max(0, activeRenders - 1);
+      if (renderQueue.length > 0) {
+        activeRenders++;
+        var next = renderQueue.shift();
+        next();
+      }
+    }
+
+    function setupCanvasVirtualization() {
+      if (!('IntersectionObserver' in window)) return;
+      if (_virtualizationObserver) _virtualizationObserver.disconnect();
+
+      _virtualizationObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var wrap = entry.target;
+          var rowIndex = parseInt(wrap.dataset.rowIndex);
+          if (isNaN(rowIndex)) return;
+
+          if (!entry.isIntersecting) {
+            if (!_releaseTimers[rowIndex]) {
+              _releaseTimers[rowIndex] = setTimeout(function () {
+                releaseCanvasForRow(rowIndex);
+                delete _releaseTimers[rowIndex];
+              }, 10000);
+            }
+          } else {
+            if (_releaseTimers[rowIndex]) {
+              clearTimeout(_releaseTimers[rowIndex]);
+              delete _releaseTimers[rowIndex];
+            }
+
+            var lv = pageViews1[rowIndex];
+            var rv = pageViews2[rowIndex];
+            if (lv && !lv.isRendered && !lv.isMissing && pdfDoc1) {
+              ensureRendered(pdfDoc1, lv, renderGeneration).then(function() {
+                if (lv.status) lv.status.textContent = lv.isCompared ? 'ready' : 'ready';
+              });
+            }
+            if (rv && !rv.isRendered && !rv.isMissing && pdfDoc2) {
+              ensureRendered(pdfDoc2, rv, renderGeneration).then(function() {
+                if (rv.status) rv.status.textContent = rv.isCompared ? 'ready' : 'ready';
+              });
+            }
+          }
+        });
+      }, {
+        rootMargin: '2500px 0px 2500px 0px',
+        threshold: 0
+      });
+
+      document.querySelectorAll('.page-wrap').forEach(function (wrap) {
+        _virtualizationObserver.observe(wrap);
+      });
+    }
+
+    function releaseCanvasForRow(rowIndex) {
+      if (currentDiffIndex >= 0 && currentDiffIndex < diffEntries.length) {
+        var cur = diffEntries[currentDiffIndex];
+        if (Math.abs(cur.rowIndex - rowIndex) <= 2) return;
+      }
+      [pageViews1[rowIndex], pageViews2[rowIndex]].forEach(function (pv) {
+        if (!pv || pv.isMissing || !pv.canvas) return;
+        var placeholder = document.createElement('div');
+        placeholder.className = 'canvas-placeholder';
+        placeholder.style.width  = pv.canvas.style.width;
+        placeholder.style.height = pv.canvas.style.height;
+        pv.canvas.replaceWith(placeholder);
+        pv.canvas = null;
+        pv.isRendered = false;
+        if (pv.status) pv.status.textContent = 'unloaded';
+      });
+    }
+
+    function downscaleCanvasToDisplay(pv) {
+      if (!pv || !pv.canvas || !pv.viewport) return;
+      var targetW = Math.floor(pv.viewport.width  * dpr);
+      var targetH = Math.floor(pv.viewport.height * dpr);
+      if (pv.canvas.width <= targetW && pv.canvas.height <= targetH) return;
+      var small = document.createElement("canvas");
+      small.width  = targetW;
+      small.height = targetH;
+      small.style.width  = pv.viewport.width  + "px";
+      small.style.height = pv.viewport.height + "px";
+      small.getContext("2d", { alpha: false }).drawImage(pv.canvas, 0, 0, targetW, targetH);
+      pv.canvas.replaceWith(small);
+      pv.canvas = small;
     }
 
     function yieldToBrowser() {
