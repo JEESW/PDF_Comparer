@@ -1531,25 +1531,30 @@
       if (generation !== undefined && generation !== renderGeneration) return { rects: [], meta: {} };
       await yieldToBrowser();
 
-      var mask = pixelOnlyDiffMask(img1, img2, w, h, 25);
+      var mask = pixelOnlyDiffMask(img1, img2, w, h, 40);
 
       if (generation !== undefined && generation !== renderGeneration) return { rects: [], meta: {} };
       await yieldToBrowser();
 
       var components = pixelOnlyCCL(mask, w, h);
 
-      var minDensity  = 0.15;
-      var minBboxArea = Math.max(60 * dpr * dpr, 60);
+      var minDensity = 0.25;
+      var minBboxArea = Math.max(200 * dpr * dpr, 200);
       var filtered = components.filter(function (c) {
         var bboxArea = c.w * c.h;
         return bboxArea >= minBboxArea && (c.area / bboxArea) >= minDensity;
       });
 
-      var pad = Math.max(3, Math.round(3 * dpr));
+      var pad = Math.max(8, Math.round(10 * dpr));
       var rectsPx = filtered.map(function (c) {
         return expandRect({ x: c.x, y: c.y, w: c.w, h: c.h }, pad, w, h);
       });
-      var merged = mergeNearbyRects(rectsPx, 20 * dpr);
+
+      var merged = mergeNearbyRects(rectsPx, 60 * dpr);
+      merged = mergeNearbyRects(merged, 40 * dpr);
+
+      var minFinalArea = Math.max(2000 * dpr * dpr, 2000);
+      merged = merged.filter(function (r) { return r.w * r.h >= minFinalArea; });
 
       var scaleX = cssWidth / w, scaleY = cssHeight / h;
       return {
