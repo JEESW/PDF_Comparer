@@ -762,7 +762,6 @@
     <input type="file" id="file1" accept="application/pdf" />
     <input type="file" id="file2" accept="application/pdf" />
     <select id="compareMode" title="비교 모드">
-      <option value="default">Default</option>
       <option value="pixel">Pixel Only</option>
       <option value="text">Text Only</option>
     </select>
@@ -876,7 +875,7 @@
 
     var pdfDoc1 = null, pdfDoc2 = null;
     var renderScale = 1.15;
-    var renderOversample = 4.0;
+    var renderOversample = 3.0;
     var viewScale = 1.0;
     var dpr = window.devicePixelRatio || 1;
     var pageViews1 = [], pageViews2 = [];
@@ -898,7 +897,7 @@
     var thumbListEl = document.getElementById("thumbList");
     var summaryTextEl = document.getElementById("summaryText");
     var compareModeEl = document.getElementById("compareMode");
-    var compareMode = "default";
+    var compareMode = "pixel";
 
     file1El.addEventListener("change", loadPDF1);
     file2El.addEventListener("change", loadPDF2);
@@ -1486,12 +1485,10 @@
       removeDiffEntriesForRow(rowIndex);
 
       var result;
-      if (compareMode === "pixel") {
-        result = await detectDiffRects_PixelOnly(left, right, generation);
-      } else if (compareMode === "text") {
+      if (compareMode === "text") {
         result = await detectDiffRects_TextOnly(left, right, generation);
       } else {
-        result = await detectDiffRects_Default(left, right, generation);
+        result = await detectDiffRects_PixelOnly(left, right, generation);
       }
 
       if (generation !== renderGeneration) {
@@ -1513,102 +1510,6 @@
       updatePageStatusBadge(left, result.rects.length, "change");
       updatePageStatusBadge(right, result.rects.length, "change");
       sortDiffEntries();
-    }
-
-    async function detectDiffRects_Default(leftView, rightView, generation) {
-      var canvas1 = leftView.canvas, canvas2 = rightView.canvas;
-      var cssWidth = leftView.width, cssHeight = leftView.height;
-      var w = canvas1.width, h = canvas1.height;
-      var sampledCanvas2 = canvas2;
-      if (canvas2.width !== w || canvas2.height !== h) {
-        sampledCanvas2 = document.createElement("canvas");
-        sampledCanvas2.width = w;
-        sampledCanvas2.height = h;
-        sampledCanvas2.getContext("2d").drawImage(canvas2, 0, 0, w, h);
-      }
-      var img1 = canvas1.getContext("2d").getImageData(0, 0, w, h).data;
-      var img2 = sampledCanvas2.getContext("2d").getImageData(0, 0, w, h).data;
-      var matchResult = matchTextLines(leftView, rightView);
-      var ignoreMask = buildIgnoreMask(matchResult, leftView, rightView, img1, img2, w, h);
-      var gridSize = Math.max(4, Math.round(6 * dpr));
-      var cols = Math.ceil(w / gridSize),
-        rows = Math.ceil(h / gridSize);
-      var cells = Array.from({ length: rows }, function () {
-        return Array(cols).fill(0);
-      });
-      var rgbThresh = 20,
-        CHUNK = 24;
-      for (var gy = 0; gy < rows; gy++) {
-        if (gy % CHUNK === 0) {
-          if (generation !== undefined && generation !== renderGeneration) {
-            return {
-              rects: [],
-              meta: {}
-            };
-          }
-          await yieldToBrowser();
-        }
-        for (var gx = 0; gx < cols; gx++) {
-          var diffCount = 0,
-            samples = 0;
-          var sx = gx * gridSize,
-            sy = gy * gridSize;
-          var ex = Math.min(sx + gridSize, w),
-            ey = Math.min(sy + gridSize, h);
-          for (var py = sy; py < ey; py++) {
-            for (var px = sx; px < ex; px++) {
-              var idx = py * w + px;
-              if (ignoreMask[idx]) {
-                continue;
-              }
-              var p = idx * 4;
-              var dr = img1[p] - img2[p],
-                dg = img1[p + 1] - img2[p + 1],
-                db = img1[p + 2] - img2[p + 2];
-              if (dr * dr + dg * dg + db * db > rgbThresh * rgbThresh) {
-                diffCount++;
-              }
-              samples++;
-            }
-          }
-          if (samples && diffCount / samples > 0.04) {
-            cells[gy][gx] = 1;
-          }
-        }
-      }
-      var textRectsPx = buildTextDiffRectsPxCached(matchResult, leftView, rightView);
-      var textBgRectsPx = buildTextBgDiffRectsCached(matchResult, leftView, rightView, img1, img2, w,
-        h);
-      for (var i = 0; i < textRectsPx.length; i++) {
-        stampRectToCells(textRectsPx[i], cells, gridSize, cols, rows);
-      }
-      for (var j = 0; j < textBgRectsPx.length; j++) {
-        stampRectToCells(textBgRectsPx[j], cells, gridSize, cols, rows);
-      }
-      var minSize = gridSize * 2;
-      var rectsPx = connectedComponentsToRects(cells, gridSize, w, h)
-        .filter(function (r) {
-          return r.w > minSize && r.h > minSize;
-        })
-        .map(function (r) {
-          return expandRect(r, 4 * dpr, w, h);
-        });
-      var merged = mergeNearbyRects(rectsPx, 20 * dpr);
-      var scaleX = cssWidth / w,
-        scaleY = cssHeight / h;
-      return {
-        rects: merged.map(function (r) {
-          var cr = { x: r.x * scaleX, y: r.y * scaleY, w: r.w * scaleX, h: r.h * scaleY };
-          return { left: cr, right: cr };
-        }),
-        meta: {
-          ignoredTextBlocks: matchResult.matched.length,
-          textDiffBlocks: textRectsPx.length,
-          textBgDiffBlocks: textBgRectsPx.length,
-          isImageHeavy: isImageHeavyPage(leftView, rightView),
-          mode: "default"
-        }
-      };
     }
 
     async function detectDiffRects_PixelOnly(leftView, rightView, generation) {
@@ -1801,20 +1702,6 @@
           mode: "text"
         }
       };
-    }
-
-    function collectAllTextLines(pageViews) {
-      var result = [];
-      for (var i = 0; i < pageViews.length; i++) {
-        var pv = pageViews[i];
-        if (!pv || pv.isMissing || !pv.textLines) {
-          continue;
-        }
-        pv.textLines.forEach(function (ln) {
-          result.push({ pageNo: pv.pageNo, line: ln });
-        });
-      }
-      return result;
     }
 
     function collectAllRowItems(pageViews) {
@@ -2286,11 +2173,6 @@
       return (lv.textLines.length + rv.textLines.length) < 10;
     }
 
-    function getSaturation(r, g, b) {
-      var mx = Math.max(r, g, b), mn = Math.min(r, g, b);
-      return mx === 0 ? 0 : (mx - mn) / mx;
-    }
-
     function yieldToBrowser() {
       return new Promise(function (res) {
         setTimeout(res, 0);
@@ -2305,132 +2187,6 @@
         w: Math.min(maxW, rect.x + rect.w + pad) - x,
         h: Math.min(maxH, rect.y + rect.h + pad) - y
       };
-    }
-
-    function buildIgnoreMask(matchResult, lv, rv, img1, img2, w, h) {
-      var mask = new Uint8Array(w * h),
-        matched = matchResult.matched;
-      for (var i = 0; i < matched.length; i++) {
-        var pair = matched[i];
-        var lPx = rectCssToCanvasPx(pair.left, lv),
-          rPx = rectCssToCanvasPx(pair.right, rv);
-        var union = unionRect(expandRect(lPx, 2 * dpr, w, h), expandRect(rPx, 2 * dpr, w, h));
-        var x0 = Math.max(0, Math.floor(union.x)),
-          y0 = Math.max(0, Math.floor(union.y));
-        var x1 = Math.min(w, Math.ceil(union.x + union.w)),
-          y1 = Math.min(h, Math.ceil(union.y + union.h));
-        for (var y = y0; y < y1; y++) {
-          for (var x = x0; x < x1; x++) {
-            var idx = y * w + x, p = idx * 4;
-            var l1 = 0.299 * img1[p] + 0.587 * img1[p + 1] + 0.114 * img1[p + 2];
-            var l2 = 0.299 * img2[p] + 0.587 * img2[p + 1] + 0.114 * img2[p + 2];
-            var s1 = getSaturation(img1[p], img1[p + 1], img1[p + 2]);
-            var s2 = getSaturation(img2[p], img2[p + 1], img2[p + 2]);
-            if ((img1[p + 3] > 10 && l1 < 180 && s1 < 0.25)
-              && (img2[p + 3] > 10 && l2 < 180 && s2 < 0.25)) {
-              mask[idx] = 1;
-            }
-          }
-        }
-      }
-      return mask;
-    }
-
-    function buildTextDiffRectsPxCached(matchResult, lv, rv) {
-      var rects = [],
-        maxW = lv.canvas.width,
-        maxH = lv.canvas.height;
-      for (var i = 0; i < matchResult.matched.length; i++) {
-        var pair = matchResult.matched[i];
-        if (pair.similarity < 0.985) {
-          var lr = rectCssToCanvasPx(pair.left, lv), rr = rectCssToCanvasPx(pair.right, rv);
-          rects.push(expandRect(unionRect(lr, rr), 8 * dpr, maxW, maxH));
-        }
-      }
-      for (var j = 0; j < matchResult.unmatchedLeft.length; j++) {
-        rects.push(
-          expandRect(rectCssToCanvasPx(matchResult.unmatchedLeft[j], lv), 8 * dpr, maxW, maxH));
-      }
-      for (var k = 0; k < matchResult.unmatchedRight.length; k++) {
-        rects.push(
-          expandRect(rectCssToCanvasPx(matchResult.unmatchedRight[k], rv), 8 * dpr, maxW, maxH));
-      }
-      return mergeNearbyRects(rects, 12 * dpr).filter(function (r) {
-        return r.w > 4 * dpr && r.h > 3 * dpr;
-      });
-    }
-
-    function buildTextBgDiffRectsCached(matchResult, lv, rv, img1, img2, w, h) {
-      var matched = matchResult.matched,
-        rects = [],
-        localGrid = Math.max(3, Math.round(4 * dpr));
-      for (var i = 0; i < matched.length; i++) {
-        var pair = matched[i];
-        var lPx = rectCssToCanvasPx(pair.left, lv),
-          rPx = rectCssToCanvasPx(pair.right, rv);
-        var rect = expandRect(
-          unionRect(expandRect(lPx, 10 * dpr, w, h), expandRect(rPx, 10 * dpr, w, h)),
-          4 * dpr, w, h
-        );
-        var x0 = Math.max(0, Math.floor(rect.x)),
-          y0 = Math.max(0, Math.floor(rect.y));
-        var x1 = Math.min(w, Math.ceil(rect.x + rect.w)),
-          y1 = Math.min(h, Math.ceil(rect.y + rect.h));
-        var lcols = Math.ceil((x1 - x0) / localGrid),
-          lrows = Math.ceil((y1 - y0) / localGrid);
-        var cells = Array.from({ length: lrows }, function () {
-          return Array(lcols).fill(0);
-        });
-        for (var gy = 0; gy < lrows; gy++) {
-          for (var gx = 0; gx < lcols; gx++) {
-            var sx = x0 + gx * localGrid,
-              sy = y0 + gy * localGrid;
-            var ex = Math.min(sx + localGrid, x1),
-              ey = Math.min(sy + localGrid, y1);
-            var changed = 0,
-              samples = 0;
-            for (var py = sy; py < ey; py++) {
-              for (var px = sx; px < ex; px++) {
-                var idx = py * w + px,
-                  p = idx * 4;
-                var l1 = 0.299 * img1[p] + 0.587 * img1[p + 1] + 0.114 * img1[p + 2];
-                var l2 = 0.299 * img2[p] + 0.587 * img2[p + 1] + 0.114 * img2[p + 2];
-                var s1 = getSaturation(img1[p], img1[p + 1], img1[p + 2]);
-                var s2 = getSaturation(img2[p], img2[p + 1], img2[p + 2]);
-                if ((img1[p + 3] > 10 && l1 < 160 && s1 < 0.25)
-                  || (img2[p + 3] > 10 && l2 < 160 && s2 < 0.25)) {
-                  continue;
-                }
-                var dr = img1[p] - img2[p],
-                  dg = img1[p + 1] - img2[p + 1],
-                  db = img1[p + 2] - img2[p + 2];
-                if (dr * dr + dg * dg + db * db > 225) {
-                  changed++;
-                }
-                samples++;
-              }
-            }
-            if (samples && changed / samples > 0.15) {
-              cells[gy][gx] = 1;
-            }
-          }
-        }
-        smoothBinaryGrid(cells);
-        var localRects = connectedComponentsToRects(cells, localGrid, x1 - x0, y1 - y0)
-          .map(function (r) {
-            return { x: x0 + r.x, y: y0 + r.y, w: r.w, h: r.h };
-          })
-          .filter(function (r) {
-            return r.w > 5 * dpr && r.h > 3 * dpr;
-          })
-          .map(function (r) {
-            return expandRect(r, 2 * dpr, w, h);
-          });
-        rects.push.apply(rects, localRects);
-      }
-      return mergeNearbyRects(rects, 8 * dpr).filter(function (r) {
-        return r.w > 8 * dpr && r.h > 6 * dpr;
-      });
     }
 
     function normalizeTextForCompare(str) {
@@ -2483,20 +2239,6 @@
       };
     }
 
-    function rectCssToCanvasPx(rect, view) {
-      if (!rect || !view) {
-        return { x: 0, y: 0, w: 1, h: 1 };
-      }
-      var cw = view.canvas ? view.canvas.width : view.width;
-      var ch = view.canvas ? view.canvas.height : view.height;
-      return {
-        x: rect.x * cw / view.width,
-        y: rect.y * ch / view.height,
-        w: rect.w * cw / view.width,
-        h: rect.h * ch / view.height
-      };
-    }
-
     function unionRect(a, b) {
       var x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
       return {
@@ -2539,87 +2281,6 @@
         merged = result;
       }
       return merged;
-    }
-
-    function smoothBinaryGrid(cells) {
-      var rows = cells.length, cols = cells[0] ? cells[0].length : 0;
-      var copy = cells.map(function (r) {
-        return r.slice();
-      });
-      for (var y = 0; y < rows; y++) {
-        for (var x = 0; x < cols; x++) {
-          var n = 0;
-          for (var dy = -1; dy <= 1; dy++) {
-            for (var dx = -1; dx <= 1; dx++) {
-              if (dx === 0 && dy === 0) {
-                continue;
-              }
-              var ny = y + dy, nx = x + dx;
-              if (ny >= 0 && ny < rows && nx >= 0 && nx < cols) {
-                n += copy[ny][nx];
-              }
-            }
-          }
-          if (copy[y][x] === 0 && n >= 7) {
-            cells[y][x] = 1;
-          }
-          if (copy[y][x] === 1 && n <= 1) {
-            cells[y][x] = 0;
-          }
-        }
-      }
-    }
-
-    function connectedComponentsToRects(cells, gridSize, maxW, maxH) {
-      var rows = cells.length, cols = cells[0] ? cells[0].length : 0;
-      var visited = Array.from({ length: rows }, function () {
-        return Array(cols).fill(false);
-      });
-      var rects = [],
-        dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
-      for (var y = 0; y < rows; y++) {
-        for (var x = 0; x < cols; x++) {
-          if (cells[y][x] !== 1 || visited[y][x]) {
-            continue;
-          }
-          var minX = x, maxX = x, minY = y, maxY = y, stack = [[x, y]];
-          visited[y][x] = true;
-          while (stack.length) {
-            var cur = stack.pop(), cx = cur[0], cy = cur[1];
-            minX = Math.min(minX, cx);
-            maxX = Math.max(maxX, cx);
-            minY = Math.min(minY, cy);
-            maxY = Math.max(maxY, cy);
-            for (var ii = 0; ii < dirs.length; ii++) {
-              var nx2 = cx + dirs[ii][0], ny2 = cy + dirs[ii][1];
-              if (nx2 >= 0 && nx2 < cols && ny2 >= 0 && ny2 < rows
-                && !visited[ny2][nx2] && cells[ny2][nx2] === 1) {
-                visited[ny2][nx2] = true;
-                stack.push([nx2, ny2]);
-              }
-            }
-          }
-          rects.push({
-            x: minX * gridSize,
-            y: minY * gridSize,
-            w: Math.min((maxX - minX + 1) * gridSize, maxW),
-            h: Math.min((maxY - minY + 1) * gridSize, maxH)
-          });
-        }
-      }
-      return rects;
-    }
-
-    function stampRectToCells(rect, cells, gridSize, cols, rows) {
-      var sc = Math.max(0, Math.floor(rect.x / gridSize));
-      var ec = Math.min(cols - 1, Math.floor((rect.x + rect.w) / gridSize));
-      var sr = Math.max(0, Math.floor(rect.y / gridSize));
-      var er = Math.min(rows - 1, Math.floor((rect.y + rect.h) / gridSize));
-      for (var gy = sr; gy <= er; gy++) {
-        for (var gx = sc; gx <= ec; gx++) {
-          cells[gy][gx] = 1;
-        }
-      }
     }
 
     function levenshtein(a, b) {
@@ -2729,56 +2390,6 @@
       });
     }
 
-    function matchTextLines(leftView, rightView) {
-      var leftLines = leftView.textLines, rightLines = rightView.textLines;
-      var usedRight = new Set(),
-        matched = [],
-        unmatchedLeft = [],
-        unmatchedRight = [];
-      var pageH = Math.max(leftView.height, rightView.height, 1);
-      var yTol = pageH * 0.015,
-        xTol = Math.max(leftView.width, rightView.width, 1) * 0.5;
-      for (var i = 0; i < leftLines.length; i++) {
-        var a = leftLines[i], bestIdx = -1, bestScore = Infinity;
-        for (var j = 0; j < rightLines.length; j++) {
-          if (usedRight.has(j)) {
-            continue;
-          }
-          var b = rightLines[j],
-            sim = textSimilarity(a.text, b.text);
-          var yGap = Math.abs((a.y + a.h / 2) - (b.y + b.h / 2)),
-            xGap = Math.abs(a.x - b.x);
-          if (sim < 0.96 && !(sim >= 0.85 && yGap <= yTol * 2)) {
-            continue;
-          }
-          if (xGap > xTol) {
-            continue;
-          }
-          var score = (1 - sim) * 100 + (yGap / pageH) * 80 + (xGap / xTol) * 4;
-          if (score < bestScore) {
-            bestScore = score;
-            bestIdx = j;
-          }
-        }
-        if (bestIdx >= 0) {
-          usedRight.add(bestIdx);
-          matched.push({
-            left: leftLines[i],
-            right: rightLines[bestIdx],
-            similarity: textSimilarity(leftLines[i].text, rightLines[bestIdx].text)
-          });
-        } else {
-          unmatchedLeft.push(leftLines[i]);
-        }
-      }
-      for (var k = 0; k < rightLines.length; k++) {
-        if (!usedRight.has(k)) {
-          unmatchedRight.push(rightLines[k]);
-        }
-      }
-      return { matched: matched, unmatchedLeft: unmatchedLeft, unmatchedRight: unmatchedRight };
-    }
-
     function expandRect(rect, padding, maxW, maxH) {
       var x = Math.max(0, rect.x - padding), y = Math.max(0, rect.y - padding);
       return {
@@ -2880,9 +2491,6 @@
           }
           var metaDiv = document.createElement("div");
           metaDiv.className = "thumb-meta";
-          var modeLabel = leftMeta.mode === "text" ? "[텍스트 전용] "
-            : leftMeta.mode === "pixel" ? "[픽셀 전용] "
-              : "";
           if (kind === "insert") {
             metaDiv.textContent = "새 버전에만 존재하는 페이지입니다.\n우측 페이지 번호: "
               + row.rightPageNo;
@@ -2890,7 +2498,7 @@
             metaDiv.textContent = "구 버전에만 존재하는 페이지입니다.\n좌측 페이지 번호: "
               + row.leftPageNo;
           } else {
-            metaDiv.textContent = modeLabel + "변경 " + rowDiffs.length + "건\n동일 텍스트 무시 "
+            metaDiv.textContent = "변경 " + rowDiffs.length + "건\n동일 텍스트 무시 "
               + (leftMeta.ignoredTextBlocks || 0) + "줄 / 텍스트 변경 " + (leftMeta.textDiffBlocks || 0)
               + "건 / 배경색 변경 " + (leftMeta.textBgDiffBlocks || 0) + "건";
           }
