@@ -392,6 +392,17 @@
       background: #fafafa;
     }
 
+    /* TEXT-ONLY: 렌더링 전 플레이스홀더 */
+    .text-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--gray-50);
+      color: var(--gray-400);
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+
     .overlay {
       position: absolute;
       inset: 0;
@@ -895,6 +906,9 @@
     var globalTextLines1 = [];
     var globalTextLines2 = [];
 
+    var pageTextMeta1 = {};
+    var pageTextMeta2 = {};
+
     var MAX_CONCURRENT_RENDERS = 4;
     var activeRenders = 0;
     var renderQueue = [];
@@ -1032,120 +1046,17 @@
       currentDiffIndex = -1;
       globalTextLines1 = [];
       globalTextLines2 = [];
+      pageTextMeta1 = {};
+      pageTextMeta2 = {};
 
       ldShow();
 
       try {
         if (compareMode === "text") {
           await renderAll_TextOnly(myGen);
-          return;
+        } else {
+          await renderAll_Pixel(myGen);
         }
-
-        ldActivateStep(0, "0 / " + pdfDoc1.numPages + " 페이지");
-        var leftSignatures = await buildAllPageSignatures(pdfDoc1, myGen, "좌측");
-        if (myGen !== renderGeneration) {
-          ldHide();
-          return;
-        }
-
-        ldActivateStep(1, "0 / " + pdfDoc2.numPages + " 페이지");
-        var rightSignatures = await buildAllPageSignatures(pdfDoc2, myGen, "우측");
-        if (myGen !== renderGeneration) {
-          ldHide();
-          return;
-        }
-
-        ldActivateStep(2, "정렬 계산 중...");
-
-        ldSetLog(
-          "페이지 순서 정렬 계산 중... (" + leftSignatures.length + " × " + rightSignatures.length + ")");
-        summaryTextEl.textContent = "페이지 정렬 계산 중...";
-        alignmentRows = await alignPageSequences(leftSignatures, rightSignatures);
-
-        if (myGen !== renderGeneration) {
-          ldHide();
-          return;
-        }
-
-        var _ins = alignmentRows.filter(function (r) {
-          return r.type === "insert";
-        }).length;
-        var _del = alignmentRows.filter(function (r) {
-          return r.type === "delete";
-        }).length;
-        var _mat = alignmentRows.filter(function (r) {
-          return r.type === "match";
-        }).length;
-        ldUpdateSub(2, "매칭 " + _mat + " / 삽입 " + _ins + " / 삭제 " + _del);
-        ldSetStepProgress(1);
-
-        summaryTextEl.textContent = "페이지 껍데기 생성 중...";
-        ldSetLog("페이지 레이아웃 구성 중...");
-        for (var ri = 0; ri < alignmentRows.length; ri++) {
-          var row = alignmentRows[ri];
-          var lv = null, rv = null;
-          if (row.leftPageNo != null) {
-            var lm = await getPageMeta(pdfDoc1, row.leftPageNo);
-            lv = createPageShell(pdf1El, row.leftPageNo, "좌측", lm.width, lm.height, ri);
-            leftRowIndexByPageNo[row.leftPageNo] = ri;
-          } else {
-            var rm2 = await getPageMeta(pdfDoc2, row.rightPageNo);
-            lv = createMissingPageShell(pdf1El, "좌측 PDF - 없음", rm2.width, rm2.height, "insert", ri);
-          }
-          if (row.rightPageNo != null) {
-            var rm = await getPageMeta(pdfDoc2, row.rightPageNo);
-            rv = createPageShell(pdf2El, row.rightPageNo, "우측", rm.width, rm.height, ri);
-            rightRowIndexByPageNo[row.rightPageNo] = ri;
-          } else {
-            var lm2 = await getPageMeta(pdfDoc1, row.leftPageNo);
-            rv = createMissingPageShell(pdf2El, "우측 PDF - 없음", lm2.width, lm2.height, "delete", ri);
-          }
-          pageViews1.push(lv);
-          pageViews2.push(rv);
-        }
-        applyViewScale();
-
-        ldActivateStep(3, "0 / " + alignmentRows.length + " 행 처리 중");
-        summaryTextEl.textContent = "렌더링/비교 중...";
-
-        var totalRows = alignmentRows.length;
-
-        for (var i = 0; i < totalRows; i++) {
-          if (myGen !== renderGeneration) {
-            ldHide();
-            return;
-          }
-          var row = alignmentRows[i];
-          var left = pageViews1[i], right = pageViews2[i];
-          ldSetStepProgress(i / totalRows);
-          var pl = (i + 1) + " / " + totalRows;
-          if (row.type === "match") {
-            ldUpdateSub(3, pl + " — 좌 " + row.leftPageNo + " ↔ 우 " + row.rightPageNo);
-            ldSetLog("p" + row.leftPageNo + " ↔ p" + row.rightPageNo + " diff 검출 중...");
-            await Promise.all(
-              [ensureRendered(pdfDoc1, left, myGen), ensureRendered(pdfDoc2, right, myGen)]);
-            await maybeCompareAlignedRow(i, myGen);
-          } else if (row.type === "insert") {
-            ldUpdateSub(3, pl + " — 우측 p" + row.rightPageNo + " 삽입");
-            await ensureRendered(pdfDoc2, right, myGen);
-            markInsertedRow(i);
-            downscaleCanvasToDisplay(right);
-          } else {
-            ldUpdateSub(3, pl + " — 좌측 p" + row.leftPageNo + " 삭제");
-            await ensureRendered(pdfDoc1, left, myGen);
-            markDeletedRow(i);
-            downscaleCanvasToDisplay(left);
-          }
-          summaryTextEl.textContent = "정렬 행 " + (i + 1) + " / " + totalRows + " 처리 완료 / 현재 변경 "
-            + diffEntries.length + "건";
-        }
-
-        buildChangedThumbList();
-        ldSetStepProgress(1);
-        ldHide();
-        updateZoomSummary();
-        setTimeout(setupCanvasVirtualization, 1000);
-
       } catch (err) {
         console.error("renderAll error:", err);
         ldSetLog("❌ 오류: " + (err && err.message ? err.message : String(err)));
@@ -1153,90 +1064,359 @@
       }
     }
 
-    async function renderAll_TextOnly(myGen) {
-      var n = pdfDoc1.numPages;
-      var m = pdfDoc2.numPages;
+    async function renderAll_Pixel(myGen) {
+      ldActivateStep(0, "0 / " + pdfDoc1.numPages + " 페이지");
+      var leftSignatures = await buildAllPageSignatures(pdfDoc1, myGen, "좌측");
+      if (myGen !== renderGeneration) { ldHide(); return; }
 
-      // Step 0: 좌측 페이지 셸 생성 + 렌더
+      ldActivateStep(1, "0 / " + pdfDoc2.numPages + " 페이지");
+      var rightSignatures = await buildAllPageSignatures(pdfDoc2, myGen, "우측");
+      if (myGen !== renderGeneration) { ldHide(); return; }
+
+      ldActivateStep(2, "정렬 계산 중...");
+      ldSetLog("페이지 순서 정렬 계산 중... (" + leftSignatures.length + " × " + rightSignatures.length + ")");
+      summaryTextEl.textContent = "페이지 정렬 계산 중...";
+      alignmentRows = await alignPageSequences(leftSignatures, rightSignatures);
+      if (myGen !== renderGeneration) { ldHide(); return; }
+
+      var _ins = alignmentRows.filter(function (r) { return r.type === "insert"; }).length;
+      var _del = alignmentRows.filter(function (r) { return r.type === "delete"; }).length;
+      var _mat = alignmentRows.filter(function (r) { return r.type === "match";  }).length;
+      ldUpdateSub(2, "매칭 " + _mat + " / 삽입 " + _ins + " / 삭제 " + _del);
+      ldSetStepProgress(1);
+
+      summaryTextEl.textContent = "페이지 껍데기 생성 중...";
+      ldSetLog("페이지 레이아웃 구성 중...");
+      for (var ri = 0; ri < alignmentRows.length; ri++) {
+        var row = alignmentRows[ri], lv, rv;
+        if (row.leftPageNo != null) {
+          var lm = await getPageMeta(pdfDoc1, row.leftPageNo);
+          lv = createPageShell(pdf1El, row.leftPageNo, "좌측", lm.width, lm.height, ri);
+          leftRowIndexByPageNo[row.leftPageNo] = ri;
+        } else {
+          var rm2 = await getPageMeta(pdfDoc2, row.rightPageNo);
+          lv = createMissingPageShell(pdf1El, "좌측 PDF - 없음", rm2.width, rm2.height, "insert", ri);
+        }
+        if (row.rightPageNo != null) {
+          var rm = await getPageMeta(pdfDoc2, row.rightPageNo);
+          rv = createPageShell(pdf2El, row.rightPageNo, "우측", rm.width, rm.height, ri);
+          rightRowIndexByPageNo[row.rightPageNo] = ri;
+        } else {
+          var lm2 = await getPageMeta(pdfDoc1, row.leftPageNo);
+          rv = createMissingPageShell(pdf2El, "우측 PDF - 없음", lm2.width, lm2.height, "delete", ri);
+        }
+        pageViews1.push(lv); pageViews2.push(rv);
+      }
+      applyViewScale();
+
+      ldActivateStep(3, "0 / " + alignmentRows.length + " 행 처리 중");
+      summaryTextEl.textContent = "렌더링/비교 중...";
+      var totalRows = alignmentRows.length;
+
+      for (var i = 0; i < totalRows; i++) {
+        if (myGen !== renderGeneration) { ldHide(); return; }
+        var row = alignmentRows[i], left = pageViews1[i], right = pageViews2[i];
+        ldSetStepProgress(i / totalRows);
+        var pl = (i+1) + " / " + totalRows;
+        if (row.type === "match") {
+          ldUpdateSub(3, pl + " — 좌 " + row.leftPageNo + " ↔ 우 " + row.rightPageNo);
+          ldSetLog("p" + row.leftPageNo + " ↔ p" + row.rightPageNo + " diff 검출 중...");
+          await Promise.all([ensureRendered(pdfDoc1, left, myGen), ensureRendered(pdfDoc2, right, myGen)]);
+          await maybeCompareAlignedRow(i, myGen);
+        } else if (row.type === "insert") {
+          ldUpdateSub(3, pl + " — 우측 p" + row.rightPageNo + " 삽입");
+          await ensureRendered(pdfDoc2, right, myGen);
+          markInsertedRow(i); downscaleCanvasToDisplay(right);
+        } else {
+          ldUpdateSub(3, pl + " — 좌측 p" + row.leftPageNo + " 삭제");
+          await ensureRendered(pdfDoc1, left, myGen);
+          markDeletedRow(i); downscaleCanvasToDisplay(left);
+        }
+        summaryTextEl.textContent = "정렬 행 " + (i+1) + " / " + totalRows + " 처리 완료 / 현재 변경 " + diffEntries.length + "건";
+      }
+
+      buildChangedThumbList(); ldSetStepProgress(1); ldHide();
+      updateZoomSummary();
+      setTimeout(setupCanvasVirtualization, 1000);
+    }
+
+    async function renderAll_TextOnly(myGen) {
+      var n = pdfDoc1.numPages, m = pdfDoc2.numPages;
+
+      // ── Step 0: 좌측 텍스트 추출 (캔버스 없음) ──────────────────────────────
       ldActivateStep(0, "0 / " + n + " 페이지");
       for (var p = 1; p <= n; p++) {
         if (myGen !== renderGeneration) { ldHide(); return; }
-        ldUpdateSub(0, p + " / " + n);
-        ldSetStepProgress((p - 1) / n);
-        ldSetLog("좌측 PDF 렌더링 중... p" + p + " / " + n);
-        summaryTextEl.textContent = "좌측 PDF 렌더링 중... " + p + " / " + n;
-        var lm = await getPageMeta(pdfDoc1, p);
-        var lv = createPageShell(pdf1El, p, "좌측", lm.width, lm.height, p - 1);
-        leftRowIndexByPageNo[p] = p - 1;
-        pageViews1.push(lv);
+        ldUpdateSub(0, p + " / " + n); ldSetStepProgress((p-1)/n);
+        ldSetLog("좌측 텍스트 추출 중... p" + p + " / " + n);
+        summaryTextEl.textContent = "좌측 텍스트 추출 중... " + p + " / " + n;
+        pageTextMeta1[p] = await extractPageTextMeta(pdfDoc1, p);
+        await yieldToBrowser();
       }
-      ldUpdateSub(0, "완료 (" + n + " 페이지)");
-      ldSetStepProgress(1);
+      ldUpdateSub(0, "완료 (" + n + " 페이지)"); ldSetStepProgress(1);
 
-      // Step 1: 우측 페이지 셸 생성 + 렌더
+      // ── Step 1: 우측 텍스트 추출 (캔버스 없음) ──────────────────────────────
       ldActivateStep(1, "0 / " + m + " 페이지");
       for (var p = 1; p <= m; p++) {
         if (myGen !== renderGeneration) { ldHide(); return; }
-        ldUpdateSub(1, p + " / " + m);
-        ldSetStepProgress((p - 1) / m);
-        ldSetLog("우측 PDF 렌더링 중... p" + p + " / " + m);
-        summaryTextEl.textContent = "우측 PDF 렌더링 중... " + p + " / " + m;
-        var rm = await getPageMeta(pdfDoc2, p);
-        var rv = createPageShell(pdf2El, p, "우측", rm.width, rm.height, p - 1);
-        rightRowIndexByPageNo[p] = p - 1;
+        ldUpdateSub(1, p + " / " + m); ldSetStepProgress((p-1)/m);
+        ldSetLog("우측 텍스트 추출 중... p" + p + " / " + m);
+        summaryTextEl.textContent = "우측 텍스트 추출 중... " + p + " / " + m;
+        pageTextMeta2[p] = await extractPageTextMeta(pdfDoc2, p);
+        await yieldToBrowser();
+      }
+      ldUpdateSub(1, "완료 (" + m + " 페이지)"); ldSetStepProgress(1);
+
+      // ── Step 2: 페이지 정렬 생략 (전체 문서 flat 스트림 비교) ──────────────
+      ldActivateStep(2, "페이지 정렬 생략 (Text Only)");
+      ldUpdateSub(2, "전체 스트림 flat 비교");
+      ldSetLog("페이지 경계 무시 — 전체 문서 스트림으로 비교");
+
+      alignmentRows = [];
+      var maxPages = Math.max(n, m);
+      for (var pi = 1; pi <= maxPages; pi++) {
+        var hasL = pi <= n, hasR = pi <= m;
+        if (hasL && hasR) {
+          alignmentRows.push({ type: "match",  leftPageNo: pi, rightPageNo: pi, similarity: 1 });
+        } else if (hasR) {
+          alignmentRows.push({ type: "insert", leftPageNo: null, rightPageNo: pi, similarity: 0 });
+        } else {
+          alignmentRows.push({ type: "delete", leftPageNo: pi,  rightPageNo: null, similarity: 0 });
+        }
+      }
+      ldUpdateSub(2, "완료 (" + alignmentRows.length + " 행)");
+      ldSetStepProgress(1);
+
+      // ── 셸 생성 (플레이스홀더, 캔버스 없음) ─────────────────────────────────
+      ldSetLog("페이지 셸 구성 중...");
+      summaryTextEl.textContent = "페이지 셸 구성 중...";
+      for (var ri = 0; ri < alignmentRows.length; ri++) {
+        var row = alignmentRows[ri];
+        var lv, rv;
+        if (row.leftPageNo != null) {
+          var lm = pageTextMeta1[row.leftPageNo];
+          lv = createPageShell_TextOnly(pdf1El, row.leftPageNo, "좌측", lm.cssWidth, lm.cssHeight, ri);
+          leftRowIndexByPageNo[row.leftPageNo] = ri;
+        } else {
+          var rm2 = pageTextMeta2[row.rightPageNo];
+          lv = createMissingPageShell(pdf1El, "좌측 PDF - 없음", rm2.cssWidth, rm2.cssHeight, "insert", ri);
+        }
+        if (row.rightPageNo != null) {
+          var rm = pageTextMeta2[row.rightPageNo];
+          rv = createPageShell_TextOnly(pdf2El, row.rightPageNo, "우측", rm.cssWidth, rm.cssHeight, ri);
+          rightRowIndexByPageNo[row.rightPageNo] = ri;
+        } else {
+          var lm2 = pageTextMeta1[row.leftPageNo];
+          rv = createMissingPageShell(pdf2El, "우측 PDF - 없음", lm2.cssWidth, lm2.cssHeight, "delete", ri);
+        }
+        pageViews1.push(lv);
         pageViews2.push(rv);
       }
-      ldUpdateSub(1, "완료 (" + m + " 페이지)");
-      ldSetStepProgress(1);
-
       applyViewScale();
 
-      // Step 2: 정렬 건너뜀
-      ldActivateStep(2, "텍스트 전용 - 정렬 건너뜀");
-      ldUpdateSub(2, "전체 텍스트 Myers diff 적용");
-      alignmentRows = [];
-      ldSetStepProgress(1);
-
-      // Step 3: 렌더링 + 텍스트 추출 + Myers diff
-      ldActivateStep(3, "0 / " + (n + m) + " 페이지 렌더링");
-      var total = n + m;
-      for (var i = 0; i < n; i++) {
-        if (myGen !== renderGeneration) { ldHide(); return; }
-        ldSetStepProgress(i / total);
-        ldSetLog("좌측 p" + (i + 1) + " 렌더링...");
-        ldUpdateSub(3, (i + 1) + " / " + total + " 페이지");
-        await ensureRendered(pdfDoc1, pageViews1[i], myGen);
-      }
-      for (var i = 0; i < m; i++) {
-        if (myGen !== renderGeneration) { ldHide(); return; }
-        ldSetStepProgress((n + i) / total);
-        ldSetLog("우측 p" + (i + 1) + " 렌더링...");
-        ldUpdateSub(3, (n + i + 1) + " / " + total + " 페이지");
-        await ensureRendered(pdfDoc2, pageViews2[i], myGen);
-      }
-
-      if (myGen !== renderGeneration) { ldHide(); return; }
-
-      globalTextLines1 = collectAllRowItems(pageViews1);
-      globalTextLines2 = collectAllRowItems(pageViews2);
-
-      ldSetLog("Myers diff 계산 중... " + globalTextLines1.length + " vs " + globalTextLines2.length + " 토큰");
+      // ── Step 3: Myers diff ───────────────────────────────────────────────────
+      ldActivateStep(3, "Myers diff 계산 중...");
+      ldSetLog("전체 토큰 수집 중...");
       summaryTextEl.textContent = "Myers diff 계산 중...";
+
+      globalTextLines1 = collectAllRowItems_TextOnly(pageTextMeta1);
+      globalTextLines2 = collectAllRowItems_TextOnly(pageTextMeta2);
+
+      ldSetLog("Myers diff 준비 중... (" + globalTextLines1.length + " vs " + globalTextLines2.length + " 토큰)");
+
+      (function pruneItems(metaMap) {
+        Object.keys(metaMap).forEach(function(p) {
+          var lines = metaMap[p] && metaMap[p].textLines;
+          if (!lines) return;
+          lines.forEach(function(ln) { ln.items = null; });
+        });
+      })(pageTextMeta1);
+      (function pruneItems(metaMap) {
+        Object.keys(metaMap).forEach(function(p) {
+          var lines = metaMap[p] && metaMap[p].textLines;
+          if (!lines) return;
+          lines.forEach(function(ln) { ln.items = null; });
+        });
+      })(pageTextMeta2);
+
+      // GC 기회 최대화
       await yieldToBrowser();
+      await yieldToBrowser();
+      if (myGen !== renderGeneration) { ldHide(); return; }
+
+      ldSetLog("Myers diff 계산 중... (" + globalTextLines1.length + " vs " + globalTextLines2.length + " 토큰)");
+      var diffOps = postProcessDiffOps(computeWordsDiff(globalTextLines1, globalTextLines2));
+
+      // diff 완료 후 토큰 배열 참조 해제
+      globalTextLines1 = null;
+      globalTextLines2 = null;
 
       if (myGen !== renderGeneration) { ldHide(); return; }
 
-      var diffOps = postProcessDiffOps(computeWordsDiff(globalTextLines1, globalTextLines2));
+      ldSetLog("diff 결과 적용 중...");
       buildTextOnlyDiffEntries(diffOps);
 
-      pageViews1.forEach(downscaleCanvasToDisplay);
-      pageViews2.forEach(downscaleCanvasToDisplay);
+      // 페이지 수 차이(insert/delete) 표시
+      for (var ri = 0; ri < alignmentRows.length; ri++) {
+        var row = alignmentRows[ri];
+        if (row.type === "insert") {
+          updatePageStatusBadge(pageViews1[ri], 0, "insert");
+          updatePageStatusBadge(pageViews2[ri], 0, "insert");
+        } else if (row.type === "delete") {
+          updatePageStatusBadge(pageViews1[ri], 0, "delete");
+          updatePageStatusBadge(pageViews2[ri], 0, "delete");
+        }
+      }
 
       buildChangedThumbList();
       ldSetStepProgress(1);
       ldHide();
       updateZoomSummary();
-      setTimeout(setupCanvasVirtualization, 1000);
+
+      setTimeout(function(){ setupTextOnlyVirtualization(myGen); }, 200);
+    }
+
+    async function extractPageTextMeta(pdfDoc, pageNo) {
+      var page = await pdfDoc.getPage(pageNo);
+      var vp = page.getViewport({ scale: renderScale });
+      var tc = await page.getTextContent();
+      var textLines = extractTextLines(tc, vp);
+      try { page.cleanup(); } catch(e){}
+      return {
+        pageNo:    pageNo,
+        cssWidth:  vp.width,
+        cssHeight: vp.height,
+        text:      normalizeTextForCompare((tc.items||[]).map(function(i){ return (i.str||"").trim(); }).filter(Boolean).join(" ")),
+        textLines: textLines
+      };
+    }
+
+    function collectAllRowItems_TextOnly(metaMap) {
+      var result = [], globalRowIndex = 0;
+      var pageNos = Object.keys(metaMap).map(Number).sort(function(a, b){ return a - b; });
+      for (var pi = 0; pi < pageNos.length; pi++) {
+        var pageNo = pageNos[pi];
+        var meta = metaMap[pageNo];
+        if (!meta || !meta.textLines) continue;
+        var pageRowCount = meta.textLines.length;
+        meta.textLines.forEach(function(ln, rowIndexInPage) {
+          if (ln._normKey === undefined) {
+            ln._normKey = normalizeTextForCompare(ln.text);
+          }
+          result.push({
+            pageNo:         pageNo,
+            rowIndexInPage: rowIndexInPage,
+            pageRowCount:   pageRowCount,
+            globalRowIndex: globalRowIndex,
+            line:           ln
+          });
+          globalRowIndex++;
+        });
+      }
+      return result;
+    }
+
+    function createPageShell_TextOnly(container, pageNo, sideLabel, width, height, rowIndex) {
+      var wrap  = document.createElement("div");
+      wrap.className = "page-wrap"; wrap.dataset.rowIndex = rowIndex;
+      var lbl   = document.createElement("div");
+      lbl.className = "page-label"; lbl.textContent = sideLabel + " PDF - 페이지 " + pageNo;
+      var body  = document.createElement("div"); body.className = "page-body";
+      var stage = document.createElement("div"); stage.className = "page-stage";
+      stage.style.width = width + "px"; stage.style.height = height + "px";
+      var ph = document.createElement("div");
+      ph.className = "text-placeholder canvas-placeholder";
+      ph.style.width  = width  + "px";
+      ph.style.height = height + "px";
+      ph.textContent = "p" + pageNo;
+      var overlay = document.createElement("div");
+      overlay.className = "overlay";
+      overlay.style.width = width + "px"; overlay.style.height = height + "px";
+      var status = document.createElement("div");
+      status.className = "page-status"; status.textContent = "text-only";
+      stage.appendChild(ph);
+      stage.appendChild(overlay);
+      stage.appendChild(status);
+      body.appendChild(stage);
+      wrap.appendChild(lbl); wrap.appendChild(body);
+      container.appendChild(wrap);
+      var view = {
+        pageNo: pageNo, rowIndex: rowIndex,
+        width: width, height: height, baseWidth: width, baseHeight: height,
+        pageWrap: wrap, pageBody: body, stage: stage, overlay: overlay, status: status,
+        canvas: null, viewport: null,
+        textLines: (pageNo) ? (
+          (container === pdf1El ? pageTextMeta1[pageNo] : pageTextMeta2[pageNo]) || {}
+        ).textLines || [] : [],
+        contentBounds: null,
+        isRendered: false, isCompared: false, renderToken: 0, meta: {},
+        isMissing: false, missingType: null
+      };
+      applyScaleToPageView(view);
+      return view;
+    }
+
+    function setupTextOnlyVirtualization(generation) {
+      if (!('IntersectionObserver' in window)) {
+        renderAllPagesTextOnlyFallback(generation);
+        return;
+      }
+      if (_virtualizationObserver) _virtualizationObserver.disconnect();
+      _virtualizationObserver = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var wrap = entry.target;
+          var rowIndex = parseInt(wrap.dataset.rowIndex);
+          if (isNaN(rowIndex)) return;
+
+          if (!entry.isIntersecting) {
+            if (!_releaseTimers[rowIndex]) {
+              _releaseTimers[rowIndex] = setTimeout(function(){
+                releaseCanvasForRow(rowIndex);
+                delete _releaseTimers[rowIndex];
+              }, 8000);
+            }
+          } else {
+            if (_releaseTimers[rowIndex]) {
+              clearTimeout(_releaseTimers[rowIndex]);
+              delete _releaseTimers[rowIndex];
+            }
+            renderRowOnDemand(rowIndex, generation);
+          }
+        });
+      }, { rootMargin: '1500px 0px 1500px 0px', threshold: 0 });
+
+      document.querySelectorAll('.page-wrap').forEach(function(wrap){
+        _virtualizationObserver.observe(wrap);
+      });
+    }
+
+    async function renderRowOnDemand(rowIndex, generation) {
+      if (generation !== renderGeneration) return;
+      var lv = pageViews1[rowIndex], rv = pageViews2[rowIndex];
+      var row = alignmentRows[rowIndex];
+      if (!row) return;
+
+      var pLeft  = (row.leftPageNo  != null && lv && !lv.isRendered && !lv.isMissing) ? pdfDoc1 : null;
+      var pRight = (row.rightPageNo != null && rv && !rv.isRendered && !rv.isMissing) ? pdfDoc2 : null;
+
+      if (!pLeft && !pRight) return;
+
+      var tasks = [];
+      if (pLeft)  tasks.push(ensureRendered(pdfDoc1, lv, generation));
+      if (pRight) tasks.push(ensureRendered(pdfDoc2, rv, generation));
+      await Promise.all(tasks);
+      if (lv && lv.canvas) downscaleCanvasToDisplay(lv);
+      if (rv && rv.canvas) downscaleCanvasToDisplay(rv);
+    }
+
+    async function renderAllPagesTextOnlyFallback(generation) {
+      for (var i = 0; i < pageViews1.length; i++) {
+        if (generation !== renderGeneration) return;
+        var row = alignmentRows[i];
+        if (!row) continue;
+        if (row.leftPageNo  != null) await ensureRendered(pdfDoc1, pageViews1[i], generation);
+        if (row.rightPageNo != null) await ensureRendered(pdfDoc2, pageViews2[i], generation);
+      }
     }
 
     function buildTextOnlyDiffEntries(diffOps) {
@@ -1278,7 +1458,8 @@
 
         var firstLeftRect = null;
         leftPageNos.forEach(function (pg) {
-          var pv = pageViews1[pg - 1];
+          var rowIdx = leftRowIndexByPageNo[pg];
+          var pv = (rowIdx !== undefined) ? pageViews1[rowIdx] : null;
           if (!pv || !pv.overlay) return;
           var rects = mergeNearbyRects(leftByPage[pg].map(function (ln) {
             return expandRectCss(ln, 4, pv.width, pv.height);
@@ -1289,7 +1470,8 @@
 
         var firstRightRect = null;
         rightPageNos.forEach(function (pg) {
-          var pv = pageViews2[pg - 1];
+          var rowIdx = rightRowIndexByPageNo[pg];
+          var pv = (rowIdx !== undefined) ? pageViews2[rowIdx] : null;
           if (!pv || !pv.overlay) return;
           var rects = mergeNearbyRects(rightByPage[pg].map(function (ln) {
             return expandRectCss(ln, 4, pv.width, pv.height);
@@ -1298,10 +1480,10 @@
           if (pg === primaryRightPageNo && rects.length) firstRightRect = rects[0];
         });
 
-        var leftRowIdx = primaryLeftPageNo != null ? primaryLeftPageNo - 1 : null;
-        var rightRowIdx = primaryRightPageNo != null ? primaryRightPageNo - 1 : null;
-        if (leftRowIdx === null) leftRowIdx = rightRowIdx != null ? Math.min(rightRowIdx, pageViews1.length - 1) : 0;
-        if (rightRowIdx === null) rightRowIdx = leftRowIdx != null ? Math.min(leftRowIdx, pageViews2.length - 1) : 0;
+        var leftRowIdx  = primaryLeftPageNo  != null ? (leftRowIndexByPageNo[primaryLeftPageNo]  || 0) : null;
+        var rightRowIdx = primaryRightPageNo != null ? (rightRowIndexByPageNo[primaryRightPageNo] || 0) : null;
+        if (leftRowIdx  === null) leftRowIdx  = rightRowIdx !== null ? Math.min(rightRowIdx,  pageViews1.length-1) : 0;
+        if (rightRowIdx === null) rightRowIdx = leftRowIdx  !== null ? Math.min(leftRowIdx,   pageViews2.length-1) : 0;
 
         var leftText = block.leftLines.map(function (e) { return e.line.text; }).join(" / ");
         var rightText = block.rightLines.map(function (e) { return e.line.text; }).join(" / ");
@@ -1329,11 +1511,9 @@
       var oldLen = oldTokens.length;
       var newLen = newTokens.length;
 
-      function entryKey(entry) {
-        return normalizeTextForCompare(entry.line.text);
-      }
       function entryEquals(a, b) {
-        var ka = entryKey(a), kb = entryKey(b);
+        var ka = a.line._normKey !== undefined ? a.line._normKey : normalizeTextForCompare(a.line.text);
+        var kb = b.line._normKey !== undefined ? b.line._normKey : normalizeTextForCompare(b.line.text);
         if (ka === kb) return true;
         if (Math.abs(ka.length - kb.length) > Math.ceil(Math.max(ka.length, kb.length) * 0.1)) return false;
         return textSimilarity(ka, kb) >= 1.0;
@@ -1404,10 +1584,10 @@
       while (editLength <= maxEditLength) {
         for (var diag = Math.max(minDiag, -editLength); diag <= Math.min(maxDiag, editLength); diag += 2) {
           var removePath = bestPath[diag - 1], addPath = bestPath[diag + 1];
-          if (removePath) bestPath[diag - 1] = undefined;
+          if (removePath) bestPath[diag - 1] = null;
           var canAdd = !!(addPath && (addPath.oldPos - diag) >= 0 && (addPath.oldPos - diag) < newLen);
           var canRemove = !!(removePath && removePath.oldPos + 1 < oldLen);
-          if (!canAdd && !canRemove) { bestPath[diag] = undefined; continue; }
+          if (!canAdd && !canRemove) { bestPath[diag] = null; continue; }
           var basePath;
           if (!canRemove || (canAdd && removePath.oldPos < addPath.oldPos)) {
             basePath = addToPath(addPath, true, false, 0);
@@ -1428,18 +1608,23 @@
     }
 
     function postProcessDiffOps(ops) {
-      var PROXIMITY = 4;
+      var SAME_PAGE_PROX = 2;
+      var MAX_PAGE_GAP   = 1;
 
       var delsByText = {};
       var insByText = {};
       for (var i = 0; i < ops.length; i++) {
         var op = ops[i];
         if (op.op === "-") {
-          var k = normalizeTextForCompare(op.leftEntry.line.text);
+          var k = op.leftEntry.line._normKey !== undefined
+            ? op.leftEntry.line._normKey
+            : normalizeTextForCompare(op.leftEntry.line.text);
           if (!delsByText[k]) delsByText[k] = [];
           delsByText[k].push({ i: i, entry: op.leftEntry });
         } else if (op.op === "+") {
-          var k = normalizeTextForCompare(op.rightEntry.line.text);
+          var k = op.rightEntry.line._normKey !== undefined
+            ? op.rightEntry.line._normKey
+            : normalizeTextForCompare(op.rightEntry.line.text);
           if (!insByText[k]) insByText[k] = [];
           insByText[k].push({ i: i, entry: op.rightEntry });
         }
@@ -1450,35 +1635,36 @@
 
       Object.keys(delsByText).forEach(function (text) {
         if (!insByText[text]) return;
-        var dels = delsByText[text];
-        var ins = insByText[text];
-
-        dels.forEach(function (del) {
-          var delEntry = del.entry;
+        delsByText[text].forEach(function (del) {
           var bestIi = -1, bestDist = Infinity;
-
-          ins.forEach(function (ins_) {
+          insByText[text].forEach(function (ins_) {
             if (usedInsIdx.has(ins_.i)) return;
-            var insEntry = ins_.entry;
-            var dist = Math.abs(delEntry.globalRowIndex - insEntry.globalRowIndex);
+            var de = del.entry, ie = ins_.entry;
+            var pageGap = Math.abs(de.pageNo - ie.pageNo);
 
-            var nearBoundary = delEntry.pageNo !== insEntry.pageNo && (
-              delEntry.rowIndexInPage >= delEntry.pageRowCount - 2 ||
-              insEntry.rowIndexInPage <= 1
+            if (pageGap > MAX_PAGE_GAP) return;
+
+            var rowDist      = Math.abs(de.globalRowIndex - ie.globalRowIndex);
+            var samePage     = pageGap === 0;
+            var nearBoundary = !samePage && (
+              de.rowIndexInPage >= de.pageRowCount - 2 ||
+              ie.rowIndexInPage <= 1
             );
 
-            if ((dist <= PROXIMITY || nearBoundary) && dist < bestDist) {
-              bestDist = dist;
-              bestIi = ins_.i;
+            var eligible = samePage ? (rowDist <= SAME_PAGE_PROX) : nearBoundary;
+
+            if (eligible && rowDist < bestDist) {
+              bestDist = rowDist;
+              bestIi   = ins_.i;
             }
           });
-
           if (bestIi >= 0) {
             rematchedDelIdx[del.i] = ops[bestIi].rightEntry;
             usedInsIdx.add(bestIi);
           }
         });
       });
+      delsByText = null; insByText = null;
 
       var result = [];
       for (var i = 0; i < ops.length; i++) {
@@ -1512,12 +1698,7 @@
       clearPageDiffBoxes(right.overlay);
       removeDiffEntriesForRow(rowIndex);
 
-      var result;
-      if (compareMode === "text") {
-        result = await detectDiffRects_TextOnly(left, right, generation);
-      } else {
-        result = await detectDiffRects_PixelOnly(left, right, generation);
-      }
+      var result = await detectDiffRects_PixelOnly(left, right, generation);
 
       if (generation !== renderGeneration) {
         return;
@@ -2327,8 +2508,10 @@
         if (!pv || pv.isMissing || !pv.canvas) return;
         var placeholder = document.createElement('div');
         placeholder.className = 'canvas-placeholder';
+        if (compareMode === "text") placeholder.classList.add("text-placeholder");
         placeholder.style.width  = pv.canvas.style.width;
         placeholder.style.height = pv.canvas.style.height;
+        if (compareMode === "text") placeholder.textContent = "p" + (pv.pageNo || "");
         pv.canvas.replaceWith(placeholder);
         pv.canvas = null;
         pv.isRendered = false;
@@ -2632,7 +2815,7 @@
       if (compareMode === "text") {
         var noteEl = document.getElementById("thumbListNote");
         if (noteEl) {
-          noteEl.textContent = "변경점 목록입니다. 클릭하면 해당 위치로 좌우 이동합니다.";
+          noteEl.textContent = "변경점 목록입니다. 클릭하면 해당 위치로 이동합니다.";
         }
         buildChangedThumbList_TextOnly();
         return;
@@ -2818,6 +3001,12 @@
         behavior: smooth ? "smooth" : "auto"
       });
       flashCurrent(entry.id);
+
+      if (compareMode === "text") {
+        await renderRowOnDemand(entry.rowIndex, renderGeneration);
+        if (entry.rightRowIndex !== undefined && entry.rightRowIndex !== entry.rowIndex)
+          await renderRowOnDemand(entry.rightRowIndex, renderGeneration);
+      }
     }
 
     function goToNextDiff() {
