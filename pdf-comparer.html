@@ -1113,26 +1113,51 @@
       summaryTextEl.textContent = "렌더링/비교 중...";
       var totalRows = alignmentRows.length;
 
-      for (var i = 0; i < totalRows; i++) {
-        if (myGen !== renderGeneration) { ldHide(); return; }
-        var row = alignmentRows[i], left = pageViews1[i], right = pageViews2[i];
-        ldSetStepProgress(i / totalRows);
-        var pl = (i+1) + " / " + totalRows;
+      var PIXEL_CONCURRENCY = 2;
+
+      // 행 하나를 처리하는 내부 헬퍼 (renderAll_Pixel 전용)
+      async function processPixelRow(idx, gen) {
+        if (gen !== renderGeneration) return;
+        var row = alignmentRows[idx], left = pageViews1[idx], right = pageViews2[idx];
         if (row.type === "match") {
-          ldUpdateSub(3, pl + " — 좌 " + row.leftPageNo + " ↔ 우 " + row.rightPageNo);
-          ldSetLog("p" + row.leftPageNo + " ↔ p" + row.rightPageNo + " diff 검출 중...");
-          await Promise.all([ensureRendered(pdfDoc1, left, myGen), ensureRendered(pdfDoc2, right, myGen)]);
-          await maybeCompareAlignedRow(i, myGen);
+          await Promise.all([
+            ensureRendered(pdfDoc1, left,  gen, true),
+            ensureRendered(pdfDoc2, right, gen, true)
+          ]);
+          if (gen !== renderGeneration) return;
+          await maybeCompareAlignedRow(idx, gen);
         } else if (row.type === "insert") {
-          ldUpdateSub(3, pl + " — 우측 p" + row.rightPageNo + " 삽입");
-          await ensureRendered(pdfDoc2, right, myGen);
-          markInsertedRow(i); downscaleCanvasToDisplay(right);
+          await ensureRendered(pdfDoc2, right, gen, true);
+          if (gen !== renderGeneration) return;
+          markInsertedRow(idx); downscaleCanvasToDisplay(right);
         } else {
-          ldUpdateSub(3, pl + " — 좌측 p" + row.leftPageNo + " 삭제");
-          await ensureRendered(pdfDoc1, left, myGen);
-          markDeletedRow(i); downscaleCanvasToDisplay(left);
+          await ensureRendered(pdfDoc1, left, gen, true);
+          if (gen !== renderGeneration) return;
+          markDeletedRow(idx); downscaleCanvasToDisplay(left);
         }
-        summaryTextEl.textContent = "정렬 행 " + (i+1) + " / " + totalRows + " 처리 완료 / 현재 변경 " + diffEntries.length + "건";
+      }
+
+      for (var i = 0; i < totalRows; i += PIXEL_CONCURRENCY) {
+        if (myGen !== renderGeneration) { ldHide(); return; }
+        var batchEnd = Math.min(i + PIXEL_CONCURRENCY, totalRows);
+        var tasks = [];
+        for (var j = i; j < batchEnd; j++) {
+          var rj = alignmentRows[j];
+          ldSetStepProgress(j / totalRows);
+          var pl = (j+1) + " / " + totalRows;
+          if (rj.type === "match") {
+            ldUpdateSub(3, pl + " — 좌 " + rj.leftPageNo + " ↔ 우 " + rj.rightPageNo);
+            ldSetLog("p" + rj.leftPageNo + " ↔ p" + rj.rightPageNo + " diff 검출 중...");
+          } else if (rj.type === "insert") {
+            ldUpdateSub(3, pl + " — 우측 p" + rj.rightPageNo + " 삽입");
+          } else {
+            ldUpdateSub(3, pl + " — 좌측 p" + rj.leftPageNo + " 삭제");
+          }
+          tasks.push(processPixelRow(j, myGen));
+        }
+        await Promise.all(tasks);
+        if (myGen !== renderGeneration) { ldHide(); return; }
+        summaryTextEl.textContent = "정렬 행 " + batchEnd + " / " + totalRows + " 처리 완료 / 현재 변경 " + diffEntries.length + "건";
       }
 
       buildChangedThumbList(); ldSetStepProgress(1); ldHide();
@@ -1737,18 +1762,54 @@
         sampledCanvas2.getContext("2d").drawImage(canvas2, 0, 0, w, h);
       }
 
-      var img1 = canvas1.getContext("2d").getImageData(0, 0, w, h).data;
-      var img2 = sampledCanvas2.getContext("2d").getImageData(0, 0, w, h).data;
+      // ── Stage 1 (coarse): 1/4 해상도로 동일 여부를 빠르게 검사 ───────────────
+      var cw = Math.max(1, Math.round(w * 0.25));
+      var ch = Math.max(1, Math.round(h * 0.25));
+      var cc1 = document.createElement("canvas"); cc1.width = cw; cc1.height = ch;
+      cc1.getContext("2d").drawImage(canvas1, 0, 0, cw, ch);
+      var cc2 = document.createElement("canvas"); cc2.width = cw; cc2.height = ch;
+      cc2.getContext("2d").drawImage(sampledCanvas2, 0, 0, cw, ch);
+      var coarseMask = pixelOnlyDiffMask_LowContrastFilter(
+        cc1.getContext("2d").getImageData(0, 0, cw, ch).data,
+        cc2.getContext("2d").getImageData(0, 0, cw, ch).data,
+        cw, ch
+      );
+      var coarseDiffCount = 0;
+      for (var k = 0; k < coarseMask.length; k++) { if (coarseMask[k]) coarseDiffCount++; }
+      if (generation !== undefined && generation !== renderGeneration) return { rects: [], meta: {} };
+
+      // 변경 없음 → 전체 heavy diff 생략
+      if (coarseDiffCount === 0) {
+        return {
+          rects: [],
+          meta: { ignoredTextBlocks: 0, textDiffBlocks: 0, textBgDiffBlocks: 0,
+                  isImageHeavy: false, mode: "pixel", rawDiffRects: 0, finalDiffRects: 0 }
+        };
+      }
+      await yieldToBrowser();
+
+      // ── Stage 2 (fine): content bounds의 합집합 영역만 full diff ─────────────
+      var cb1 = leftView.contentBounds  || { x: 0, y: 0, w: w, h: h };
+      var cb2 = rightView.contentBounds || { x: 0, y: 0, w: w, h: h };
+      var roiX  = Math.max(0, Math.min(cb1.x, cb2.x));
+      var roiY  = Math.max(0, Math.min(cb1.y, cb2.y));
+      var roiX2 = Math.min(w, Math.max(cb1.x + cb1.w, cb2.x + cb2.w));
+      var roiY2 = Math.min(h, Math.max(cb1.y + cb1.h, cb2.y + cb2.h));
+      var roiW  = Math.max(1, roiX2 - roiX);
+      var roiH  = Math.max(1, roiY2 - roiY);
+
+      var img1 = canvas1.getContext("2d").getImageData(roiX, roiY, roiW, roiH).data;
+      var img2 = sampledCanvas2.getContext("2d").getImageData(roiX, roiY, roiW, roiH).data;
 
       if (generation !== undefined && generation !== renderGeneration) return { rects: [], meta: {} };
       await yieldToBrowser();
 
-      var mask = pixelOnlyDiffMask_LowContrastFilter(img1, img2, w, h);
+      var mask = pixelOnlyDiffMask_LowContrastFilter(img1, img2, roiW, roiH);
 
       if (generation !== undefined && generation !== renderGeneration) return { rects: [], meta: {} };
       await yieldToBrowser();
 
-      var components = pixelOnlyCCL(mask, w, h);
+      var components = pixelOnlyCCL(mask, roiW, roiH);
 
       var minDensity = 0.15;
       var minBboxArea = Math.max(60 * effectiveScale, 60);
@@ -1762,8 +1823,9 @@
       });
 
       var pad = Math.max(6, Math.round(8 * effectiveScale / 3));
+      // ROI 내부 좌표를 전체 canvas 좌표로 되돌린 뒤 expand
       var rectsPx = filtered.map(function (c) {
-        return expandRect({ x: c.x, y: c.y, w: c.w, h: c.h }, pad, w, h);
+        return expandRect({ x: c.x + roiX, y: c.y + roiY, w: c.w, h: c.h }, pad, w, h);
       });
 
       var merged = mergeNearbyRects(rectsPx, Math.round(50 * effectiveScale / 3));
@@ -1782,7 +1844,7 @@
           ignoredTextBlocks: 0,
           textDiffBlocks: 0,
           textBgDiffBlocks: 0,
-          isImageHeavy: isImageHeavyPage(leftView, rightView),
+          isImageHeavy: false,
           mode: "pixel",
           rawDiffRects: components.length,
           finalDiffRects: merged.length
@@ -1981,15 +2043,21 @@
       var total = pdfDoc.numPages,
         result = [],
         stepIdx = sideLabel === "좌측" ? 0 : 1;
-      for (var p = 1; p <= total; p++) {
-        if (generation !== renderGeneration) {
-          return result;
-        }
-        summaryTextEl.textContent = sideLabel + " PDF 시그니처 생성 중... " + p + " / " + total;
-        ldUpdateSub(stepIdx, p + " / " + total + " 페이지");
-        ldSetLog(sideLabel + " PDF 시그니처 생성 중... " + p + " / " + total);
-        ldSetStepProgress((p - 1) / total);
-        result.push(await buildPageSignature(pdfDoc, p));
+      var CONCURRENCY = 4;
+      for (var start = 1; start <= total; start += CONCURRENCY) {
+        if (generation !== renderGeneration) return result;
+
+        var end = Math.min(start + CONCURRENCY - 1, total);
+        var pages = [];
+        for (var p = start; p <= end; p++) pages.push(p);
+
+        var batchSigs = await Promise.all(pages.map(function (p) { return buildPageSignature(pdfDoc, p); }));
+        for (var i = 0; i < batchSigs.length; i++) result.push(batchSigs[i]);
+        
+        summaryTextEl.textContent = sideLabel + " PDF 시그니처 생성 중... " + end + " / " + total;
+        ldUpdateSub(stepIdx, end + " / " + total + " 페이지");
+        ldSetLog(sideLabel + " PDF 시그니처 생성 중... " + end + " / " + total);
+        ldSetStepProgress((end - 1) / total);
       }
       ldUpdateSub(stepIdx, "완료 (" + total + " 페이지)");
       return result;
@@ -2316,7 +2384,7 @@
       return view;
     }
 
-    async function ensureRendered(pdfDoc, pageView, generation) {
+    async function ensureRendered(pdfDoc, pageView, generation, skipText) {
       if (generation !== renderGeneration) {
         return;
       }
@@ -2347,8 +2415,11 @@
       } finally {
         releaseRenderSlot();
       }
-      var tc = await page.getTextContent();
-      var textLines = extractTextLines(tc, displayViewport);
+      var textLines = [];
+      if (!skipText) {
+        var tc = await page.getTextContent();
+        textLines = extractTextLines(tc, displayViewport);
+      }
       var contentBounds = detectCanvasContentBounds(canvas, textLines);
       if (generation !== renderGeneration || token !== pageView.renderToken) {
         return;
@@ -2664,15 +2735,25 @@
       return dp[m][n];
     }
 
+    function sampleText(s, n) {
+      if (s.length <= n * 3) return s;
+
+      var mid = Math.floor((s.length - n) / 2);
+      return s.slice(0, n) + s.slice(mid, mid + n) + s.slice(s.length - n);
+    }
+
     function textSimilarity(a, b) {
-      if (a === b) {
-        return 1;
-      }
-      if (!a || !b) {
-        return 0;
-      }
-      var ml = Math.max(a.length, b.length);
-      return ml ? 1 - levenshtein(a, b) / ml : 1;
+      if (a === b) return 1;
+      if (!a || !b) return 0;
+
+      var la = a.length, lb = b.length, ml = Math.max(la, lb);
+      if (Math.min(la, lb) / ml < 0.5) return Math.min(la, lb) / ml;
+
+      var sa = sampleText(a, 100), sb = sampleText(b, 100);
+      if (sa === sb) return 1;
+
+      var sml = Math.max(sa.length, sb.length);
+      return sml ? 1 - levenshtein(sa, sb) / sml : 1;
     }
 
     function extractTextLines(textContent, viewport) {
