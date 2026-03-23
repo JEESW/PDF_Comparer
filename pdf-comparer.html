@@ -1303,42 +1303,105 @@
 
     async function extractPageTextMeta(pdfDoc, pageNo) {
       var page = await pdfDoc.getPage(pageNo);
-      var vp = page.getViewport({ scale: renderScale });
-      var tc = await page.getTextContent();
-      var textLines = extractTextLines(tc, vp);
-      try { page.cleanup(); } catch(e){}
-      return {
-        pageNo:    pageNo,
-        cssWidth:  vp.width,
-        cssHeight: vp.height,
-        text:      normalizeTextForCompare((tc.items||[]).map(function(i){ return (i.str||"").trim(); }).filter(Boolean).join(" ")),
-        textLines: textLines
-      };
+        var vp = page.getViewport({scale: renderScale});
+        var tc = await page.getTextContent();
+
+        var rawItems = (tc.items || []).map(function(item) {
+            var str = (item.str || "");
+            if (!str) return null;
+            var tx = pdfjsLib.Util.transform(vp.transform, item.transform);
+            var ih = Math.max(1, Math.abs(tx[3]) || 10);
+            return {
+                str: str,
+                ix: tx[4],
+                iy: tx[5] - ih,
+                iw: Math.max(1, item.width * renderScale),
+                ih: ih,
+                baselineY: tx[5],
+                hasEOL: !!item.hasEOL
+            };
+        }).filter(Boolean);
+
+        var avgH = rawItems.length
+            ? rawItems.reduce(function(s, i) { return s + i.ih; }, 0) / rawItems.length
+            : 10;
+
+        rawItems.sort(function(a, b) {
+            var dy = a.baselineY - b.baselineY;
+            if (Math.abs(dy) > avgH * 0.5) return dy;
+            return a.ix - b.ix;
+        });
+
+        var mergedItems = [];
+        rawItems.forEach(function(item) {
+            if (!item.str.trim()) {
+                if (mergedItems.length) mergedItems[mergedItems.length - 1].hasSpace = true;
+                return;
+            }
+
+            var last = mergedItems.length ? mergedItems[mergedItems.length - 1] : null;
+
+            var canMerge = last
+                && !last.hasSpace
+                && !last.hasEOL
+                && Math.abs(item.baselineY - last.baselineY) < avgH * 0.3
+                && (item.ix - (last.ix + last.iw)) < avgH * 0.3
+                && !item.str.startsWith(" ")
+                && !last.str.endsWith(" ");
+
+            if (canMerge) {
+                last.str += item.str;
+                last.iw = (item.ix + item.iw) - last.ix;
+                last.hasEOL = item.hasEOL;
+            } else {
+                mergedItems.push(Object.assign({}, item, { hasSpace: false }));
+            }
+        });
+
+        var spans = [];
+        mergedItems.forEach(function(item) {
+            item.str.trim().split(/\s+/).filter(Boolean).forEach(function(word) {
+                if (/^[.,!?;:()\[\]\/\-"']+$/.test(word)) return;
+                spans.push({ text: word, x: item.ix, y: item.iy, w: item.iw, h: item.ih });
+            });
+        });
+
+        try { page.cleanup(); } catch(e) {}
+        return {
+            pageNo:    pageNo,
+            cssWidth:  vp.width,
+            cssHeight: vp.height,
+            text: normalizeTextForCompare(
+                mergedItems.map(function(i) { return i.str.trim(); }).filter(Boolean).join(" ")
+            ),
+            textLines: spans
+        };
     }
 
     function collectAllRowItems_TextOnly(metaMap) {
-      var result = [], globalRowIndex = 0;
-      var pageNos = Object.keys(metaMap).map(Number).sort(function(a, b){ return a - b; });
-      for (var pi = 0; pi < pageNos.length; pi++) {
-        var pageNo = pageNos[pi];
-        var meta = metaMap[pageNo];
-        if (!meta || !meta.textLines) continue;
-        var pageRowCount = meta.textLines.length;
-        meta.textLines.forEach(function(ln, rowIndexInPage) {
-          if (ln._normKey === undefined) {
-            ln._normKey = normalizeTextForCompare(ln.text);
-          }
-          result.push({
-            pageNo:         pageNo,
-            rowIndexInPage: rowIndexInPage,
-            pageRowCount:   pageRowCount,
-            globalRowIndex: globalRowIndex,
-            line:           ln
-          });
-          globalRowIndex++;
-        });
-      }
-      return result;
+        var result = [], globalRowIndex = 0;
+        var pageNos = Object.keys(metaMap).map(Number).sort(function(a, b) { return a - b; });
+        for (var pi = 0; pi < pageNos.length; pi++) {
+            var pageNo = pageNos[pi];
+            var meta = metaMap[pageNo];
+            if (!meta || !meta.textLines) continue;
+            var pageRowCount = meta.textLines.length;
+            meta.textLines.forEach(function(span, idx) {
+                if (span._normKey === undefined) {
+                    span._normKey = normalizeTextForCompare(span.text)
+                        .replace(/\s/g, "");
+                }
+                result.push({
+                    pageNo:         pageNo,
+                    rowIndexInPage: idx,
+                    pageRowCount:   pageRowCount,
+                    globalRowIndex: globalRowIndex,
+                    line:           span
+                });
+                globalRowIndex++;
+            });
+        }
+        return result;
     }
 
     function createPageShell_TextOnly(container, pageNo, sideLabel, width, height, rowIndex) {
@@ -1537,11 +1600,21 @@
       var newLen = newTokens.length;
 
       function entryEquals(a, b) {
-        var ka = a.line._normKey !== undefined ? a.line._normKey : normalizeTextForCompare(a.line.text);
-        var kb = b.line._normKey !== undefined ? b.line._normKey : normalizeTextForCompare(b.line.text);
+        var ka = a.line._normKey !== undefined ? a.line._normKey
+          : normalizeTextForCompare(a.line.text).replace(/\s/g, "");
+        var kb = b.line._normKey !== undefined ? b.line._normKey
+          : normalizeTextForCompare(b.line.text).replace(/\s/g, "");
+
+        if (!ka || !kb) return false;
         if (ka === kb) return true;
-        if (Math.abs(ka.length - kb.length) > Math.ceil(Math.max(ka.length, kb.length) * 0.1)) return false;
-        return textSimilarity(ka, kb) >= 1.0;
+
+        var isPunctOnly = function(s) { return /^[.,!?;:()\[\]\/\-"']+$/.test(s); };
+        if (isPunctOnly(ka) && isPunctOnly(kb)) return true;
+        if (isPunctOnly(ka) || isPunctOnly(kb)) return false;
+
+        if (Math.abs(ka.length - kb.length) > Math.ceil(Math.max(ka.length, kb.length) * 0.15)) return false;
+
+        return textSimilarity(ka, kb) >= 0.9;
       }
 
       function addToPath(path, added, removed, oldPosInc) {
