@@ -6,6 +6,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PDF Visual Compare Viewer</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- OpenCV.js: cv state must be declared before async load -->
+  <script>
+    var cvReady = false;
+    function onCvLoaded() {
+      function _setReady() { cvReady = true; }
+      if (typeof cv !== 'undefined' && cv.Mat) {
+        _setReady();
+      } else if (typeof cv !== 'undefined') {
+        cv.onRuntimeInitialized = _setReady;
+      } else {
+        // Very rare: module object not exposed yet — retry once
+        setTimeout(function () {
+          if (typeof cv !== 'undefined') cv.onRuntimeInitialized = _setReady;
+        }, 200);
+      }
+    }
+  </script>
+  <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onCvLoaded()"></script>
   <style>
     :root {
       --white: #ffffff;
@@ -158,6 +176,11 @@
     }
 
     .sidebar {
+      width: 272px;
+      min-width: 140px;
+      max-width: 600px;
+      resize: horizontal;
+      flex-shrink: 0;
       background: var(--white);
       overflow: auto;
       border-right: 1px solid var(--gray-200);
@@ -425,6 +448,27 @@
 
     .diff-box.flash {
       animation: flashBox 0.9s ease-in-out 2;
+    }
+
+    .diff-box.diff-line {
+      border-radius: 0;
+      border: none;
+      background: rgba(239, 68, 68, 0.45);
+    }
+    .diff-box.diff-line.current {
+      background: rgba(37, 99, 235, 0.55) !important;
+      box-shadow: none;
+    }
+
+    .diff-box.diff-overlay-mask {
+      border-radius: 2px;
+      border: 1.5px dashed rgba(239, 68, 68, 0.55);
+      background: rgba(239, 68, 68, 0.04);
+    }
+    .diff-box.diff-overlay-mask.current {
+      border-color: rgba(37, 99, 235, 0.75) !important;
+      background: rgba(59, 130, 246, 0.08) !important;
+      box-shadow: none;
     }
 
     @keyframes flashBox {
@@ -907,6 +951,30 @@
     var globalTextLines2 = [];
 
     var pageTextMeta1 = {};
+
+    // ── diff 후처리 튜닝 상수 ────────────────────────────────────────────────
+    // (모든 값은 effectiveScale=1 기준 픽셀 단위. 내부에서 effectiveScale 적용)
+    var DIFF_POST = {
+      // ── 공통 bbox 후처리 ─────────────────────────────────────────────────
+      MIN_AREA:               200,   // CCL area (diff 픽셀 수) 최솟값
+      MIN_DENSITY:            0.04,  // diffPixels/bboxArea 최솟값 (저밀도 노이즈 제거)
+      LINE_THIN_SIDE:         8,     // 선 판정: 짧은 쪽 px 임계값
+      LINE_LONG_SIDE:         50,    // 선 판정: 긴 쪽 px 임계값
+      LINE_ASPECT_RATIO:      6,     // 추가 종횡비 임계값
+      BOX_MERGE_GAP:          10,    // 이 px 이내 박스는 병합
+      SPARSE_SPLIT_THRESHOLD: 0.03,  // density < 이 값이면 sparse 후보
+      SPARSE_MIN_BBOX:        3000,  // sparse 판정에 필요한 최소 bbox 면적 (px²)
+      BORDER_MARGIN:          0.015, // 캔버스 외곽 노이즈 제거 비율
+      // ── OpenCV 파이프라인 전용 ────────────────────────────────────────────
+      CV_PIX_DIFF_THR:        30,    // 픽셀 강도 차이 임계값 (0-255)
+      CV_CANNY_LO:            20,    // Canny 하이스테리시스 낮은 임계값 (base scale)
+      CV_CANNY_HI:            50,    // Canny 하이스테리시스 높은 임계값 (base scale)
+      CV_DIST_TOL:            3,     // 에지 거리 허용 px (subpixel shift 보정)
+      CV_BLUR_KSIZE:          3,     // Gaussian blur 커널 크기 (odd, base scale)
+      CV_MORPH_OPEN:          3,     // Opening 커널 크기 (노이즈 제거, base scale)
+      CV_MORPH_CLOSE:         3,     // Closing 커널 크기 (갭 메우기, base scale)
+      CV_ALIGN_TRANSLATION:   true   // 경미한 translation 보정 활성화
+    };
     var pageTextMeta2 = {};
 
     var MAX_CONCURRENT_RENDERS = 4;
@@ -1803,8 +1871,9 @@
       }
       result.rects.forEach(function (rect, idx) {
         var diffId = "r" + rowIndex + "-d" + (idx + 1);
-        drawDiffBox(left.overlay, rect.left, diffId, "change");
-        drawDiffBox(right.overlay, rect.right, diffId, "change");
+        var type = rect.type || "compact";
+        drawDiffElement(left.overlay,  rect.left,  diffId, "change", type);
+        drawDiffElement(right.overlay, rect.right, diffId, "change", type);
         diffEntries.push({
           id: diffId, kind: "change", rowIndex: rowIndex,
           pageNo: left.pageNo, leftPageNo: left.pageNo, rightPageNo: right.pageNo,
@@ -1822,6 +1891,244 @@
     }
 
     async function detectDiffRects_PixelOnly(leftView, rightView, generation) {
+      if (cvReady) {
+        try {
+          return await detectDiffRects_CV(leftView, rightView, generation);
+        } catch (cvErr) {
+          console.warn("[PDF Compare] OpenCV 파이프라인 오류, JS 폴백:", cvErr);
+        }
+      }
+      return detectDiffRects_JS(leftView, rightView, generation);
+    }
+
+    async function detectDiffRects_CV(leftView, rightView, generation) {
+      var canvas1 = leftView.canvas, canvas2 = rightView.canvas;
+      var cssWidth = leftView.width, cssHeight = leftView.height;
+      var w = canvas1.width, h = canvas1.height;
+      var ES = Math.max(1, renderOversample * dpr);
+
+      // canvas2 크기 정규화
+      var sampledCanvas2 = canvas2;
+      if (canvas2.width !== w || canvas2.height !== h) {
+        sampledCanvas2 = document.createElement("canvas");
+        sampledCanvas2.width = w; sampledCanvas2.height = h;
+        sampledCanvas2.getContext("2d").drawImage(canvas2, 0, 0, w, h);
+      }
+
+      // ── Stage 1 (coarse): 1/4 해상도로 동일 여부 빠르게 검사 ──────────────
+      var cw = Math.max(1, Math.round(w * 0.25)), ch = Math.max(1, Math.round(h * 0.25));
+      var cc1 = document.createElement("canvas"); cc1.width = cw; cc1.height = ch;
+      cc1.getContext("2d").drawImage(canvas1, 0, 0, cw, ch);
+      var cc2 = document.createElement("canvas"); cc2.width = cw; cc2.height = ch;
+      cc2.getContext("2d").drawImage(sampledCanvas2, 0, 0, cw, ch);
+      var cd1 = cc1.getContext("2d").getImageData(0, 0, cw, ch).data;
+      var cd2 = cc2.getContext("2d").getImageData(0, 0, cw, ch).data;
+      var coarseDiff = 0;
+      for (var k = 0; k < cw * ch; k++) {
+        var p = k * 4;
+        if (cd1[p] > 250 && cd1[p+1] > 250 && cd1[p+2] > 250 &&
+            cd2[p] > 250 && cd2[p+1] > 250 && cd2[p+2] > 250) continue;
+        if (Math.max(Math.abs(cd1[p]-cd2[p]), Math.abs(cd1[p+1]-cd2[p+1]),
+                     Math.abs(cd1[p+2]-cd2[p+2])) > 20) coarseDiff++;
+      }
+      if (generation !== renderGeneration) return { rects: [], meta: {} };
+      if (coarseDiff === 0) {
+        return { rects: [], meta: { mode: "pixel-cv", rawDiffRects: 0, finalDiffRects: 0 } };
+      }
+      await yieldToBrowser();
+
+      // ── Stage 2: content bounds ROI 계산 ───────────────────────────────────
+      var cb1 = leftView.contentBounds  || { x: 0, y: 0, w: w, h: h };
+      var cb2 = rightView.contentBounds || { x: 0, y: 0, w: w, h: h };
+      var roiX  = Math.max(0, Math.min(cb1.x, cb2.x));
+      var roiY  = Math.max(0, Math.min(cb1.y, cb2.y));
+      var roiX2 = Math.min(w, Math.max(cb1.x + cb1.w, cb2.x + cb2.w));
+      var roiY2 = Math.min(h, Math.max(cb1.y + cb1.h, cb2.y + cb2.h));
+      var roiW  = Math.max(1, roiX2 - roiX);
+      var roiH  = Math.max(1, roiY2 - roiY);
+
+      // ── Stage 3: OpenCV 풀 파이프라인 ──────────────────────────────────────
+      // cv.Mat 변수 전부 null 초기화 → finally에서 일괄 delete
+      var src1=null, src2=null, gray1=null, gray2=null, gray2a=null;
+      var blur1=null, blur2=null;
+      var edges1=null, edges2=null;
+      var invEdges1=null, invEdges2=null;
+      var dist1=null, dist2=null;
+      var farFrom1f=null, farFrom2f=null, farFrom1u=null, farFrom2u=null;
+      var newEdges=null, removedEdges=null, edgeDiff=null;
+      var diffInt=null, threshInt=null;
+      var combined=null, morphed=null;
+      var labels=null, stats=null, centroids=null;
+      var kOpen=null, kClose=null;
+
+      try {
+        // 1. ROI ImageData → cv.Mat (RGBA)
+        var id1 = canvas1.getContext("2d").getImageData(roiX, roiY, roiW, roiH);
+        var id2 = sampledCanvas2.getContext("2d").getImageData(roiX, roiY, roiW, roiH);
+        src1 = cv.matFromImageData(id1);
+        src2 = cv.matFromImageData(id2);
+
+        // 2. Grayscale 변환
+        gray1 = new cv.Mat(); gray2 = new cv.Mat();
+        cv.cvtColor(src1, gray1, cv.COLOR_RGBA2GRAY);
+        cv.cvtColor(src2, gray2, cv.COLOR_RGBA2GRAY);
+        src1.delete(); src1 = null;
+        src2.delete(); src2 = null;
+
+        if (generation !== renderGeneration) return { rects: [], meta: {} };
+        await yieldToBrowser();
+
+        // 3. Translation 정렬 보정 (경미한 스캔 오프셋 제거)
+        if (DIFF_POST.CV_ALIGN_TRANSLATION) {
+          gray2a = cvAlignTranslation(gray1, gray2);
+          if (gray2a !== gray2) { gray2.delete(); gray2 = null; }
+          else                  { gray2 = null; }
+        } else {
+          gray2a = gray2; gray2 = null;
+        }
+
+        // 4. Gaussian blur (anti-aliasing 노이즈 억제)
+        blur1 = new cv.Mat(); blur2 = new cv.Mat();
+        var bSz = Math.max(3, (DIFF_POST.CV_BLUR_KSIZE * Math.round(ES / 3)) | 1);
+        var kBlur = new cv.Size(bSz, bSz);
+        cv.GaussianBlur(gray1,  blur1, kBlur, 0);
+        cv.GaussianBlur(gray2a, blur2, kBlur, 0);
+        gray1.delete();  gray1  = null;
+        gray2a.delete(); gray2a = null;
+
+        // 5. 직접 픽셀 강도 차이
+        diffInt  = new cv.Mat(); threshInt = new cv.Mat();
+        cv.absdiff(blur1, blur2, diffInt);
+        var pixThr = Math.max(20, Math.round(DIFF_POST.CV_PIX_DIFF_THR * 3 / ES));
+        cv.threshold(diffInt, threshInt, pixThr, 255, cv.THRESH_BINARY);
+        diffInt.delete(); diffInt = null;
+
+        // 6. Edge map 생성 (Canny)
+        edges1 = new cv.Mat(); edges2 = new cv.Mat();
+        var cLo = Math.max(10, Math.round(DIFF_POST.CV_CANNY_LO * 3 / ES));
+        var cHi = Math.max(30, Math.round(DIFF_POST.CV_CANNY_HI * 3 / ES));
+        cv.Canny(blur1, edges1, cLo, cHi);
+        cv.Canny(blur2, edges2, cLo, cHi);
+        blur1.delete(); blur1 = null;
+        blur2.delete(); blur2 = null;
+
+        if (generation !== renderGeneration) return { rects: [], meta: {} };
+        await yieldToBrowser();
+
+        // 7. Distance Transform 기반 edge diff
+        //    각 픽셀에서 가장 가까운 edge까지의 거리 계산
+        //    → 한쪽 edge가 상대 이미지 edge에서 D_TOL px 이상 멀면 "진짜 diff"로 판정
+        invEdges1 = new cv.Mat(); invEdges2 = new cv.Mat();
+        cv.bitwise_not(edges1, invEdges1);
+        cv.bitwise_not(edges2, invEdges2);
+
+        dist1 = new cv.Mat(); dist2 = new cv.Mat();
+        cv.distanceTransform(invEdges1, dist1, cv.DIST_L2, cv.DIST_MASK_PRECISE);
+        cv.distanceTransform(invEdges2, dist2, cv.DIST_L2, cv.DIST_MASK_PRECISE);
+        invEdges1.delete(); invEdges1 = null;
+        invEdges2.delete(); invEdges2 = null;
+
+        var dTol = Math.max(2, Math.round(DIFF_POST.CV_DIST_TOL * ES / 3));
+        farFrom1f = new cv.Mat(); farFrom2f = new cv.Mat();
+        cv.threshold(dist1, farFrom1f, dTol, 255, cv.THRESH_BINARY);
+        cv.threshold(dist2, farFrom2f, dTol, 255, cv.THRESH_BINARY);
+        dist1.delete(); dist1 = null;
+        dist2.delete(); dist2 = null;
+
+        // float → 8U 변환 (bitwise 연산에 필요)
+        farFrom1u = new cv.Mat(); farFrom2u = new cv.Mat();
+        farFrom1f.convertTo(farFrom1u, cv.CV_8U);
+        farFrom2f.convertTo(farFrom2u, cv.CV_8U);
+        farFrom1f.delete(); farFrom1f = null;
+        farFrom2f.delete(); farFrom2f = null;
+
+        // new edges: img2 edge that is far from any edge in img1
+        // removed edges: img1 edge that is far from any edge in img2
+        newEdges = new cv.Mat(); removedEdges = new cv.Mat();
+        cv.bitwise_and(edges2, farFrom1u, newEdges);
+        cv.bitwise_and(edges1, farFrom2u, removedEdges);
+        edges1.delete(); edges1 = null;
+        edges2.delete(); edges2 = null;
+        farFrom1u.delete(); farFrom1u = null;
+        farFrom2u.delete(); farFrom2u = null;
+
+        edgeDiff = new cv.Mat();
+        cv.bitwise_or(newEdges, removedEdges, edgeDiff);
+        newEdges.delete();    newEdges    = null;
+        removedEdges.delete(); removedEdges = null;
+
+        // 8. 강도 diff + edge diff 합산
+        combined = new cv.Mat();
+        cv.bitwise_or(threshInt, edgeDiff, combined);
+        threshInt.delete(); threshInt = null;
+        edgeDiff.delete();  edgeDiff  = null;
+
+        if (generation !== renderGeneration) return { rects: [], meta: {} };
+        await yieldToBrowser();
+
+        // 9. Morphology: Opening(노이즈 제거) → Closing(갭 메우기)
+        var oSz = Math.max(3, (DIFF_POST.CV_MORPH_OPEN  * Math.round(ES / 3)) | 1);
+        var cSz = Math.max(5, (DIFF_POST.CV_MORPH_CLOSE * Math.round(ES / 3)) | 1);
+        kOpen  = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(oSz, oSz));
+        kClose = cv.getStructuringElement(cv.MORPH_RECT,    new cv.Size(cSz, cSz));
+        morphed = new cv.Mat();
+        cv.morphologyEx(combined, morphed, cv.MORPH_OPEN,  kOpen);
+        combined.delete(); combined = null;
+        cv.morphologyEx(morphed,  morphed, cv.MORPH_CLOSE, kClose);
+        kOpen.delete();  kOpen  = null;
+        kClose.delete(); kClose = null;
+
+        // 10. connectedComponentsWithStats
+        labels = new cv.Mat(); stats = new cv.Mat(); centroids = new cv.Mat();
+        var nComp = cv.connectedComponentsWithStats(morphed, labels, stats, centroids, 8, cv.CV_32S);
+        labels.delete();    labels    = null;
+        centroids.delete(); centroids = null;
+
+        var components = [];
+        for (var i = 1; i < nComp; i++) {
+          var cx   = stats.intAt(i, cv.CC_STAT_LEFT);
+          var cy   = stats.intAt(i, cv.CC_STAT_TOP);
+          var cw2  = stats.intAt(i, cv.CC_STAT_WIDTH);
+          var ch2  = stats.intAt(i, cv.CC_STAT_HEIGHT);
+          var area = stats.intAt(i, cv.CC_STAT_AREA);
+          if (cw2 > 0 && ch2 > 0 && area > 0) {
+            components.push({ x: cx, y: cy, w: cw2, h: ch2, area: area });
+          }
+        }
+        stats.delete(); stats = null;
+
+        // morphed.data는 WASM 메모리 뷰 → delete 전에 복사
+        var maskData = new Uint8Array(morphed.data);
+        morphed.delete(); morphed = null;
+
+        // 11. bbox 후처리 (분류·분할·병합·필터링)
+        var finalRects = postProcessDiffComponents(
+          components, maskData, roiW, roiH, roiX, roiY, w, h, ES, cssWidth, cssHeight
+        );
+
+        return {
+          rects: finalRects,
+          meta: {
+            ignoredTextBlocks: 0, textDiffBlocks: 0, textBgDiffBlocks: 0,
+            isImageHeavy: false, mode: "pixel-cv",
+            rawDiffRects: components.length, finalDiffRects: finalRects.length
+          }
+        };
+
+      } finally {
+        // 모든 cv.Mat 일괄 해제
+        [src1, src2, gray1, gray2, gray2a, blur1, blur2,
+         edges1, edges2, invEdges1, invEdges2,
+         dist1, dist2, farFrom1f, farFrom2f, farFrom1u, farFrom2u,
+         newEdges, removedEdges, edgeDiff,
+         diffInt, threshInt, combined, morphed,
+         labels, stats, centroids, kOpen, kClose
+        ].forEach(function (m) { if (m) try { m.delete(); } catch (e) {} });
+      }
+    }
+
+    // ── 순수 JS 폴백 파이프라인 (OpenCV 미로드 시 사용) ─────────────────────
+    async function detectDiffRects_JS(leftView, rightView, generation) {
       var canvas1 = leftView.canvas, canvas2 = rightView.canvas;
       var cssWidth = leftView.width, cssHeight = leftView.height;
       var w = canvas1.width, h = canvas1.height;
@@ -1830,38 +2137,27 @@
       var sampledCanvas2 = canvas2;
       if (canvas2.width !== w || canvas2.height !== h) {
         sampledCanvas2 = document.createElement("canvas");
-        sampledCanvas2.width = w;
-        sampledCanvas2.height = h;
+        sampledCanvas2.width = w; sampledCanvas2.height = h;
         sampledCanvas2.getContext("2d").drawImage(canvas2, 0, 0, w, h);
       }
 
-      // ── Stage 1 (coarse): 1/4 해상도로 동일 여부를 빠르게 검사 ───────────────
-      var cw = Math.max(1, Math.round(w * 0.25));
-      var ch = Math.max(1, Math.round(h * 0.25));
+      var cw = Math.max(1, Math.round(w * 0.25)), ch = Math.max(1, Math.round(h * 0.25));
       var cc1 = document.createElement("canvas"); cc1.width = cw; cc1.height = ch;
       cc1.getContext("2d").drawImage(canvas1, 0, 0, cw, ch);
       var cc2 = document.createElement("canvas"); cc2.width = cw; cc2.height = ch;
       cc2.getContext("2d").drawImage(sampledCanvas2, 0, 0, cw, ch);
       var coarseMask = pixelOnlyDiffMask_LowContrastFilter(
         cc1.getContext("2d").getImageData(0, 0, cw, ch).data,
-        cc2.getContext("2d").getImageData(0, 0, cw, ch).data,
-        cw, ch
+        cc2.getContext("2d").getImageData(0, 0, cw, ch).data, cw, ch
       );
       var coarseDiffCount = 0;
       for (var k = 0; k < coarseMask.length; k++) { if (coarseMask[k]) coarseDiffCount++; }
       if (generation !== undefined && generation !== renderGeneration) return { rects: [], meta: {} };
-
-      // 변경 없음 → 전체 heavy diff 생략
       if (coarseDiffCount === 0) {
-        return {
-          rects: [],
-          meta: { ignoredTextBlocks: 0, textDiffBlocks: 0, textBgDiffBlocks: 0,
-                  isImageHeavy: false, mode: "pixel", rawDiffRects: 0, finalDiffRects: 0 }
-        };
+        return { rects: [], meta: { mode: "pixel-js", rawDiffRects: 0, finalDiffRects: 0 } };
       }
       await yieldToBrowser();
 
-      // ── Stage 2 (fine): content bounds의 합집합 영역만 full diff ─────────────
       var cb1 = leftView.contentBounds  || { x: 0, y: 0, w: w, h: h };
       var cb2 = rightView.contentBounds || { x: 0, y: 0, w: w, h: h };
       var roiX  = Math.max(0, Math.min(cb1.x, cb2.x));
@@ -1883,44 +2179,16 @@
       await yieldToBrowser();
 
       var components = pixelOnlyCCL(mask, roiW, roiH);
+      var finalRects = postProcessDiffComponents(
+        components, mask, roiW, roiH, roiX, roiY, w, h, effectiveScale, cssWidth, cssHeight
+      );
 
-      var minDensity = 0.15;
-      var minBboxArea = Math.max(60 * effectiveScale, 60);
-      var minLinePixels = Math.max(600 * effectiveScale, 600);
-      var minLineBbox   = Math.max(2500 * effectiveScale, 2500);
-      var filtered = components.filter(function (c) {
-        var bboxArea = c.w * c.h;
-        if (bboxArea < minBboxArea) return false;
-        if ((c.area / bboxArea) >= minDensity) return true;
-        return bboxArea >= minLineBbox && c.area >= minLinePixels;
-      });
-
-      var pad = Math.max(6, Math.round(8 * effectiveScale / 3));
-      // ROI 내부 좌표를 전체 canvas 좌표로 되돌린 뒤 expand
-      var rectsPx = filtered.map(function (c) {
-        return expandRect({ x: c.x + roiX, y: c.y + roiY, w: c.w, h: c.h }, pad, w, h);
-      });
-
-      var merged = mergeNearbyRects(rectsPx, Math.round(50 * effectiveScale / 3));
-      merged = mergeNearbyRects(merged, Math.round(30 * effectiveScale / 3));
-
-      var minFinalArea = Math.max(500 * effectiveScale, 500);
-      merged = merged.filter(function (r) { return r.w * r.h >= minFinalArea; });
-
-      var scaleX = cssWidth / w, scaleY = cssHeight / h;
       return {
-        rects: merged.map(function (r) {
-          var cr = { x: r.x * scaleX, y: r.y * scaleY, w: r.w * scaleX, h: r.h * scaleY };
-          return { left: cr, right: cr };
-        }),
+        rects: finalRects,
         meta: {
-          ignoredTextBlocks: 0,
-          textDiffBlocks: 0,
-          textBgDiffBlocks: 0,
-          isImageHeavy: false,
-          mode: "pixel",
-          rawDiffRects: components.length,
-          finalDiffRects: merged.length
+          ignoredTextBlocks: 0, textDiffBlocks: 0, textBgDiffBlocks: 0,
+          isImageHeavy: false, mode: "pixel-js",
+          rawDiffRects: components.length, finalDiffRects: finalRects.length
         }
       };
     }
@@ -2032,6 +2300,67 @@
       return Object.values(stats).map(function(s) {
         return { x: s.minX, y: s.minY, w: s.maxX - s.minX + 1, h: s.maxY - s.minY + 1, area: s.area };
       });
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // cvAlignTranslation: 경미한 translation 보정 (스캔 PDF 대응)
+    //   gray1, gray2: CV_8UC1 grayscale cv.Mat (ROI 크기)
+    //   반환: 보정된 gray2 Mat (새로 생성) 또는 원본 gray2 (변환 불필요 시)
+    // ────────────────────────────────────────────────────────────────────────
+    function cvAlignTranslation(gray1, gray2) {
+      var SCALE = 8; // 1/8 해상도로 계산
+      var sw = Math.max(32, Math.round(gray1.cols / SCALE));
+      var sh = Math.max(32, Math.round(gray1.rows / SCALE));
+
+      var small1 = null, small2 = null, templ = null, result = null;
+      try {
+        var dsize = new cv.Size(sw, sh);
+        small1 = new cv.Mat(); small2 = new cv.Mat();
+        cv.resize(gray1, small1, dsize, 0, 0, cv.INTER_AREA);
+        cv.resize(gray2, small2, dsize, 0, 0, cv.INTER_AREA);
+
+        // 중앙 70% 영역을 template으로 사용
+        var mx = Math.round(sw * 0.15), my = Math.round(sh * 0.15);
+        var tw = sw - 2 * mx, th = sh - 2 * my;
+        if (tw < 8 || th < 8) return gray2; // 너무 작으면 skip
+
+        var templRect = new cv.Rect(mx, my, tw, th);
+        templ  = small2.roi(templRect);
+        result = new cv.Mat();
+        cv.matchTemplate(small1, templ, result, cv.TM_CCOEFF_NORMED);
+
+        var minMaxRes = cv.minMaxLoc(result);
+        var maxLoc    = minMaxRes.maxLoc;
+
+        // 소형 이미지 상 오프셋 → 원본 스케일로 환산
+        var dxSmall = maxLoc.x - mx;
+        var dySmall = maxLoc.y - my;
+        var dx = Math.round(dxSmall * SCALE);
+        var dy = Math.round(dySmall * SCALE);
+
+        // 의미 없는 수준(< 2px) 또는 너무 큰 오프셋(> 20px)은 보정 생략
+        if ((Math.abs(dx) < 2 && Math.abs(dy) < 2) ||
+             Math.abs(dx) > 20 || Math.abs(dy) > 20) {
+          return gray2;
+        }
+
+        // Translation matrix: 2×3, CV_64F
+        var M = cv.matFromArray(2, 3, cv.CV_64F, [1, 0, dx, 0, 1, dy]);
+        var aligned = new cv.Mat();
+        var fullSize = new cv.Size(gray2.cols, gray2.rows);
+        cv.warpAffine(gray2, aligned, M, fullSize,
+                      cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar(255));
+        M.delete();
+        return aligned; // 호출자가 delete 책임
+
+      } catch (e) {
+        return gray2; // 오류 시 원본 반환
+      } finally {
+        if (small1)  try { small1.delete();  } catch (e) {}
+        if (small2)  try { small2.delete();  } catch (e) {}
+        if (templ)   try { templ.delete();   } catch (e) {}
+        if (result)  try { result.delete();  } catch (e) {}
+      }
     }
 
     async function detectDiffRects_TextOnly(leftView, rightView, generation) {
@@ -2958,6 +3287,289 @@
       box.style.width = rect.w + "px";
       box.style.height = rect.h + "px";
       overlay.appendChild(box);
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // diff 시각화 – type별 draw 함수
+    // ────────────────────────────────────────────────────────────────────────
+
+    function drawBox(overlay, rect, diffId, kind) {
+      var box = document.createElement("div");
+      box.className = "diff-box";
+      if (kind === "insert") box.classList.add("insert-box");
+      if (kind === "delete") box.classList.add("delete-box");
+      box.dataset.diffId = diffId;
+      box.style.left   = rect.x + "px";
+      box.style.top    = rect.y + "px";
+      box.style.width  = rect.w + "px";
+      box.style.height = rect.h + "px";
+      overlay.appendChild(box);
+    }
+
+    /** thin line용: 반투명 채운 바 (border 없음) */
+    function drawLine(overlay, rect, diffId) {
+      var box = document.createElement("div");
+      box.className = "diff-box diff-line";
+      box.dataset.diffId = diffId;
+      box.style.left   = rect.x + "px";
+      box.style.top    = rect.y + "px";
+      box.style.width  = rect.w + "px";
+      box.style.height = rect.h + "px";
+      overlay.appendChild(box);
+    }
+
+    /** sparse 영역용: 점선 영역 */
+    function drawOverlayMask(overlay, rect, diffId) {
+      var box = document.createElement("div");
+      box.className = "diff-box diff-overlay-mask";
+      box.dataset.diffId = diffId;
+      box.style.left   = rect.x + "px";
+      box.style.top    = rect.y + "px";
+      box.style.width  = rect.w + "px";
+      box.style.height = rect.h + "px";
+      overlay.appendChild(box);
+    }
+
+    /** type에 따라 적절한 draw 함수 선택 */
+    function drawDiffElement(overlay, rect, diffId, kind, type) {
+      if (type === "hline" || type === "vline") {
+        drawLine(overlay, rect, diffId);
+      } else if (type === "sparse") {
+        drawOverlayMask(overlay, rect, diffId);
+      } else {
+        drawBox(overlay, rect, diffId, kind);
+      }
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // diff 후처리 파이프라인
+    // ────────────────────────────────────────────────────────────────────────
+
+    /**
+     * CCL 컴포넌트 배열을 받아 분류·분할·병합·필터링 후
+     * { left, right, type } 배열로 반환.
+     */
+    function postProcessDiffComponents(components, mask, roiW, roiH, roiX, roiY,
+                                        canvasW, canvasH, effectiveScale, cssWidth, cssHeight) {
+      var ES = Math.max(1, effectiveScale);
+
+      // ── 1. filterNoiseBoxes (초기): bbox 너무 작거나 밀도 너무 낮은 제거 ──
+      var minArea    = Math.round(DIFF_POST.MIN_AREA * ES / 3);
+      var minBboxPx  = Math.max(60 * ES, 60);
+      var borderX    = Math.round(canvasW * DIFF_POST.BORDER_MARGIN);
+      var borderY    = Math.round(canvasH * DIFF_POST.BORDER_MARGIN);
+
+      var items = components.filter(function (c) {
+        if (c.area < minArea) return false;
+        var bboxArea = c.w * c.h;
+        if (bboxArea < minBboxPx) return false;
+        var density = c.area / bboxArea;
+        // 밀도 낮고 bbox도 작으면 노이즈
+        if (density < DIFF_POST.MIN_DENSITY && bboxArea < DIFF_POST.SPARSE_MIN_BBOX * ES) return false;
+        // border noise 제거
+        var absX = c.x + roiX, absY = c.y + roiY;
+        if (absX + c.w <= borderX || absX >= canvasW - borderX) return false;
+        if (absY + c.h <= borderY || absY >= canvasH - borderY) return false;
+        return true;
+      });
+
+      // ── 2. classifyDiffRegion + splitSparseBox ─────────────────────────────
+      var expanded = [];
+      items.forEach(function (c) {
+        var density = c.area / (c.w * c.h);
+        var type = classifyDiffRegion(c, density, ES);
+        if (type === "sparse") {
+          var splits = splitSparseBox(c, mask, roiW, roiH);
+          splits.forEach(function (s) { expanded.push(s); });
+        } else {
+          expanded.push(Object.assign({}, c, { type: type }));
+        }
+      });
+
+      // ── 3. pad 적용 후 canvas 좌표로 변환 ──────────────────────────────────
+      var pad = Math.max(6, Math.round(8 * ES / 3));
+      var paddedPx = expanded.map(function (c) {
+        var r = expandRect({ x: c.x + roiX, y: c.y + roiY, w: c.w, h: c.h }, pad, canvasW, canvasH);
+        r.type = c.type || "compact";
+        r.area = c.area;
+        return r;
+      });
+
+      // ── 4. mergeNearbyBoxesWithType ─────────────────────────────────────────
+      var mergeGap = Math.round(DIFF_POST.BOX_MERGE_GAP * ES / 3);
+      var merged = mergeNearbyBoxesWithType(paddedPx, mergeGap);
+      merged     = mergeNearbyBoxesWithType(merged,   Math.round(mergeGap * 0.5));
+
+      // ── 5. filterNoiseBoxes (최종): 병합 후 최소 면적 필터 ─────────────────
+      var minFinalArea = Math.max(500 * ES, 500);
+      merged = merged.filter(function (r) { return r.w * r.h >= minFinalArea; });
+
+      // ── 6. CSS 좌표로 변환 후 반환 ─────────────────────────────────────────
+      var scaleX = cssWidth / canvasW, scaleY = cssHeight / canvasH;
+      return merged.map(function (r) {
+        var cr = { x: r.x * scaleX, y: r.y * scaleY, w: r.w * scaleX, h: r.h * scaleY };
+        return { left: cr, right: cr, type: r.type || "compact" };
+      });
+    }
+
+    /**
+     * 단일 컴포넌트를 타입으로 분류.
+     * @param {object} c      - { w, h, area }
+     * @param {number} density - c.area / (c.w * c.h)
+     * @param {number} ES     - effectiveScale
+     */
+    function classifyDiffRegion(c, density, ES) {
+      var w = c.w, h = c.h;
+      var thinSide = DIFF_POST.LINE_THIN_SIDE * ES;
+      var longSide = DIFF_POST.LINE_LONG_SIDE * ES;
+
+      // thin vertical line
+      if (w <= thinSide && h > longSide) return "vline";
+      // thin horizontal line
+      if (h <= thinSide && w > longSide) return "hline";
+      // aspect ratio 기반 선 판정 (긴 쪽이 짧은 쪽의 LINE_ASPECT_RATIO 배 이상)
+      if (w > 0 && h > 0) {
+        var asp = Math.max(w / h, h / w);
+        if (asp >= DIFF_POST.LINE_ASPECT_RATIO) {
+          return (w > h) ? "hline" : "vline";
+        }
+      }
+      // sparse 분할 대상
+      var bboxArea = w * h;
+      if (bboxArea >= DIFF_POST.SPARSE_MIN_BBOX * Math.max(1, ES / 2) &&
+          density < DIFF_POST.SPARSE_SPLIT_THRESHOLD) {
+        return "sparse";
+      }
+      // 작은 점
+      if (bboxArea < 400 * ES) return "point";
+      return "compact";
+    }
+
+    /**
+     * sparse 컴포넌트를 x/y projection 기반으로 분할.
+     * mask 좌표는 ROI 기준 (roiW×roiH).
+     */
+    function splitSparseBox(c, mask, maskW, maskH) {
+      var GAP_MIN = Math.max(8, Math.round(Math.max(c.w, c.h) * 0.04));
+
+      // x-projection (각 열의 diff 픽셀 수)
+      var xProj = new Int32Array(c.w);
+      var yProj = new Int32Array(c.h);
+      for (var dy = 0; dy < c.h; dy++) {
+        for (var dx = 0; dx < c.w; dx++) {
+          var mx = c.x + dx, my = c.y + dy;
+          if (mx < 0 || mx >= maskW || my < 0 || my >= maskH) continue;
+          if (mask[my * maskW + mx]) { xProj[dx]++; yProj[dy]++; }
+        }
+      }
+
+      var xSegs = findProjectionSegments(xProj, GAP_MIN);
+      var ySegs = findProjectionSegments(yProj, GAP_MIN);
+
+      var results = [];
+      for (var yi = 0; yi < ySegs.length; yi++) {
+        for (var xi = 0; xi < xSegs.length; xi++) {
+          var xs = xSegs[xi], ys = ySegs[yi];
+          var segW = xs[1] - xs[0] + 1;
+          var segH = ys[1] - ys[0] + 1;
+          // 세그먼트 내 실제 diff 픽셀 계산
+          var area = 0;
+          for (var sy = ys[0]; sy <= ys[1]; sy++) {
+            for (var sx = xs[0]; sx <= xs[1]; sx++) {
+              var mx2 = c.x + sx, my2 = c.y + sy;
+              if (mx2 >= 0 && mx2 < maskW && my2 >= 0 && my2 < maskH && mask[my2 * maskW + mx2]) area++;
+            }
+          }
+          if (area < DIFF_POST.MIN_AREA / 4) continue; // 너무 작은 세그먼트 제거
+          var density2 = area / (segW * segH);
+          var type2 = classifyDiffRegion({ w: segW, h: segH, area: area }, density2, 1);
+          results.push({
+            x: c.x + xs[0], y: c.y + ys[0],
+            w: segW, h: segH,
+            area: area,
+            type: type2 === "sparse" ? "compact" : type2 // 재귀 방지
+          });
+        }
+      }
+
+      // 분할 결과가 없으면 원본을 compact로 반환
+      if (results.length === 0) {
+        return [Object.assign({}, c, { type: "compact" })];
+      }
+      return results;
+    }
+
+    /**
+     * 1D projection 배열에서 연속 0 구간(gap)으로 세그먼트 분리.
+     * @returns {Array<[start, end]>}
+     */
+    function findProjectionSegments(proj, minGap) {
+      var len = proj.length;
+      if (len === 0) return [[0, 0]];
+
+      var segs = [];
+      var inSeg = false, segStart = 0, gapCount = 0;
+
+      for (var i = 0; i < len; i++) {
+        if (proj[i] > 0) {
+          if (!inSeg) { inSeg = true; segStart = i; }
+          gapCount = 0;
+        } else {
+          if (inSeg) {
+            gapCount++;
+            if (gapCount >= minGap) {
+              segs.push([segStart, i - gapCount]);
+              inSeg = false;
+              gapCount = 0;
+            }
+          }
+        }
+      }
+      if (inSeg) segs.push([segStart, len - 1 - Math.min(gapCount, minGap - 1)]);
+
+      if (segs.length === 0) segs = [[0, len - 1]];
+      return segs;
+    }
+
+    /**
+     * area 합산 및 type 결정을 포함한 nearbyBoxes 병합.
+     */
+    function mergeNearbyBoxesWithType(rects, gap) {
+      gap = typeof gap === "number" ? gap : 20;
+      var merged = rects.slice(), changed = true;
+      while (changed) {
+        changed = false;
+        var result = [], used = new Array(merged.length).fill(false);
+        for (var i = 0; i < merged.length; i++) {
+          if (used[i]) continue;
+          var base = Object.assign({}, merged[i]);
+          for (var j = i + 1; j < merged.length; j++) {
+            if (used[j]) continue;
+            if (areRectsNear(base, merged[j], gap)) {
+              var u = unionRect(base, merged[j]);
+              u.area = (base.area || 0) + (merged[j].area || 0);
+              // 병합 시 타입: compact가 하나라도 있으면 compact,
+              // 같은 선 타입끼리는 유지, 그 외 compact
+              var bt = base.type, jt = merged[j].type;
+              if (bt === "compact" || jt === "compact" ||
+                  bt === "point"   || jt === "point") {
+                u.type = "compact";
+              } else if (bt === jt) {
+                u.type = bt;
+              } else {
+                u.type = "compact";
+              }
+              base = u;
+              used[j] = true;
+              changed = true;
+            }
+          }
+          used[i] = true;
+          result.push(base);
+        }
+        merged = result;
+      }
+      return merged;
     }
 
     function buildChangedThumbList() {
