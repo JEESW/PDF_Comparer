@@ -961,7 +961,9 @@
       LINE_THIN_SIDE:         8,     // 선 판정: 짧은 쪽 px 임계값
       LINE_LONG_SIDE:         50,    // 선 판정: 긴 쪽 px 임계값
       LINE_ASPECT_RATIO:      6,     // 추가 종횡비 임계값
-      BOX_MERGE_GAP:          10,    // 이 px 이내 박스는 병합
+      BOX_MERGE_GAP:          4,    // 이 px 이내 박스는 병합
+      MERGE_OVERLAP_RATIO:    0.25, // 분리 방향 반대축 겹침 비율 최솟값 (0=없음, 1=완전겹침)
+      MERGE_MAX_FILL_INV:     4.0,  // union면적 / 누적픽셀면적 최댓값 (초과 시 병합 거부)
       SPARSE_SPLIT_THRESHOLD: 0.03,  // density < 이 값이면 sparse 후보
       SPARSE_MIN_BBOX:        3000,  // sparse 판정에 필요한 최소 bbox 면적 (px²)
       BORDER_MARGIN:          0.015, // 캔버스 외곽 노이즈 제거 비율
@@ -1157,22 +1159,46 @@
       ldSetLog("페이지 레이아웃 구성 중...");
       for (var ri = 0; ri < alignmentRows.length; ri++) {
         var row = alignmentRows[ri], lv, rv;
-        if (row.leftPageNo != null) {
+
+        if (row.type === "match") {
+          // 양쪽 메타를 먼저 가져와 비율·크기 비교
+          var lm = await getPageMeta(pdfDoc1, row.leftPageNo);
+          var rm = await getPageMeta(pdfDoc2, row.rightPageNo);
+
+          // 비율이 같고 크기가 다를 때 → 큰 쪽 사이즈로 작은 쪽을 스케일업
+          var sameAspect = Math.abs(lm.width / lm.height - rm.width / rm.height) < 0.02;
+          var diffSize   = Math.abs(lm.width - rm.width) > 1 || Math.abs(lm.height - rm.height) > 1;
+          if (sameAspect && diffSize) {
+            if (rm.width < lm.width) {
+              rm = { width: lm.width, height: lm.height,
+                     renderScaleOverride: renderScale * lm.width / rm.width };
+            } else {
+              lm = { width: rm.width, height: rm.height,
+                     renderScaleOverride: renderScale * rm.width / lm.width };
+            }
+          }
+
+          lv = createPageShell(pdf1El, row.leftPageNo, "좌측", lm.width, lm.height, ri);
+          if (lm.renderScaleOverride) lv.renderScaleOverride = lm.renderScaleOverride;
+          leftRowIndexByPageNo[row.leftPageNo] = ri;
+
+          rv = createPageShell(pdf2El, row.rightPageNo, "우측", rm.width, rm.height, ri);
+          if (rm.renderScaleOverride) rv.renderScaleOverride = rm.renderScaleOverride;
+          rightRowIndexByPageNo[row.rightPageNo] = ri;
+
+        } else if (row.type === "delete") {
           var lm = await getPageMeta(pdfDoc1, row.leftPageNo);
           lv = createPageShell(pdf1El, row.leftPageNo, "좌측", lm.width, lm.height, ri);
           leftRowIndexByPageNo[row.leftPageNo] = ri;
-        } else {
-          var rm2 = await getPageMeta(pdfDoc2, row.rightPageNo);
-          lv = createMissingPageShell(pdf1El, "좌측 PDF - 없음", rm2.width, rm2.height, "insert", ri);
-        }
-        if (row.rightPageNo != null) {
+          rv = createMissingPageShell(pdf2El, "우측 PDF - 없음", lm.width, lm.height, "delete", ri);
+
+        } else { // insert
           var rm = await getPageMeta(pdfDoc2, row.rightPageNo);
+          lv = createMissingPageShell(pdf1El, "좌측 PDF - 없음", rm.width, rm.height, "insert", ri);
           rv = createPageShell(pdf2El, row.rightPageNo, "우측", rm.width, rm.height, ri);
           rightRowIndexByPageNo[row.rightPageNo] = ri;
-        } else {
-          var lm2 = await getPageMeta(pdfDoc1, row.leftPageNo);
-          rv = createMissingPageShell(pdf2El, "우측 PDF - 없음", lm2.width, lm2.height, "delete", ri);
         }
+
         pageViews1.push(lv); pageViews2.push(rv);
       }
       applyViewScale();
@@ -1286,22 +1312,49 @@
       for (var ri = 0; ri < alignmentRows.length; ri++) {
         var row = alignmentRows[ri];
         var lv, rv;
-        if (row.leftPageNo != null) {
+
+        if (row.type === "match") {
+          var lm = pageTextMeta1[row.leftPageNo];
+          var rm = pageTextMeta2[row.rightPageNo];
+
+          // 비율이 같고 크기가 다를 때 → 큰 쪽으로 작은 쪽의 스팬 좌표를 스케일
+          // (텍스트 비교 자체는 좌표 무관 → 좌표만 변환하면 diff box 위치가 맞춰짐)
+          var sameAspect = Math.abs(lm.cssWidth / lm.cssHeight - rm.cssWidth / rm.cssHeight) < 0.02;
+          var diffSize   = Math.abs(lm.cssWidth - rm.cssWidth) > 1 || Math.abs(lm.cssHeight - rm.cssHeight) > 1;
+          if (sameAspect && diffSize) {
+            if (rm.cssWidth < lm.cssWidth) {
+              var sf = lm.cssWidth / rm.cssWidth;
+              rm.textLines.forEach(function(s) { s.x *= sf; s.y *= sf; s.w *= sf; s.h *= sf; });
+              rm.cssWidth = lm.cssWidth; rm.cssHeight = lm.cssHeight;
+              rm.renderScaleOverride = renderScale * sf;
+            } else {
+              var sf = rm.cssWidth / lm.cssWidth;
+              lm.textLines.forEach(function(s) { s.x *= sf; s.y *= sf; s.w *= sf; s.h *= sf; });
+              lm.cssWidth = rm.cssWidth; lm.cssHeight = rm.cssHeight;
+              lm.renderScaleOverride = renderScale * sf;
+            }
+          }
+
+          lv = createPageShell_TextOnly(pdf1El, row.leftPageNo, "좌측", lm.cssWidth, lm.cssHeight, ri);
+          if (lm.renderScaleOverride) lv.renderScaleOverride = lm.renderScaleOverride;
+          leftRowIndexByPageNo[row.leftPageNo] = ri;
+          rv = createPageShell_TextOnly(pdf2El, row.rightPageNo, "우측", rm.cssWidth, rm.cssHeight, ri);
+          if (rm.renderScaleOverride) rv.renderScaleOverride = rm.renderScaleOverride;
+          rightRowIndexByPageNo[row.rightPageNo] = ri;
+
+        } else if (row.type === "delete") {
           var lm = pageTextMeta1[row.leftPageNo];
           lv = createPageShell_TextOnly(pdf1El, row.leftPageNo, "좌측", lm.cssWidth, lm.cssHeight, ri);
           leftRowIndexByPageNo[row.leftPageNo] = ri;
-        } else {
-          var rm2 = pageTextMeta2[row.rightPageNo];
-          lv = createMissingPageShell(pdf1El, "좌측 PDF - 없음", rm2.cssWidth, rm2.cssHeight, "insert", ri);
-        }
-        if (row.rightPageNo != null) {
+          rv = createMissingPageShell(pdf2El, "우측 PDF - 없음", lm.cssWidth, lm.cssHeight, "delete", ri);
+
+        } else { // insert
           var rm = pageTextMeta2[row.rightPageNo];
+          lv = createMissingPageShell(pdf1El, "좌측 PDF - 없음", rm.cssWidth, rm.cssHeight, "insert", ri);
           rv = createPageShell_TextOnly(pdf2El, row.rightPageNo, "우측", rm.cssWidth, rm.cssHeight, ri);
           rightRowIndexByPageNo[row.rightPageNo] = ri;
-        } else {
-          var lm2 = pageTextMeta1[row.leftPageNo];
-          rv = createMissingPageShell(pdf2El, "우측 PDF - 없음", lm2.cssWidth, lm2.cssHeight, "delete", ri);
         }
+
         pageViews1.push(lv);
         pageViews2.push(rv);
       }
@@ -2568,7 +2621,7 @@
       }
       var result = [],
         i2 = n, j2 = m,
-        thr = 0.70;
+        thr = 0.10;
       while (i2 > 0 || j2 > 0) {
         var d2 = path[i2][j2];
         if (i2 > 0 && j2 > 0 && d2 === "diag") {
@@ -2740,8 +2793,9 @@
       var token = pageView.renderToken;
       pageView.status.textContent = "rendering";
       var page = await pdfDoc.getPage(pageView.pageNo);
-      var displayViewport = page.getViewport({ scale: renderScale });
-      var renderViewport  = page.getViewport({ scale: renderScale * renderOversample });
+      var effectiveScale  = pageView.renderScaleOverride || renderScale;
+      var displayViewport = page.getViewport({ scale: effectiveScale });
+      var renderViewport  = page.getViewport({ scale: effectiveScale * renderOversample });
       if (generation !== renderGeneration || token !== pageView.renderToken) {
         return;
       }
@@ -3023,8 +3077,37 @@
     }
 
     function areRectsNear(a, b, gap) {
-      return !(a.x + a.w + gap < b.x || b.x + b.w + gap < a.x || a.y + a.h + gap < b.y || b.y + b.h
-        + gap < a.y);
+      // ── 1. 축별 거리: 어느 한 축이라도 gap 초과면 즉시 탈락 ─────────────────
+      var xGap = Math.max(0, Math.max(a.x, b.x) - Math.min(a.x + a.w, b.x + b.w));
+      var yGap = Math.max(0, Math.max(a.y, b.y) - Math.min(a.y + a.h, b.y + b.h));
+      if (xGap > gap || yGap > gap) return false;
+
+      // ── 2. 분리 방향의 반대축 겹침 비율 ───────────────────────────────────────
+      // x 방향으로 떨어진 경우 → y축 겹침이 짧은 쪽 높이의 MERGE_OVERLAP_RATIO 이상이어야 함
+      // y 방향으로 떨어진 경우 → x축 겹침이 짧은 쪽 너비의 MERGE_OVERLAP_RATIO 이상이어야 함
+      // (두 조건 모두 분리가 있을 때만 적용 → 대각선 배치 박스의 연쇄 병합 차단)
+      var minOv = DIFF_POST.MERGE_OVERLAP_RATIO;
+      if (xGap > 0) {
+        var yOv  = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        var yRef = Math.min(a.h, b.h);
+        if (yRef > 0 && yOv / yRef < minOv) return false;
+      }
+      if (yGap > 0) {
+        var xOv  = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+        var xRef = Math.min(a.w, b.w);
+        if (xRef > 0 && xOv / xRef < minOv) return false;
+      }
+
+      // ── 3. union 후 면적 증가율 ──────────────────────────────────────────────
+      // .area = mergeNearbyBoxesWithType에서 누적된 실제 픽셀 수
+      //         없으면 기하 면적(bounding box)으로 대체
+      var aPixels = (a.area != null ? a.area : a.w * a.h);
+      var bPixels = (b.area != null ? b.area : b.w * b.h);
+      var u = unionRect(a, b);
+      if (aPixels + bPixels > 0 &&
+          u.w * u.h > DIFF_POST.MERGE_MAX_FILL_INV * (aPixels + bPixels)) return false;
+
+      return true;
     }
 
     function mergeNearbyRects(rects, gap) {
@@ -3326,7 +3409,7 @@
       });
 
       // ── 3. pad 적용 후 canvas 좌표로 변환 ──────────────────────────────────
-      var pad = Math.max(6, Math.round(8 * ES / 3));
+      var pad = Math.max(3, Math.round(4 * ES / 3));
       var paddedPx = expanded.map(function (c) {
         var r = expandRect({ x: c.x + roiX, y: c.y + roiY, w: c.w, h: c.h }, pad, canvasW, canvasH);
         r.type = c.type || "compact";
