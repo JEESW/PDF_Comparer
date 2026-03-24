@@ -2363,63 +2363,6 @@
       }
     }
 
-    async function detectDiffRects_TextOnly(leftView, rightView, generation) {
-      await yieldToBrowser();
-      if (generation !== undefined && generation !== renderGeneration) {
-        return { rects: [], meta: {} };
-      }
-
-      if (!globalTextLines1.length || !globalTextLines2.length) {
-        globalTextLines1 = collectAllRowItems(pageViews1);
-        globalTextLines2 = collectAllRowItems(pageViews2);
-      }
-
-      var diffOps = postProcessDiffOps(computeWordsDiff(globalTextLines1, globalTextLines2));
-
-      var lDiffs = [], rDiffs = [];
-      diffOps.forEach(function (op) {
-        if ((op.op === "-" || op.op === "~") && op.leftEntry && op.leftEntry.pageNo
-          === leftView.pageNo) {
-          lDiffs.push(op.leftEntry.line);
-        }
-        if ((op.op === "+" || op.op === "~") && op.rightEntry && op.rightEntry.pageNo
-          === rightView.pageNo) {
-          rDiffs.push(op.rightEntry.line);
-        }
-      });
-
-      if (lDiffs.length === 0 && rDiffs.length === 0) {
-        return { rects: [], meta: { mode: "text" } };
-      }
-
-      var lRects = mergeNearbyRects(lDiffs.map(function (ln) {
-        return expandRectCss(ln, 4, leftView.width, leftView.height);
-      }), 8);
-      var rRects = mergeNearbyRects(rDiffs.map(function (ln) {
-        return expandRectCss(ln, 4, rightView.width, rightView.height);
-      }), 8);
-
-      var pairCount = Math.max(lRects.length, rRects.length);
-      var rects = [];
-      for (var i = 0; i < pairCount; i++) {
-        rects.push({
-          left: lRects[i] || rRects[i],
-          right: rRects[i] || lRects[i]
-        });
-      }
-
-      return {
-        rects: rects,
-        meta: {
-          ignoredTextBlocks: 0,
-          textDiffBlocks: rects.length,
-          textBgDiffBlocks: 0,
-          isImageHeavy: false,
-          mode: "text"
-        }
-      };
-    }
-
     function collectAllRowItems(pageViews) {
       var result = [];
       var globalRowIndex = 0;
@@ -2899,10 +2842,6 @@
       updatePageStatusBadge(left, 1, "delete");
       updatePageStatusBadge(right, 1, "delete");
       sortDiffEntries();
-    }
-
-    function isImageHeavyPage(lv, rv) {
-      return (lv.textLines.length + rv.textLines.length) < 10;
     }
 
     function acquireRenderSlot() {
