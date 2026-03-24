@@ -3731,11 +3731,38 @@
         { top: Math.max(0, right.pageWrap.offsetTop - 20), behavior: smooth ? "smooth" : "auto" });
     }
 
-    function getScrollTopForRect(pageWrap, rect, container) {
-      var rectTop = rect ? (rect.y * viewScale) : 0;
-      var targetTop = pageWrap.offsetTop + rectTop - container.clientHeight * 0.35;
-      return Math.max(0,
-        Math.min(targetTop, Math.max(0, container.scrollHeight - container.clientHeight)));
+    function scrollContainerToElement(el, container, smooth) {
+      var elBCR  = el.getBoundingClientRect();
+      var cntBCR = container.getBoundingClientRect();
+      var elTop  = container.scrollTop  + (elBCR.top  - cntBCR.top);
+      var elLeft = container.scrollLeft + (elBCR.left - cntBCR.left);
+      var targetTop  = elTop  - (container.clientHeight - elBCR.height) * 0.38;
+      var targetLeft = elLeft - (container.clientWidth  - elBCR.width)  * 0.5;
+      container.scrollTo({
+        top:  Math.max(0, Math.min(targetTop,  container.scrollHeight - container.clientHeight)),
+        left: Math.max(0, Math.min(targetLeft, container.scrollWidth  - container.clientWidth)),
+        behavior: smooth ? "smooth" : "auto"
+      });
+    }
+
+    function scrollContainerToRect(pageWrap, rect, container, smooth) {
+      var wrapBCR = pageWrap.getBoundingClientRect();
+      var cntBCR  = container.getBoundingClientRect();
+      var wrapTop  = container.scrollTop  + (wrapBCR.top  - cntBCR.top);
+      var wrapLeft = container.scrollLeft + (wrapBCR.left - cntBCR.left);
+      var labelEl  = pageWrap.querySelector('.page-label');
+      var labelH   = labelEl ? labelEl.offsetHeight : 0;
+      var ry = rect ? (rect.y * viewScale) : 0;
+      var rx = rect ? (rect.x * viewScale) : 0;
+      var rh = rect ? (rect.h * viewScale) : 0;
+      var rw = rect ? (rect.w * viewScale) : 0;
+      var targetTop  = wrapTop  + labelH + ry - (container.clientHeight - rh) * 0.38;
+      var targetLeft = wrapLeft +          rx - (container.clientWidth  - rw) * 0.5;
+      container.scrollTo({
+        top:  Math.max(0, Math.min(targetTop,  container.scrollHeight - container.clientHeight)),
+        left: Math.max(0, Math.min(targetLeft, container.scrollWidth  - container.clientWidth)),
+        behavior: smooth ? "smooth" : "auto"
+      });
     }
 
     async function goToDiff(index, smooth) {
@@ -3758,14 +3785,18 @@
         return;
       }
       navLockUntil = performance.now() + 500;
-      pdf1El.scrollTo({
-        top: getScrollTopForRect(lv.pageWrap, entry.leftRect, pdf1El),
-        behavior: smooth ? "smooth" : "auto"
-      });
-      pdf2El.scrollTo({
-        top: getScrollTopForRect(rv.pageWrap, entry.rightRect, pdf2El),
-        behavior: smooth ? "smooth" : "auto"
-      });
+      var leftBox  = pdf1El.querySelector('.diff-box[data-diff-id="' + entry.id + '"]');
+      var rightBox = pdf2El.querySelector('.diff-box[data-diff-id="' + entry.id + '"]');
+      if (leftBox) {
+        scrollContainerToElement(leftBox, pdf1El, smooth);
+      } else {
+        scrollContainerToRect(lv.pageWrap, entry.leftRect, pdf1El, smooth);
+      }
+      if (rightBox) {
+        scrollContainerToElement(rightBox, pdf2El, smooth);
+      } else {
+        scrollContainerToRect(rv.pageWrap, entry.rightRect, pdf2El, smooth);
+      }
       flashCurrent(entry.id);
 
       if (compareMode === "text") {
