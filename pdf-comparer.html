@@ -341,6 +341,12 @@
       border-right: 1px solid var(--gray-200);
       background: var(--gray-100);
       padding: 20px 16px;
+      cursor: grab;
+    }
+
+    .pdf-pane.panning {
+      cursor: grabbing;
+      user-select: none;
     }
 
     .pdf-pane:last-child {
@@ -1007,6 +1013,10 @@
     var overlayPageViews = [];
     var currentViewingRowIndex = -1;
     var _viewingRafPending = false;
+    var isPanning = false;
+    var panTarget = null;
+    var panStartX = 0, panStartY = 0;
+    var panScrollLeft = 0, panScrollTop = 0;
 
     file1El.addEventListener("change", loadPDF1);
     file2El.addEventListener("change", loadPDF2);
@@ -2657,7 +2667,7 @@
       }
       var result = [],
         i2 = n, j2 = m,
-        thr = 0.10;
+        thr = 0.20;
       while (i2 > 0 || j2 > 0) {
         var d2 = path[i2][j2];
         if (i2 > 0 && j2 > 0 && d2 === "diag") {
@@ -4114,6 +4124,43 @@
       syncScroll(pdf2El, pdf1El);
       scheduleViewingUpdate();
     });
+
+    // ── 드래그 패닝 ──────────────────────────────────────────────────────────
+
+    function startPan(e, container) {
+      if (e.button !== 0) return;
+      isPanning = true;
+      panTarget = container;
+      panStartX = e.clientX;
+      panStartY = e.clientY;
+      panScrollLeft = container.scrollLeft;
+      panScrollTop  = container.scrollTop;
+      container.classList.add("panning");
+      e.preventDefault();
+    }
+
+    function doPan(e) {
+      if (!isPanning || !panTarget) return;
+      e.preventDefault();
+      var dx = panStartX - e.clientX;
+      var dy = panStartY - e.clientY;
+      panTarget.scrollLeft = panScrollLeft + dx;
+      panTarget.scrollTop  = panScrollTop  + dy;
+      // pixel 모드에서는 scroll 이벤트 → syncScroll 이 반대쪽 패인을 자동 동기화
+    }
+
+    function stopPan() {
+      if (!isPanning) return;
+      isPanning = false;
+      if (panTarget) panTarget.classList.remove("panning");
+      panTarget = null;
+    }
+
+    [pdf1El, pdf2El, overlayPaneEl].forEach(function (pane) {
+      pane.addEventListener("mousedown", function (e) { startPan(e, pane); });
+    });
+    document.addEventListener("mousemove", doPan);
+    document.addEventListener("mouseup",   stopPan);
 
     // ── 현재 페이지 감지 (Pixel Only) ────────────────────────────────────────
 
