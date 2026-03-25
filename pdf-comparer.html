@@ -377,6 +377,11 @@
       transition: box-shadow 0.2s, border-color 0.2s;
     }
 
+    .page-wrap.viewing {
+      border-color: var(--blue-400);
+      box-shadow: 0 0 0 3px var(--blue-100), 0 8px 24px rgba(0,0,0,0.10);
+    }
+
     .page-wrap:hover {
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
       border-color: var(--gray-300);
@@ -1000,6 +1005,8 @@
     var compareMode = "pixel";
     var overlayMode = false;
     var overlayPageViews = [];
+    var currentViewingRowIndex = -1;
+    var _viewingRafPending = false;
 
     file1El.addEventListener("change", loadPDF1);
     file2El.addEventListener("change", loadPDF2);
@@ -1126,9 +1133,10 @@
       activeRenders = 0;
       renderQueue = [];
 
-      // overlay 상태 리셋
+      // overlay / viewing 상태 리셋
       if (overlayMode) exitOverlayMode();
       overlayBtnEl.style.display = "none";
+      currentViewingRowIndex = -1;
 
       pdf1El.innerHTML = "";
       pdf2El.innerHTML = "";
@@ -1284,7 +1292,7 @@
       buildChangedThumbList(); ldSetStepProgress(1); ldHide();
       updateZoomSummary();
       overlayBtnEl.style.display = "";
-      setTimeout(setupCanvasVirtualization, 1000);
+      setTimeout(function() { updateCurrentViewingRow(); setupCanvasVirtualization(); }, 200);
     }
 
     async function renderAll_TextOnly(myGen) {
@@ -3924,7 +3932,8 @@
       pdf1El.style.display = "none";
       pdf2El.style.display = "none";
       overlayPaneEl.style.display = "";
-      buildOverlayView();
+      var targetRow = currentViewingRowIndex >= 0 ? currentViewingRowIndex : findVisibleRowIndex();
+      buildOverlayView(targetRow);
     }
 
     function exitOverlayMode() {
@@ -3940,84 +3949,85 @@
       overlayPageViews = [];
     }
 
-    function buildOverlayView() {
+    function buildOverlayView(rowIndex) {
       overlayPaneEl.innerHTML = "";
       overlayPageViews = [];
 
-      for (var i = 0; i < alignmentRows.length; i++) {
-        var row = alignmentRows[i];
-        var lv = pageViews1[i];
-        var rv = pageViews2[i];
+      var i = (typeof rowIndex === "number" && rowIndex >= 0 && rowIndex < alignmentRows.length)
+        ? rowIndex : 0;
 
-        var refView = (row.type === "delete") ? lv : rv;
-        var baseW = refView.baseWidth, baseH = refView.baseHeight;
+      var row = alignmentRows[i];
+      var lv  = pageViews1[i];
+      var rv  = pageViews2[i];
+      var refView = (row.type === "delete") ? lv : rv;
+      var baseW = refView.baseWidth, baseH = refView.baseHeight;
 
-        var wrap = document.createElement("div");
-        wrap.className = "page-wrap";
-        wrap.dataset.rowIndex = i;
+      var wrap = document.createElement("div");
+      wrap.className = "page-wrap";
+      wrap.dataset.rowIndex = i;
 
-        var lbl = document.createElement("div");
-        lbl.className = "page-label";
-        if (row.type === "match") {
-          lbl.textContent = "좌 p" + row.leftPageNo + " ↔ 우 p" + row.rightPageNo + "  —  Overlay (빨강=좌, 초록=우, 노랑=공통)";
-        } else if (row.type === "insert") {
-          lbl.textContent = "우측 p" + row.rightPageNo + " 삽입";
-        } else {
-          lbl.textContent = "좌측 p" + row.leftPageNo + " 삭제";
-        }
-
-        var body = document.createElement("div");
-        body.className = "page-body";
-        body.style.width  = Math.max(1, Math.round(baseW * viewScale)) + "px";
-        body.style.height = Math.max(1, Math.round(baseH * viewScale)) + "px";
-
-        var stage = document.createElement("div");
-        stage.className = "page-stage";
-        stage.style.width  = baseW + "px";
-        stage.style.height = baseH + "px";
-        stage.style.transformOrigin = "top left";
-        stage.style.transform = "scale(" + viewScale + ")";
-
-        var overlayCanvas = null;
-        if (row.type === "match" && lv && rv && lv.canvas && rv.canvas) {
-          overlayCanvas = buildOverlayCanvas(lv, rv);
-        } else if (row.type === "insert" && rv && rv.canvas) {
-          overlayCanvas = buildSingleColorCanvas(rv, "right");
-        } else if (row.type === "delete" && lv && lv.canvas) {
-          overlayCanvas = buildSingleColorCanvas(lv, "left");
-        }
-
-        if (overlayCanvas) {
-          stage.appendChild(overlayCanvas);
-        } else {
-          var ph = document.createElement("div");
-          ph.className = "canvas-placeholder";
-          ph.style.width  = baseW + "px";
-          ph.style.height = baseH + "px";
-          ph.style.display = "flex";
-          ph.style.alignItems = "center";
-          ph.style.justifyContent = "center";
-          ph.style.color = "#9aa1b0";
-          ph.style.fontSize = "12px";
-          ph.textContent = "캔버스 로드 필요 — Split View로 전환 후 스크롤하여 로드하세요";
-          stage.appendChild(ph);
-        }
-
-        body.appendChild(stage);
-        wrap.appendChild(lbl);
-        wrap.appendChild(body);
-        overlayPaneEl.appendChild(wrap);
-
-        overlayPageViews.push({ stage: stage, body: body, baseWidth: baseW, baseHeight: baseH });
+      var lbl = document.createElement("div");
+      lbl.className = "page-label";
+      if (row.type === "match") {
+        lbl.textContent = "좌 p" + row.leftPageNo + " ↔ 우 p" + row.rightPageNo
+          + "  —  Overlay  (빨강=좌, 초록=우, 검정=공통)";
+      } else if (row.type === "insert") {
+        lbl.textContent = "우측 p" + row.rightPageNo + " 삽입";
+      } else {
+        lbl.textContent = "좌측 p" + row.leftPageNo + " 삭제";
       }
+
+      var body = document.createElement("div");
+      body.className = "page-body";
+      body.style.width  = Math.max(1, Math.round(baseW * viewScale)) + "px";
+      body.style.height = Math.max(1, Math.round(baseH * viewScale)) + "px";
+
+      var stage = document.createElement("div");
+      stage.className = "page-stage";
+      stage.style.width  = baseW + "px";
+      stage.style.height = baseH + "px";
+      stage.style.transformOrigin = "top left";
+      stage.style.transform = "scale(" + viewScale + ")";
+
+      var overlayCanvas = null;
+      if (row.type === "match" && lv && rv && lv.canvas && rv.canvas) {
+        overlayCanvas = buildOverlayCanvas(lv, rv);
+      } else if (row.type === "insert" && rv && rv.canvas) {
+        overlayCanvas = buildSingleColorCanvas(rv, "right");
+      } else if (row.type === "delete" && lv && lv.canvas) {
+        overlayCanvas = buildSingleColorCanvas(lv, "left");
+      }
+
+      if (overlayCanvas) {
+        stage.appendChild(overlayCanvas);
+      } else {
+        var ph = document.createElement("div");
+        ph.className = "canvas-placeholder";
+        ph.style.width  = baseW + "px";
+        ph.style.height = baseH + "px";
+        ph.style.display = "flex";
+        ph.style.alignItems = "center";
+        ph.style.justifyContent = "center";
+        ph.style.color = "#9aa1b0";
+        ph.style.fontSize = "12px";
+        ph.textContent = "캔버스 로드 필요 — Split View로 전환 후 해당 페이지를 스크롤하여 로드하세요";
+        stage.appendChild(ph);
+      }
+
+      body.appendChild(stage);
+      wrap.appendChild(lbl);
+      wrap.appendChild(body);
+      overlayPaneEl.appendChild(wrap);
+
+      overlayPageViews.push({ stage: stage, body: body, baseWidth: baseW, baseHeight: baseH });
     }
 
     /**
      * 왼쪽(빨강) + 오른쪽(초록) 채널 합성 overlay canvas 생성.
      * - 흰 배경 → 흰색
-     * - 왼쪽 텍스트만 → 빨간색
-     * - 오른쪽 텍스트만 → 초록색
-     * - 공통 텍스트 → 노란색
+     * - 왼쪽 → 빨간색
+     * - 오른쪽 → 초록색
+     * - 공통 → 검정색
      */
     function buildOverlayCanvas(leftView, rightView) {
       var lc = leftView.canvas, rc = rightView.canvas;
@@ -4046,9 +4056,13 @@
         var p = i * 4;
         var lum1 = (d1[p] * 77 + d1[p+1] * 150 + d1[p+2] * 29) >> 8;
         var lum2 = (d2[p] * 77 + d2[p+1] * 150 + d2[p+2] * 29) >> 8;
-        var white = lum1 < lum2 ? lum1 : lum2; // min(lum1, lum2)
-        out[p]   = ((255 - lum1) + white) < 255 ? ((255 - lum1) + white) : 255; // R
-        out[p+1] = ((255 - lum2) + white) < 255 ? ((255 - lum2) + white) : 255; // G
+        var inv1 = 255 - lum1, inv2 = 255 - lum2;
+        var white    = lum1 < lum2 ? lum1 : lum2;           // min(lum1,lum2) — 배경 밝기
+        var leftOnly  = inv1 > inv2 ? inv1 - inv2 : 0;       // 왼쪽만 있는 강도
+        var rightOnly = inv2 > inv1 ? inv2 - inv1 : 0;       // 오른쪽만 있는 강도
+        // 공통 부분(inv1≈inv2 모두 높음) → leftOnly=rightOnly=0 → R=G=B=0 → 검정
+        out[p]   = leftOnly  + white < 255 ? leftOnly  + white : 255; // R
+        out[p+1] = rightOnly + white < 255 ? rightOnly + white : 255; // G
         out[p+2] = white;  // B
         out[p+3] = 255;
       }
@@ -4093,10 +4107,60 @@
 
     pdf1El.addEventListener("scroll", function () {
       syncScroll(pdf1El, pdf2El);
+      scheduleViewingUpdate();
     });
     pdf2El.addEventListener("scroll", function () {
       syncScroll(pdf2El, pdf1El);
+      scheduleViewingUpdate();
     });
+
+    // ── 현재 페이지 감지 (Pixel Only) ────────────────────────────────────────
+
+    function findVisibleRowIndex() {
+      var cTop    = pdf1El.scrollTop;
+      var cBottom = cTop + pdf1El.clientHeight;
+      var cCenter = (cTop + cBottom) / 2;
+      var bestDist = Infinity, bestRow = 0;
+      pdf1El.querySelectorAll('.page-wrap').forEach(function (wrap) {
+        var ri = parseInt(wrap.dataset.rowIndex);
+        if (isNaN(ri)) return;
+        var mid = wrap.offsetTop + wrap.offsetHeight / 2;
+        var dist = Math.abs(mid - cCenter);
+        if (dist < bestDist) { bestDist = dist; bestRow = ri; }
+      });
+      return bestRow;
+    }
+
+    function scheduleViewingUpdate() {
+      if (compareMode !== "pixel" || overlayMode || _viewingRafPending) return;
+      _viewingRafPending = true;
+      requestAnimationFrame(function () {
+        _viewingRafPending = false;
+        updateCurrentViewingRow();
+      });
+    }
+
+    function updateCurrentViewingRow() {
+      if (compareMode !== "pixel" || overlayMode) return;
+      var newRow = findVisibleRowIndex();
+      if (newRow === currentViewingRowIndex) return;
+
+      // 이전 row 하이라이트 제거
+      if (currentViewingRowIndex >= 0) {
+        var oldLv = pageViews1[currentViewingRowIndex];
+        var oldRv = pageViews2[currentViewingRowIndex];
+        if (oldLv && oldLv.pageWrap) oldLv.pageWrap.classList.remove("viewing");
+        if (oldRv && oldRv.pageWrap) oldRv.pageWrap.classList.remove("viewing");
+      }
+
+      currentViewingRowIndex = newRow;
+
+      // 새 row 하이라이트
+      var lv = pageViews1[newRow];
+      var rv = pageViews2[newRow];
+      if (lv && lv.pageWrap) lv.pageWrap.classList.add("viewing");
+      if (rv && rv.pageWrap) rv.pageWrap.classList.add("viewing");
+    }
 
     function syncScroll(src, tgt) {
       if (compareMode === "text") {
