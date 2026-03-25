@@ -151,6 +151,15 @@
       text-align: center;
     }
 
+    #toggleDiffBtn {
+      min-width: 88px;
+      text-align: center;
+    }
+
+    .diff-hidden .diff-box {
+      visibility: hidden;
+    }
+
     #compareBtn {
       background: var(--blue-600);
       border-color: var(--blue-700);
@@ -851,6 +860,7 @@
       <option value="text">Text Only</option>
     </select>
     <button id="overlayBtn" style="display:none;">Overlay</button>
+    <button id="toggleDiffBtn" style="display:none;">변경 숨기기</button>
     <button id="zoomOutBtn">Zoom -</button>
     <button id="zoomInBtn">Zoom +</button>
     <button id="prevBtn">이전 변경</button>
@@ -1019,11 +1029,13 @@
     var pdf2El = document.getElementById("pdf2");
     var overlayPaneEl = document.getElementById("overlayPane");
     var overlayBtnEl = document.getElementById("overlayBtn");
+    var toggleDiffBtnEl = document.getElementById("toggleDiffBtn");
     var thumbListEl = document.getElementById("thumbList");
     var summaryTextEl = document.getElementById("summaryText");
     var compareModeEl = document.getElementById("compareMode");
     var compareMode = "pixel";
     var overlayMode = false;
+    var diffVisible = true;
     var overlayPageViews = [];
     var currentViewingRowIndex = -1;
     var _viewingRafPending = false;
@@ -1052,6 +1064,11 @@
     document.getElementById("prevBtn").addEventListener("click", goToPrevDiff);
     document.getElementById("nextBtn").addEventListener("click", goToNextDiff);
     document.getElementById("compareBtn").addEventListener("click", rerenderIfReady);
+    toggleDiffBtnEl.addEventListener("click", function () {
+      diffVisible = !diffVisible;
+      document.body.classList.toggle("diff-hidden", !diffVisible);
+      toggleDiffBtnEl.textContent = diffVisible ? "변경 숨기기" : "변경 보이기";
+    });
     overlayBtnEl.addEventListener("click", function () {
       if (overlayMode) {
         exitOverlayMode();
@@ -1160,6 +1177,10 @@
       // overlay / viewing 상태 리셋
       if (overlayMode) exitOverlayMode();
       overlayBtnEl.style.display = "none";
+      toggleDiffBtnEl.style.display = "none";
+      diffVisible = true;
+      document.body.classList.remove("diff-hidden");
+      toggleDiffBtnEl.textContent = "변경 숨기기";
       currentViewingRowIndex = -1;
 
       pdf1El.innerHTML = "";
@@ -1316,6 +1337,7 @@
       buildChangedThumbList(); ldSetStepProgress(1); ldHide();
       updateZoomSummary();
       overlayBtnEl.style.display = "";
+      toggleDiffBtnEl.style.display = "";
       setTimeout(function() { updateCurrentViewingRow(); setupCanvasVirtualization(); }, 200);
     }
 
@@ -1478,6 +1500,7 @@
       ldSetStepProgress(1);
       ldHide();
       updateZoomSummary();
+      toggleDiffBtnEl.style.display = "";
 
       setTimeout(function(){ setupTextOnlyVirtualization(myGen); }, 200);
     }
@@ -4012,7 +4035,7 @@
       lbl.className = "page-label";
       if (row.type === "match") {
         lbl.textContent = "좌 p" + row.leftPageNo + " ↔ 우 p" + row.rightPageNo
-          + "  —  Overlay  (빨강=좌, 초록=우)";
+          + "  —  Overlay  (파랑=좌, 빨강=우)";
       } else if (row.type === "insert") {
         lbl.textContent = "우측 p" + row.rightPageNo + " 삽입";
       } else {
@@ -4067,8 +4090,8 @@
     /**
      * 왼쪽(빨강) + 오른쪽(초록) 채널 합성 overlay canvas 생성.
      * - 흰 배경 → 흰색
-     * - 왼쪽 → 빨간색
-     * - 오른쪽 → 초록색
+     * - 왼쪽 → 파란색
+     * - 오른쪽 → 빨간색
      * - 공통 → 원본색
      */
     function buildOverlayCanvas(leftView, rightView) {
@@ -4103,10 +4126,10 @@
         var leftOnly  = inv1 > inv2 ? inv1 - inv2 : 0;       // 왼쪽만 있는 강도
         var rightOnly = inv2 > inv1 ? inv2 - inv1 : 0;       // 오른쪽만 있는 강도
         var common    = inv1 < inv2 ? inv1 : inv2;           // min(inv1,inv2) — 공통 강도
-        // 공통 부분 → d1 원본 색상, 왼쪽만 → 빨강, 오른쪽만 → 초록, 배경 → 흰색
-        out[p]   = Math.min(255, white + leftOnly  + ((common * d1[p])   >> 8)); // R
-        out[p+1] = Math.min(255, white + rightOnly + ((common * d1[p+1]) >> 8)); // G
-        out[p+2] = Math.min(255, white +             ((common * d1[p+2]) >> 8)); // B
+        // 공통 부분 → d1 원본 색상, 왼쪽만 → 파랑, 오른쪽만 → 빨강, 배경 → 흰색
+        out[p]   = Math.min(255, white + rightOnly  + ((common * d1[p])   >> 8)); // R
+        out[p+1] = Math.min(255, white + ((common * d1[p+1]) >> 8)); // G
+        out[p+2] = Math.min(255, white + leftOnly + ((common * d1[p+2]) >> 8)); // B
         out[p+3] = 255;
       }
 
@@ -4133,12 +4156,12 @@
         var p = i * 4;
         var lum = (data[p] * 77 + data[p+1] * 150 + data[p+2] * 29) >> 8;
         if (side === "left") {
-          out[p]   = 255;  // R = full
+          out[p]   = lum;  // R = full
           out[p+1] = lum;  // G = 배경만
-          out[p+2] = lum;  // B = 배경만
+          out[p+2] = 255;  // B = 배경만
         } else {
-          out[p]   = lum;  // R = 배경만
-          out[p+1] = 255;  // G = full
+          out[p]   = 255;  // R = 배경만
+          out[p+1] = lum;  // G = full
           out[p+2] = lum;  // B = 배경만
         }
         out[p+3] = 255;
