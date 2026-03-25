@@ -146,6 +146,11 @@
       box-shadow: none;
     }
 
+    #overlayBtn {
+      min-width: 88px;
+      text-align: center;
+    }
+
     #compareBtn {
       background: var(--blue-600);
       border-color: var(--blue-700);
@@ -480,6 +485,15 @@
       border-color: rgba(37, 99, 235, 0.75) !important;
       background: rgba(59, 130, 246, 0.08) !important;
       box-shadow: none;
+    }
+
+    @keyframes paneIn {
+      from { opacity: 0; transform: scale(0.985); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .pane-enter {
+      animation: paneIn 0.22s ease-out both;
     }
 
     @keyframes flashBox {
@@ -836,11 +850,11 @@
       <option value="pixel">Pixel Only</option>
       <option value="text">Text Only</option>
     </select>
+    <button id="overlayBtn" style="display:none;">Overlay</button>
     <button id="zoomOutBtn">Zoom -</button>
     <button id="zoomInBtn">Zoom +</button>
     <button id="prevBtn">이전 변경</button>
     <button id="nextBtn">다음 변경</button>
-    <button id="overlayBtn" style="display:none;">Overlay</button>
     <button id="compareBtn">다시 비교</button>
     <div class="summary" id="summaryText">PDF 2개를 선택하세요.</div>
   </div>
@@ -3936,27 +3950,45 @@
     function enterOverlayMode() {
       overlayMode = true;
       overlayBtnEl.textContent = "Split View";
-      overlayBtnEl.style.background = "var(--blue-600)";
-      overlayBtnEl.style.borderColor = "var(--blue-700)";
-      overlayBtnEl.style.color = "var(--white)";
-      pdf1El.style.display = "none";
-      pdf2El.style.display = "none";
-      overlayPaneEl.style.display = "";
-      var targetRow = currentViewingRowIndex >= 0 ? currentViewingRowIndex : findVisibleRowIndex();
-      buildOverlayView(targetRow);
+      pdf1El.style.transition = "opacity 0.15s ease";
+      pdf2El.style.transition = "opacity 0.15s ease";
+      pdf1El.style.opacity = "0";
+      pdf2El.style.opacity = "0";
+      setTimeout(function () {
+        pdf1El.style.display = "none";
+        pdf2El.style.display = "none";
+        pdf1El.style.opacity = "";
+        pdf2El.style.opacity = "";
+        pdf1El.style.transition = "";
+        pdf2El.style.transition = "";
+        overlayPaneEl.style.display = "";
+        overlayPaneEl.classList.remove("pane-enter");
+        void overlayPaneEl.offsetWidth;
+        overlayPaneEl.classList.add("pane-enter");
+        var targetRow = currentViewingRowIndex >= 0 ? currentViewingRowIndex : findVisibleRowIndex();
+        buildOverlayView(targetRow);
+      }, 150);
     }
 
     function exitOverlayMode() {
       overlayMode = false;
       overlayBtnEl.textContent = "Overlay";
-      overlayBtnEl.style.background = "";
-      overlayBtnEl.style.borderColor = "";
-      overlayBtnEl.style.color = "";
-      pdf1El.style.display = "";
-      pdf2El.style.display = "";
-      overlayPaneEl.style.display = "none";
-      overlayPaneEl.innerHTML = "";
-      overlayPageViews = [];
+      overlayPaneEl.style.transition = "opacity 0.15s ease";
+      overlayPaneEl.style.opacity = "0";
+      setTimeout(function () {
+        overlayPaneEl.style.display = "none";
+        overlayPaneEl.style.opacity = "";
+        overlayPaneEl.style.transition = "";
+        overlayPaneEl.innerHTML = "";
+        overlayPageViews = [];
+        pdf1El.style.display = "";
+        pdf2El.style.display = "";
+        pdf1El.classList.remove("pane-enter");
+        pdf2El.classList.remove("pane-enter");
+        void pdf1El.offsetWidth;
+        pdf1El.classList.add("pane-enter");
+        pdf2El.classList.add("pane-enter");
+      }, 150);
     }
 
     function buildOverlayView(rowIndex) {
