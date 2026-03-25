@@ -1018,11 +1018,11 @@
       }
     });
     document.getElementById("zoomInBtn").addEventListener("click", function () {
-      viewScale = Math.min(viewScale + 0.15, 3);
+      viewScale = Math.min(viewScale + 0.1, 8);
       applyViewScale();
     });
     document.getElementById("zoomOutBtn").addEventListener("click", function () {
-      viewScale = Math.max(viewScale - 0.15, 0.5);
+      viewScale = Math.max(viewScale - 0.1, 0.1);
       applyViewScale();
     });
     document.getElementById("prevBtn").addEventListener("click", goToPrevDiff);
@@ -3970,7 +3970,7 @@
       lbl.className = "page-label";
       if (row.type === "match") {
         lbl.textContent = "좌 p" + row.leftPageNo + " ↔ 우 p" + row.rightPageNo
-          + "  —  Overlay  (빨강=좌, 초록=우, 검정=공통)";
+          + "  —  Overlay  (빨강=좌, 초록=우)";
       } else if (row.type === "insert") {
         lbl.textContent = "우측 p" + row.rightPageNo + " 삽입";
       } else {
@@ -4027,7 +4027,7 @@
      * - 흰 배경 → 흰색
      * - 왼쪽 → 빨간색
      * - 오른쪽 → 초록색
-     * - 공통 → 검정색
+     * - 공통 → 원본색
      */
     function buildOverlayCanvas(leftView, rightView) {
       var lc = leftView.canvas, rc = rightView.canvas;
@@ -4057,13 +4057,14 @@
         var lum1 = (d1[p] * 77 + d1[p+1] * 150 + d1[p+2] * 29) >> 8;
         var lum2 = (d2[p] * 77 + d2[p+1] * 150 + d2[p+2] * 29) >> 8;
         var inv1 = 255 - lum1, inv2 = 255 - lum2;
-        var white    = lum1 < lum2 ? lum1 : lum2;           // min(lum1,lum2) — 배경 밝기
+        var white     = lum1 < lum2 ? lum1 : lum2;          // min(lum1,lum2) — 배경 밝기
         var leftOnly  = inv1 > inv2 ? inv1 - inv2 : 0;       // 왼쪽만 있는 강도
         var rightOnly = inv2 > inv1 ? inv2 - inv1 : 0;       // 오른쪽만 있는 강도
-        // 공통 부분(inv1≈inv2 모두 높음) → leftOnly=rightOnly=0 → R=G=B=0 → 검정
-        out[p]   = leftOnly  + white < 255 ? leftOnly  + white : 255; // R
-        out[p+1] = rightOnly + white < 255 ? rightOnly + white : 255; // G
-        out[p+2] = white;  // B
+        var common    = inv1 < inv2 ? inv1 : inv2;           // min(inv1,inv2) — 공통 강도
+        // 공통 부분 → d1 원본 색상, 왼쪽만 → 빨강, 오른쪽만 → 초록, 배경 → 흰색
+        out[p]   = Math.min(255, white + leftOnly  + ((common * d1[p])   >> 8)); // R
+        out[p+1] = Math.min(255, white + rightOnly + ((common * d1[p+1]) >> 8)); // G
+        out[p+2] = Math.min(255, white +             ((common * d1[p+2]) >> 8)); // B
         out[p+3] = 255;
       }
 
