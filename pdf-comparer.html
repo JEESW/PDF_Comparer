@@ -829,6 +829,7 @@
     <button id="zoomInBtn">Zoom +</button>
     <button id="prevBtn">이전 변경</button>
     <button id="nextBtn">다음 변경</button>
+    <button id="overlayBtn" style="display:none;">Overlay</button>
     <button id="compareBtn">다시 비교</button>
     <div class="summary" id="summaryText">PDF 2개를 선택하세요.</div>
   </div>
@@ -848,6 +849,7 @@
     <div class="main">
       <div id="pdf1" class="pdf-pane"></div>
       <div id="pdf2" class="pdf-pane"></div>
+      <div id="overlayPane" class="pdf-pane" style="display:none; width:100%;"></div>
     </div>
   </div>
 
@@ -990,15 +992,23 @@
     var file2El = document.getElementById("file2");
     var pdf1El = document.getElementById("pdf1");
     var pdf2El = document.getElementById("pdf2");
+    var overlayPaneEl = document.getElementById("overlayPane");
+    var overlayBtnEl = document.getElementById("overlayBtn");
     var thumbListEl = document.getElementById("thumbList");
     var summaryTextEl = document.getElementById("summaryText");
     var compareModeEl = document.getElementById("compareMode");
     var compareMode = "pixel";
+    var overlayMode = false;
+    var overlayPageViews = [];
 
     file1El.addEventListener("change", loadPDF1);
     file2El.addEventListener("change", loadPDF2);
     compareModeEl.addEventListener("change", function () {
       compareMode = compareModeEl.value;
+      if (compareMode !== "pixel") {
+        overlayBtnEl.style.display = "none";
+        if (overlayMode) exitOverlayMode();
+      }
     });
     document.getElementById("zoomInBtn").addEventListener("click", function () {
       viewScale = Math.min(viewScale + 0.15, 3);
@@ -1011,6 +1021,13 @@
     document.getElementById("prevBtn").addEventListener("click", goToPrevDiff);
     document.getElementById("nextBtn").addEventListener("click", goToNextDiff);
     document.getElementById("compareBtn").addEventListener("click", rerenderIfReady);
+    overlayBtnEl.addEventListener("click", function () {
+      if (overlayMode) {
+        exitOverlayMode();
+      } else {
+        enterOverlayMode();
+      }
+    });
     ldCancelBtn.addEventListener("click", function () {
       renderGeneration++;
       ldHide();
@@ -1045,6 +1062,12 @@
 
     function applyViewScale() {
       pageViews1.concat(pageViews2).forEach(applyScaleToPageView);
+      overlayPageViews.forEach(function (ov) {
+        if (!ov || !ov.body || !ov.stage) return;
+        ov.body.style.width  = Math.max(1, Math.round(ov.baseWidth  * viewScale)) + "px";
+        ov.body.style.height = Math.max(1, Math.round(ov.baseHeight * viewScale)) + "px";
+        ov.stage.style.transform = "scale(" + viewScale + ")";
+      });
       if (currentDiffIndex >= 0 && currentDiffIndex < diffEntries.length) {
         highlightCurrent();
       }
@@ -1102,6 +1125,10 @@
       _releaseTimers = {};
       activeRenders = 0;
       renderQueue = [];
+
+      // overlay 상태 리셋
+      if (overlayMode) exitOverlayMode();
+      overlayBtnEl.style.display = "none";
 
       pdf1El.innerHTML = "";
       pdf2El.innerHTML = "";
@@ -1256,6 +1283,7 @@
 
       buildChangedThumbList(); ldSetStepProgress(1); ldHide();
       updateZoomSummary();
+      overlayBtnEl.style.display = "";
       setTimeout(setupCanvasVirtualization, 1000);
     }
 
@@ -3883,6 +3911,184 @@
         item.classList.add("active");
         item.scrollIntoView({ block: "nearest", behavior: "smooth" });
       }
+    }
+
+    // ── Overlay 모드 ─────────────────────────────────────────────────────────
+
+    function enterOverlayMode() {
+      overlayMode = true;
+      overlayBtnEl.textContent = "Split View";
+      overlayBtnEl.style.background = "var(--blue-600)";
+      overlayBtnEl.style.borderColor = "var(--blue-700)";
+      overlayBtnEl.style.color = "var(--white)";
+      pdf1El.style.display = "none";
+      pdf2El.style.display = "none";
+      overlayPaneEl.style.display = "";
+      buildOverlayView();
+    }
+
+    function exitOverlayMode() {
+      overlayMode = false;
+      overlayBtnEl.textContent = "Overlay";
+      overlayBtnEl.style.background = "";
+      overlayBtnEl.style.borderColor = "";
+      overlayBtnEl.style.color = "";
+      pdf1El.style.display = "";
+      pdf2El.style.display = "";
+      overlayPaneEl.style.display = "none";
+      overlayPaneEl.innerHTML = "";
+      overlayPageViews = [];
+    }
+
+    function buildOverlayView() {
+      overlayPaneEl.innerHTML = "";
+      overlayPageViews = [];
+
+      for (var i = 0; i < alignmentRows.length; i++) {
+        var row = alignmentRows[i];
+        var lv = pageViews1[i];
+        var rv = pageViews2[i];
+
+        var refView = (row.type === "delete") ? lv : rv;
+        var baseW = refView.baseWidth, baseH = refView.baseHeight;
+
+        var wrap = document.createElement("div");
+        wrap.className = "page-wrap";
+        wrap.dataset.rowIndex = i;
+
+        var lbl = document.createElement("div");
+        lbl.className = "page-label";
+        if (row.type === "match") {
+          lbl.textContent = "좌 p" + row.leftPageNo + " ↔ 우 p" + row.rightPageNo + "  —  Overlay (빨강=좌, 초록=우, 노랑=공통)";
+        } else if (row.type === "insert") {
+          lbl.textContent = "우측 p" + row.rightPageNo + " 삽입";
+        } else {
+          lbl.textContent = "좌측 p" + row.leftPageNo + " 삭제";
+        }
+
+        var body = document.createElement("div");
+        body.className = "page-body";
+        body.style.width  = Math.max(1, Math.round(baseW * viewScale)) + "px";
+        body.style.height = Math.max(1, Math.round(baseH * viewScale)) + "px";
+
+        var stage = document.createElement("div");
+        stage.className = "page-stage";
+        stage.style.width  = baseW + "px";
+        stage.style.height = baseH + "px";
+        stage.style.transformOrigin = "top left";
+        stage.style.transform = "scale(" + viewScale + ")";
+
+        var overlayCanvas = null;
+        if (row.type === "match" && lv && rv && lv.canvas && rv.canvas) {
+          overlayCanvas = buildOverlayCanvas(lv, rv);
+        } else if (row.type === "insert" && rv && rv.canvas) {
+          overlayCanvas = buildSingleColorCanvas(rv, "right");
+        } else if (row.type === "delete" && lv && lv.canvas) {
+          overlayCanvas = buildSingleColorCanvas(lv, "left");
+        }
+
+        if (overlayCanvas) {
+          stage.appendChild(overlayCanvas);
+        } else {
+          var ph = document.createElement("div");
+          ph.className = "canvas-placeholder";
+          ph.style.width  = baseW + "px";
+          ph.style.height = baseH + "px";
+          ph.style.display = "flex";
+          ph.style.alignItems = "center";
+          ph.style.justifyContent = "center";
+          ph.style.color = "#9aa1b0";
+          ph.style.fontSize = "12px";
+          ph.textContent = "캔버스 로드 필요 — Split View로 전환 후 스크롤하여 로드하세요";
+          stage.appendChild(ph);
+        }
+
+        body.appendChild(stage);
+        wrap.appendChild(lbl);
+        wrap.appendChild(body);
+        overlayPaneEl.appendChild(wrap);
+
+        overlayPageViews.push({ stage: stage, body: body, baseWidth: baseW, baseHeight: baseH });
+      }
+    }
+
+    /**
+     * 왼쪽(빨강) + 오른쪽(초록) 채널 합성 overlay canvas 생성.
+     * - 흰 배경 → 흰색
+     * - 왼쪽 텍스트만 → 빨간색
+     * - 오른쪽 텍스트만 → 초록색
+     * - 공통 텍스트 → 노란색
+     */
+    function buildOverlayCanvas(leftView, rightView) {
+      var lc = leftView.canvas, rc = rightView.canvas;
+      var w = lc.width, h = lc.height;
+
+      var sampledRc = rc;
+      if (rc.width !== w || rc.height !== h) {
+        sampledRc = document.createElement("canvas");
+        sampledRc.width = w; sampledRc.height = h;
+        sampledRc.getContext("2d").drawImage(rc, 0, 0, w, h);
+      }
+
+      var d1 = lc.getContext("2d").getImageData(0, 0, w, h).data;
+      var d2 = sampledRc.getContext("2d").getImageData(0, 0, w, h).data;
+
+      var outCanvas = document.createElement("canvas");
+      outCanvas.width = w; outCanvas.height = h;
+      outCanvas.style.width  = leftView.baseWidth  + "px";
+      outCanvas.style.height = leftView.baseHeight + "px";
+
+      var ctx = outCanvas.getContext("2d");
+      var imgData = ctx.createImageData(w, h);
+      var out = imgData.data;
+
+      for (var i = 0, n = w * h; i < n; i++) {
+        var p = i * 4;
+        var lum1 = (d1[p] * 77 + d1[p+1] * 150 + d1[p+2] * 29) >> 8;
+        var lum2 = (d2[p] * 77 + d2[p+1] * 150 + d2[p+2] * 29) >> 8;
+        var white = lum1 < lum2 ? lum1 : lum2; // min(lum1, lum2)
+        out[p]   = ((255 - lum1) + white) < 255 ? ((255 - lum1) + white) : 255; // R
+        out[p+1] = ((255 - lum2) + white) < 255 ? ((255 - lum2) + white) : 255; // G
+        out[p+2] = white;  // B
+        out[p+3] = 255;
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      return outCanvas;
+    }
+
+    /** insert/delete 페이지용: 한쪽만 있을 때 해당 색으로 tint */
+    function buildSingleColorCanvas(view, side) {
+      var lc = view.canvas;
+      var w = lc.width, h = lc.height;
+      var data = lc.getContext("2d").getImageData(0, 0, w, h).data;
+
+      var outCanvas = document.createElement("canvas");
+      outCanvas.width = w; outCanvas.height = h;
+      outCanvas.style.width  = view.baseWidth  + "px";
+      outCanvas.style.height = view.baseHeight + "px";
+
+      var ctx = outCanvas.getContext("2d");
+      var imgData = ctx.createImageData(w, h);
+      var out = imgData.data;
+
+      for (var i = 0, n = w * h; i < n; i++) {
+        var p = i * 4;
+        var lum = (data[p] * 77 + data[p+1] * 150 + data[p+2] * 29) >> 8;
+        if (side === "left") {
+          out[p]   = 255;  // R = full
+          out[p+1] = lum;  // G = 배경만
+          out[p+2] = lum;  // B = 배경만
+        } else {
+          out[p]   = lum;  // R = 배경만
+          out[p+1] = 255;  // G = full
+          out[p+2] = lum;  // B = 배경만
+        }
+        out[p+3] = 255;
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      return outCanvas;
     }
 
     pdf1El.addEventListener("scroll", function () {
