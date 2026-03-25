@@ -117,6 +117,18 @@
       cursor: pointer;
       box-shadow: var(--shadow-xs);
       flex-shrink: 0;
+      margin-right: 15px;
+    }
+
+    .select-wrap {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .select-wrap select {
+      min-width: 180px;
+      max-width: 280px;
     }
 
     .toolbar button {
@@ -144,6 +156,127 @@
       background: var(--gray-100);
       transform: translateY(1px);
       box-shadow: none;
+    }
+
+    .toolbar>div:not(.summary):not(.select-wrap) {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .file-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-500);
+      margin-right: 0;
+      white-space: nowrap;
+    }
+
+    .file-picker {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-right: 35px;
+      flex-shrink: 0;
+    }
+
+    .file-hidden-input {
+      display: none;
+    }
+
+    .file-btn {
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      color: var(--gray-700);
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: var(--shadow-xs);
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .file-btn:hover {
+      background: var(--gray-50);
+      border-color: var(--gray-300);
+      color: var(--gray-900);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .file-btn:active {
+      background: var(--gray-100);
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    .file-selected-name {
+      font-size: 13px;
+      color: var(--gray-900);
+      font-weight: 500;
+      max-width: 220px;
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      display: inline-block;
+    }
+
+    .file-selected-name.empty {
+      color: var(--gray-400);
+      font-weight: 400;
+    }
+
+    .file-selected-name.is-filled {
+      color: var(--gray-900);
+      border-color: var(--blue-200);
+      background: var(--blue-50);
+    }
+
+    .file-btn {
+      height: 32px;
+      padding: 0 12px;
+
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      background: var(--white);
+
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-700);
+
+      cursor: pointer;
+      white-space: nowrap;
+
+      box-shadow: var(--shadow-xs);
+      transition: all 0.12s;
+    }
+
+    .file-btn:hover {
+      background: var(--gray-50);
+      border-color: var(--gray-300);
+      color: var(--gray-900);
+    }
+
+    .file-btn:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    .compare-btn-area {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     #overlayBtn {
@@ -174,7 +307,7 @@
     }
 
     .toolbar .summary {
-      margin-left: auto;
+      margin-left: 15px;
       font-family: var(--font-mono);
       font-size: 12px;
       color: var(--gray-400);
@@ -184,22 +317,52 @@
     }
 
     .layout {
-      display: grid;
-      grid-template-columns: 272px 1fr;
-      height: calc(100vh - var(--toolbar-h));
+      display: flex;
+      height: var(--compare-layout-h, calc(100vh - var(--toolbar-h)));
+      min-height: 0;
     }
 
     .sidebar {
       width: 272px;
-      min-width: 140px;
-      max-width: 600px;
-      resize: horizontal;
+      min-width: 180px;
+      max-width: 640px;
       flex-shrink: 0;
       background: var(--white);
       overflow: auto;
       border-right: 1px solid var(--gray-200);
       display: flex;
       flex-direction: column;
+    }
+
+    .sidebar-resizer {
+      width: 10px;
+      flex: 0 0 10px;
+      cursor: col-resize;
+      position: relative;
+      background: linear-gradient(90deg, transparent 0, transparent 3px, var(--gray-200) 3px, var(--gray-200) 4px, transparent 4px);
+      transition: background-color 0.12s ease;
+    }
+
+    .sidebar-resizer:hover {
+      background-color: var(--blue-50);
+    }
+
+    .sidebar-resizer::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 4px;
+      width: 2px;
+      height: 56px;
+      border-radius: 999px;
+      background: var(--gray-300);
+      transform: translateY(-50%);
+    }
+
+    body.is-resizing-sidebar,
+    body.is-resizing-sidebar * {
+      cursor: col-resize !important;
+      user-select: none !important;
     }
 
     .sidebar::-webkit-scrollbar {
@@ -345,6 +508,8 @@
 
     .main {
       display: flex;
+      flex: 1 1 auto;
+      min-width: 0;
       height: 100%;
       overflow: hidden;
     }
@@ -399,7 +564,7 @@
 
     .page-wrap.viewing {
       border-color: var(--blue-400);
-      box-shadow: 0 0 0 3px var(--blue-100), 0 8px 24px rgba(0,0,0,0.10);
+      box-shadow: 0 0 0 3px var(--blue-100), 0 8px 24px rgba(0, 0, 0, 0.10);
     }
 
     .page-wrap:hover {
@@ -440,7 +605,6 @@
       background: #fafafa;
     }
 
-    /* TEXT-ONLY: 렌더링 전 플레이스홀더 */
     .text-placeholder {
       display: flex;
       align-items: center;
@@ -480,6 +644,7 @@
       border: none;
       background: rgba(239, 68, 68, 0.45);
     }
+
     .diff-box.diff-line.current {
       background: rgba(37, 99, 235, 0.55) !important;
       box-shadow: none;
@@ -490,6 +655,7 @@
       border: 1.5px dashed rgba(239, 68, 68, 0.55);
       background: rgba(239, 68, 68, 0.04);
     }
+
     .diff-box.diff-overlay-mask.current {
       border-color: rgba(37, 99, 235, 0.75) !important;
       background: rgba(59, 130, 246, 0.08) !important;
@@ -497,8 +663,15 @@
     }
 
     @keyframes paneIn {
-      from { opacity: 0; transform: scale(0.985); }
-      to   { opacity: 1; transform: scale(1); }
+      from {
+        opacity: 0;
+        transform: scale(0.985);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
 
     .pane-enter {
@@ -853,34 +1026,45 @@
   </div>
 
   <div class="toolbar">
-    <input type="file" id="file1" accept="application/pdf" />
-    <input type="file" id="file2" accept="application/pdf" />
+    <div class="file-picker">
+      <div class="file-label">이전 파일:</div>
+      <span class="file-selected-name empty" id="file1Name">선택된 파일 없음</span>
+      <button type="button" class="file-btn" onclick="document.getElementById('file1').click();">파일 선택</button>
+      <input type="file" id="file1" accept="application/pdf" class="file-hidden-input" />
+    </div>
+
+    <div class="file-picker">
+      <div class="file-label">새 파일:</div>
+      <span class="file-selected-name empty" id="file2Name">선택된 파일 없음</span>
+      <button type="button" class="file-btn" onclick="document.getElementById('file2').click();">파일 선택</button>
+      <input type="file" id="file2" accept="application/pdf" class="file-hidden-input" />
+    </div>
+
+    <div>비교 모드</div>
     <select id="compareMode" title="비교 모드">
-      <option value="pixel">Pixel Only</option>
-      <option value="text">Text Only</option>
+      <option value="pixel">픽셀 비교</option>
+      <option value="text">텍스트 비교</option>
     </select>
-    <button id="overlayBtn" style="display:none;">Overlay</button>
-    <button id="toggleDiffBtn" style="display:none;">변경 숨기기</button>
-    <button id="zoomOutBtn">Zoom -</button>
-    <button id="zoomInBtn">Zoom +</button>
-    <button id="prevBtn">이전 변경</button>
-    <button id="nextBtn">다음 변경</button>
-    <button id="compareBtn">다시 비교</button>
+    <div class="compare-btn-area">
+      <button id="toggleDiffBtn" style="display:none;">변경 숨기기</button>
+      <button id="overlayBtn" style="display:none;">Overlay</button>
+      <button id="zoomOutBtn">Zoom -</button>
+      <button id="zoomInBtn">Zoom +</button>
+      <button id="prevBtn">이전 변경</button>
+      <button id="nextBtn">다음 변경</button>
+      <button id="compareBtn">다시 비교</button>
+    </div>
     <div class="summary" id="summaryText">PDF 2개를 선택하세요.</div>
   </div>
 
   <div class="layout">
     <aside class="sidebar">
       <h2>변경 페이지 목록</h2>
-      <div class="note">
-        전체 페이지를 한 번에 렌더링하고 비교합니다.<br>
-        <span id="thumbListNote">목록에는 변경이 감지된 페이지만 표시됩니다.<br>
-        항목을 클릭하면 해당 페이지로 이동합니다.</span>
-      </div>
       <div id="thumbList" class="thumb-list">
         <div class="empty">비교 후 변경된 페이지 목록이 표시됩니다.</div>
       </div>
     </aside>
+    <div id="sidebarResizer" class="sidebar-resizer" aria-hidden="true"></div>
     <div class="main">
       <div id="pdf1" class="pdf-pane"></div>
       <div id="pdf2" class="pdf-pane"></div>
@@ -993,26 +1177,26 @@
     // (모든 값은 effectiveScale=1 기준 픽셀 단위. 내부에서 effectiveScale 적용)
     var DIFF_POST = {
       // ── 공통 bbox 후처리 ─────────────────────────────────────────────────
-      MIN_AREA:               200,   // CCL area (diff 픽셀 수) 최솟값
-      MIN_DENSITY:            0.04,  // diffPixels/bboxArea 최솟값 (저밀도 노이즈 제거)
-      LINE_THIN_SIDE:         8,     // 선 판정: 짧은 쪽 px 임계값
-      LINE_LONG_SIDE:         50,    // 선 판정: 긴 쪽 px 임계값
-      LINE_ASPECT_RATIO:      6,     // 추가 종횡비 임계값
-      BOX_MERGE_GAP:          4,    // 이 px 이내 박스는 병합
-      MERGE_OVERLAP_RATIO:    0.25, // 분리 방향 반대축 겹침 비율 최솟값 (0=없음, 1=완전겹침)
-      MERGE_MAX_FILL_INV:     4.0,  // union면적 / 누적픽셀면적 최댓값 (초과 시 병합 거부)
+      MIN_AREA: 200,   // CCL area (diff 픽셀 수) 최솟값
+      MIN_DENSITY: 0.04,  // diffPixels/bboxArea 최솟값 (저밀도 노이즈 제거)
+      LINE_THIN_SIDE: 8,     // 선 판정: 짧은 쪽 px 임계값
+      LINE_LONG_SIDE: 50,    // 선 판정: 긴 쪽 px 임계값
+      LINE_ASPECT_RATIO: 6,     // 추가 종횡비 임계값
+      BOX_MERGE_GAP: 4,    // 이 px 이내 박스는 병합
+      MERGE_OVERLAP_RATIO: 0.25, // 분리 방향 반대축 겹침 비율 최솟값 (0=없음, 1=완전겹침)
+      MERGE_MAX_FILL_INV: 4.0,  // union면적 / 누적픽셀면적 최댓값 (초과 시 병합 거부)
       SPARSE_SPLIT_THRESHOLD: 0.03,  // density < 이 값이면 sparse 후보
-      SPARSE_MIN_BBOX:        3000,  // sparse 판정에 필요한 최소 bbox 면적 (px²)
-      BORDER_MARGIN:          0.015, // 캔버스 외곽 노이즈 제거 비율
+      SPARSE_MIN_BBOX: 3000,  // sparse 판정에 필요한 최소 bbox 면적 (px²)
+      BORDER_MARGIN: 0.015, // 캔버스 외곽 노이즈 제거 비율
       // ── OpenCV 파이프라인 전용 ────────────────────────────────────────────
-      CV_PIX_DIFF_THR:        30,    // 픽셀 강도 차이 임계값 (0-255)
-      CV_CANNY_LO:            20,    // Canny 하이스테리시스 낮은 임계값 (base scale)
-      CV_CANNY_HI:            50,    // Canny 하이스테리시스 높은 임계값 (base scale)
-      CV_DIST_TOL:            3,     // 에지 거리 허용 px (subpixel shift 보정)
-      CV_BLUR_KSIZE:          3,     // Gaussian blur 커널 크기 (odd, base scale)
-      CV_MORPH_OPEN:          3,     // Opening 커널 크기 (노이즈 제거, base scale)
-      CV_MORPH_CLOSE:         3,     // Closing 커널 크기 (갭 메우기, base scale)
-      CV_ALIGN_TRANSLATION:   true   // 경미한 translation 보정 활성화
+      CV_PIX_DIFF_THR: 30,    // 픽셀 강도 차이 임계값 (0-255)
+      CV_CANNY_LO: 20,    // Canny 하이스테리시스 낮은 임계값 (base scale)
+      CV_CANNY_HI: 50,    // Canny 하이스테리시스 높은 임계값 (base scale)
+      CV_DIST_TOL: 3,     // 에지 거리 허용 px (subpixel shift 보정)
+      CV_BLUR_KSIZE: 3,     // Gaussian blur 커널 크기 (odd, base scale)
+      CV_MORPH_OPEN: 3,     // Opening 커널 크기 (노이즈 제거, base scale)
+      CV_MORPH_CLOSE: 3,     // Closing 커널 크기 (갭 메우기, base scale)
+      CV_ALIGN_TRANSLATION: true   // 경미한 translation 보정 활성화
     };
     var pageTextMeta2 = {};
 
@@ -1025,8 +1209,16 @@
 
     var file1El = document.getElementById("file1");
     var file2El = document.getElementById("file2");
+    var file1 = document.getElementById("file1");
+    var file2 = document.getElementById("file2");
+    var file1Name = document.getElementById("file1Name");
+    var file2Name = document.getElementById("file2Name");
+    var toolbarEl = document.querySelector(".toolbar");
+    var layoutEl = document.querySelector(".layout");
     var pdf1El = document.getElementById("pdf1");
     var pdf2El = document.getElementById("pdf2");
+    var sidebarEl = document.querySelector(".sidebar");
+    var sidebarResizerEl = document.getElementById("sidebarResizer");
     var overlayPaneEl = document.getElementById("overlayPane");
     var overlayBtnEl = document.getElementById("overlayBtn");
     var toggleDiffBtnEl = document.getElementById("toggleDiffBtn");
@@ -1044,31 +1236,71 @@
     var panStartX = 0, panStartY = 0;
     var panScrollLeft = 0, panScrollTop = 0;
 
-    file1El.addEventListener("change", loadPDF1);
-    file2El.addEventListener("change", loadPDF2);
-    compareModeEl.addEventListener("change", function () {
+    if (file1El) {
+      file1El.addEventListener("change", loadPDF1);
+    }
+
+    if (file2El) {
+      file2El.addEventListener("change", loadPDF2);
+    }
+
+    if (file1) {
+      file1.addEventListener("change", function (e) {
+        var file = e.target.files[0];
+
+        if (file) {
+          file1Name.textContent = file.name;
+          file1Name.classList.remove("empty");
+        } else {
+          file1Name.textContent = "선택된 파일 없음";
+          file1Name.classList.add("empty");
+        }
+      });
+    }
+
+    if (file2) {
+      file2.addEventListener("change", function (e) {
+        var file = e.target.files[0];
+
+        if (file) {
+          file2Name.textContent = file.name;
+          file2Name.classList.remove("empty");
+        } else {
+          file2Name.textContent = "선택된 파일 없음";
+          file2Name.classList.add("empty");
+        }
+      });
+    }
+
+    compareModeEl.addEventListener("change", async function () {
       compareMode = compareModeEl.value;
       if (compareMode !== "pixel") {
         overlayBtnEl.style.display = "none";
         if (overlayMode) exitOverlayMode();
       }
+      await rerenderIfReady();
     });
+
     document.getElementById("zoomInBtn").addEventListener("click", function () {
       viewScale = Math.min(viewScale + 0.1, 8);
       applyViewScale();
     });
+
     document.getElementById("zoomOutBtn").addEventListener("click", function () {
       viewScale = Math.max(viewScale - 0.1, 0.1);
       applyViewScale();
     });
+
     document.getElementById("prevBtn").addEventListener("click", goToPrevDiff);
     document.getElementById("nextBtn").addEventListener("click", goToNextDiff);
     document.getElementById("compareBtn").addEventListener("click", rerenderIfReady);
+
     toggleDiffBtnEl.addEventListener("click", function () {
       diffVisible = !diffVisible;
       document.body.classList.toggle("diff-hidden", !diffVisible);
       toggleDiffBtnEl.textContent = diffVisible ? "변경 숨기기" : "변경 보이기";
     });
+
     overlayBtnEl.addEventListener("click", function () {
       if (overlayMode) {
         exitOverlayMode();
@@ -1076,6 +1308,7 @@
         enterOverlayMode();
       }
     });
+
     ldCancelBtn.addEventListener("click", function () {
       renderGeneration++;
       ldHide();
@@ -1112,7 +1345,7 @@
       pageViews1.concat(pageViews2).forEach(applyScaleToPageView);
       overlayPageViews.forEach(function (ov) {
         if (!ov || !ov.body || !ov.stage) return;
-        ov.body.style.width  = Math.max(1, Math.round(ov.baseWidth  * viewScale)) + "px";
+        ov.body.style.width = Math.max(1, Math.round(ov.baseWidth * viewScale)) + "px";
         ov.body.style.height = Math.max(1, Math.round(ov.baseHeight * viewScale)) + "px";
         ov.stage.style.transform = "scale(" + viewScale + ")";
       });
@@ -1169,7 +1402,7 @@
         _virtualizationObserver.disconnect();
         _virtualizationObserver = null;
       }
-      Object.keys(_releaseTimers).forEach(function(k) { clearTimeout(_releaseTimers[k]); });
+      Object.keys(_releaseTimers).forEach(function (k) { clearTimeout(_releaseTimers[k]); });
       _releaseTimers = {};
       activeRenders = 0;
       renderQueue = [];
@@ -1231,7 +1464,7 @@
 
       var _ins = alignmentRows.filter(function (r) { return r.type === "insert"; }).length;
       var _del = alignmentRows.filter(function (r) { return r.type === "delete"; }).length;
-      var _mat = alignmentRows.filter(function (r) { return r.type === "match";  }).length;
+      var _mat = alignmentRows.filter(function (r) { return r.type === "match"; }).length;
       ldUpdateSub(2, "매칭 " + _mat + " / 삽입 " + _ins + " / 삭제 " + _del);
       ldSetStepProgress(1);
 
@@ -1247,14 +1480,18 @@
 
           // 비율이 같고 크기가 다를 때 → 큰 쪽 사이즈로 작은 쪽을 스케일업
           var sameAspect = Math.abs(lm.width / lm.height - rm.width / rm.height) < 0.02;
-          var diffSize   = Math.abs(lm.width - rm.width) > 1 || Math.abs(lm.height - rm.height) > 1;
+          var diffSize = Math.abs(lm.width - rm.width) > 1 || Math.abs(lm.height - rm.height) > 1;
           if (sameAspect && diffSize) {
             if (rm.width < lm.width) {
-              rm = { width: lm.width, height: lm.height,
-                     renderScaleOverride: renderScale * lm.width / rm.width };
+              rm = {
+                width: lm.width, height: lm.height,
+                renderScaleOverride: renderScale * lm.width / rm.width
+              };
             } else {
-              lm = { width: rm.width, height: rm.height,
-                     renderScaleOverride: renderScale * rm.width / lm.width };
+              lm = {
+                width: rm.width, height: rm.height,
+                renderScaleOverride: renderScale * rm.width / lm.width
+              };
             }
           }
 
@@ -1295,7 +1532,7 @@
         var row = alignmentRows[idx], left = pageViews1[idx], right = pageViews2[idx];
         if (row.type === "match") {
           await Promise.all([
-            ensureRendered(pdfDoc1, left,  gen, true),
+            ensureRendered(pdfDoc1, left, gen, true),
             ensureRendered(pdfDoc2, right, gen, true)
           ]);
           if (gen !== renderGeneration) return;
@@ -1318,7 +1555,7 @@
         for (var j = i; j < batchEnd; j++) {
           var rj = alignmentRows[j];
           ldSetStepProgress(j / totalRows);
-          var pl = (j+1) + " / " + totalRows;
+          var pl = (j + 1) + " / " + totalRows;
           if (rj.type === "match") {
             ldUpdateSub(3, pl + " — 좌 " + rj.leftPageNo + " ↔ 우 " + rj.rightPageNo);
             ldSetLog("p" + rj.leftPageNo + " ↔ p" + rj.rightPageNo + " diff 검출 중...");
@@ -1338,7 +1575,7 @@
       updateZoomSummary();
       overlayBtnEl.style.display = "";
       toggleDiffBtnEl.style.display = "";
-      setTimeout(function() { updateCurrentViewingRow(); setupCanvasVirtualization(); }, 200);
+      setTimeout(function () { updateCurrentViewingRow(); setupCanvasVirtualization(); }, 200);
     }
 
     async function renderAll_TextOnly(myGen) {
@@ -1348,7 +1585,7 @@
       ldActivateStep(0, "0 / " + n + " 페이지");
       for (var p = 1; p <= n; p++) {
         if (myGen !== renderGeneration) { ldHide(); return; }
-        ldUpdateSub(0, p + " / " + n); ldSetStepProgress((p-1)/n);
+        ldUpdateSub(0, p + " / " + n); ldSetStepProgress((p - 1) / n);
         ldSetLog("좌측 텍스트 추출 중... p" + p + " / " + n);
         summaryTextEl.textContent = "좌측 텍스트 추출 중... " + p + " / " + n;
         pageTextMeta1[p] = await extractPageTextMeta(pdfDoc1, p);
@@ -1360,7 +1597,7 @@
       ldActivateStep(1, "0 / " + m + " 페이지");
       for (var p = 1; p <= m; p++) {
         if (myGen !== renderGeneration) { ldHide(); return; }
-        ldUpdateSub(1, p + " / " + m); ldSetStepProgress((p-1)/m);
+        ldUpdateSub(1, p + " / " + m); ldSetStepProgress((p - 1) / m);
         ldSetLog("우측 텍스트 추출 중... p" + p + " / " + m);
         summaryTextEl.textContent = "우측 텍스트 추출 중... " + p + " / " + m;
         pageTextMeta2[p] = await extractPageTextMeta(pdfDoc2, p);
@@ -1378,11 +1615,11 @@
       for (var pi = 1; pi <= maxPages; pi++) {
         var hasL = pi <= n, hasR = pi <= m;
         if (hasL && hasR) {
-          alignmentRows.push({ type: "match",  leftPageNo: pi, rightPageNo: pi, similarity: 1 });
+          alignmentRows.push({ type: "match", leftPageNo: pi, rightPageNo: pi, similarity: 1 });
         } else if (hasR) {
           alignmentRows.push({ type: "insert", leftPageNo: null, rightPageNo: pi, similarity: 0 });
         } else {
-          alignmentRows.push({ type: "delete", leftPageNo: pi,  rightPageNo: null, similarity: 0 });
+          alignmentRows.push({ type: "delete", leftPageNo: pi, rightPageNo: null, similarity: 0 });
         }
       }
       ldUpdateSub(2, "완료 (" + alignmentRows.length + " 행)");
@@ -1402,16 +1639,16 @@
           // 비율이 같고 크기가 다를 때 → 큰 쪽으로 작은 쪽의 스팬 좌표를 스케일
           // (텍스트 비교 자체는 좌표 무관 → 좌표만 변환하면 diff box 위치가 맞춰짐)
           var sameAspect = Math.abs(lm.cssWidth / lm.cssHeight - rm.cssWidth / rm.cssHeight) < 0.02;
-          var diffSize   = Math.abs(lm.cssWidth - rm.cssWidth) > 1 || Math.abs(lm.cssHeight - rm.cssHeight) > 1;
+          var diffSize = Math.abs(lm.cssWidth - rm.cssWidth) > 1 || Math.abs(lm.cssHeight - rm.cssHeight) > 1;
           if (sameAspect && diffSize) {
             if (rm.cssWidth < lm.cssWidth) {
               var sf = lm.cssWidth / rm.cssWidth;
-              rm.textLines.forEach(function(s) { s.x *= sf; s.y *= sf; s.w *= sf; s.h *= sf; });
+              rm.textLines.forEach(function (s) { s.x *= sf; s.y *= sf; s.w *= sf; s.h *= sf; });
               rm.cssWidth = lm.cssWidth; rm.cssHeight = lm.cssHeight;
               rm.renderScaleOverride = renderScale * sf;
             } else {
               var sf = rm.cssWidth / lm.cssWidth;
-              lm.textLines.forEach(function(s) { s.x *= sf; s.y *= sf; s.w *= sf; s.h *= sf; });
+              lm.textLines.forEach(function (s) { s.x *= sf; s.y *= sf; s.w *= sf; s.h *= sf; });
               lm.cssWidth = rm.cssWidth; lm.cssHeight = rm.cssHeight;
               lm.renderScaleOverride = renderScale * sf;
             }
@@ -1453,17 +1690,17 @@
       ldSetLog("Myers diff 준비 중... (" + globalTextLines1.length + " vs " + globalTextLines2.length + " 토큰)");
 
       (function pruneItems(metaMap) {
-        Object.keys(metaMap).forEach(function(p) {
+        Object.keys(metaMap).forEach(function (p) {
           var lines = metaMap[p] && metaMap[p].textLines;
           if (!lines) return;
-          lines.forEach(function(ln) { ln.items = null; });
+          lines.forEach(function (ln) { ln.items = null; });
         });
       })(pageTextMeta1);
       (function pruneItems(metaMap) {
-        Object.keys(metaMap).forEach(function(p) {
+        Object.keys(metaMap).forEach(function (p) {
           var lines = metaMap[p] && metaMap[p].textLines;
           if (!lines) return;
-          lines.forEach(function(ln) { ln.items = null; });
+          lines.forEach(function (ln) { ln.items = null; });
         });
       })(pageTextMeta2);
 
@@ -1502,123 +1739,123 @@
       updateZoomSummary();
       toggleDiffBtnEl.style.display = "";
 
-      setTimeout(function(){ setupTextOnlyVirtualization(myGen); }, 200);
+      setTimeout(function () { setupTextOnlyVirtualization(myGen); }, 200);
     }
 
     async function extractPageTextMeta(pdfDoc, pageNo) {
       var page = await pdfDoc.getPage(pageNo);
-        var vp = page.getViewport({scale: renderScale});
-        var tc = await page.getTextContent();
+      var vp = page.getViewport({ scale: renderScale });
+      var tc = await page.getTextContent();
 
-        var rawItems = (tc.items || []).map(function(item) {
-            var str = (item.str || "");
-            if (!str) return null;
-            var tx = pdfjsLib.Util.transform(vp.transform, item.transform);
-            var ih = Math.max(1, Math.abs(tx[3]) || 10);
-            return {
-                str: str,
-                ix: tx[4],
-                iy: tx[5] - ih,
-                iw: Math.max(1, item.width * renderScale),
-                ih: ih,
-                baselineY: tx[5],
-                hasEOL: !!item.hasEOL
-            };
-        }).filter(Boolean);
-
-        var avgH = rawItems.length
-            ? rawItems.reduce(function(s, i) { return s + i.ih; }, 0) / rawItems.length
-            : 10;
-
-        rawItems.sort(function(a, b) {
-            var dy = a.baselineY - b.baselineY;
-            if (Math.abs(dy) > avgH * 0.5) return dy;
-            return a.ix - b.ix;
-        });
-
-        var mergedItems = [];
-        rawItems.forEach(function(item) {
-            if (!item.str.trim()) {
-                if (mergedItems.length) mergedItems[mergedItems.length - 1].hasSpace = true;
-                return;
-            }
-
-            var last = mergedItems.length ? mergedItems[mergedItems.length - 1] : null;
-
-            var canMerge = last
-                && !last.hasSpace
-                && !last.hasEOL
-                && Math.abs(item.baselineY - last.baselineY) < avgH * 0.3
-                && (item.ix - (last.ix + last.iw)) < avgH * 0.3
-                && !item.str.startsWith(" ")
-                && !last.str.endsWith(" ");
-
-            if (canMerge) {
-                last.str += item.str;
-                last.iw = (item.ix + item.iw) - last.ix;
-                last.hasEOL = item.hasEOL;
-            } else {
-                mergedItems.push(Object.assign({}, item, { hasSpace: false }));
-            }
-        });
-
-        var spans = [];
-        mergedItems.forEach(function(item) {
-            item.str.trim().split(/\s+/).filter(Boolean).forEach(function(word) {
-                if (/^[.,!?;:()\[\]\/\-"']+$/.test(word)) return;
-                spans.push({ text: word, x: item.ix, y: item.iy, w: item.iw, h: item.ih });
-            });
-        });
-
-        try { page.cleanup(); } catch(e) {}
+      var rawItems = (tc.items || []).map(function (item) {
+        var str = (item.str || "");
+        if (!str) return null;
+        var tx = pdfjsLib.Util.transform(vp.transform, item.transform);
+        var ih = Math.max(1, Math.abs(tx[3]) || 10);
         return {
-            pageNo:    pageNo,
-            cssWidth:  vp.width,
-            cssHeight: vp.height,
-            text: normalizeTextForCompare(
-                mergedItems.map(function(i) { return i.str.trim(); }).filter(Boolean).join(" ")
-            ),
-            textLines: spans
+          str: str,
+          ix: tx[4],
+          iy: tx[5] - ih,
+          iw: Math.max(1, item.width * renderScale),
+          ih: ih,
+          baselineY: tx[5],
+          hasEOL: !!item.hasEOL
         };
+      }).filter(Boolean);
+
+      var avgH = rawItems.length
+        ? rawItems.reduce(function (s, i) { return s + i.ih; }, 0) / rawItems.length
+        : 10;
+
+      rawItems.sort(function (a, b) {
+        var dy = a.baselineY - b.baselineY;
+        if (Math.abs(dy) > avgH * 0.5) return dy;
+        return a.ix - b.ix;
+      });
+
+      var mergedItems = [];
+      rawItems.forEach(function (item) {
+        if (!item.str.trim()) {
+          if (mergedItems.length) mergedItems[mergedItems.length - 1].hasSpace = true;
+          return;
+        }
+
+        var last = mergedItems.length ? mergedItems[mergedItems.length - 1] : null;
+
+        var canMerge = last
+          && !last.hasSpace
+          && !last.hasEOL
+          && Math.abs(item.baselineY - last.baselineY) < avgH * 0.3
+          && (item.ix - (last.ix + last.iw)) < avgH * 0.3
+          && !item.str.startsWith(" ")
+          && !last.str.endsWith(" ");
+
+        if (canMerge) {
+          last.str += item.str;
+          last.iw = (item.ix + item.iw) - last.ix;
+          last.hasEOL = item.hasEOL;
+        } else {
+          mergedItems.push(Object.assign({}, item, { hasSpace: false }));
+        }
+      });
+
+      var spans = [];
+      mergedItems.forEach(function (item) {
+        item.str.trim().split(/\s+/).filter(Boolean).forEach(function (word) {
+          if (/^[.,!?;:()\[\]\/\-"']+$/.test(word)) return;
+          spans.push({ text: word, x: item.ix, y: item.iy, w: item.iw, h: item.ih });
+        });
+      });
+
+      try { page.cleanup(); } catch (e) { }
+      return {
+        pageNo: pageNo,
+        cssWidth: vp.width,
+        cssHeight: vp.height,
+        text: normalizeTextForCompare(
+          mergedItems.map(function (i) { return i.str.trim(); }).filter(Boolean).join(" ")
+        ),
+        textLines: spans
+      };
     }
 
     function collectAllRowItems_TextOnly(metaMap) {
-        var result = [], globalRowIndex = 0;
-        var pageNos = Object.keys(metaMap).map(Number).sort(function(a, b) { return a - b; });
-        for (var pi = 0; pi < pageNos.length; pi++) {
-            var pageNo = pageNos[pi];
-            var meta = metaMap[pageNo];
-            if (!meta || !meta.textLines) continue;
-            var pageRowCount = meta.textLines.length;
-            meta.textLines.forEach(function(span, idx) {
-                if (span._normKey === undefined) {
-                    span._normKey = normalizeTextForCompare(span.text)
-                        .replace(/\s/g, "");
-                }
-                result.push({
-                    pageNo:         pageNo,
-                    rowIndexInPage: idx,
-                    pageRowCount:   pageRowCount,
-                    globalRowIndex: globalRowIndex,
-                    line:           span
-                });
-                globalRowIndex++;
-            });
-        }
-        return result;
+      var result = [], globalRowIndex = 0;
+      var pageNos = Object.keys(metaMap).map(Number).sort(function (a, b) { return a - b; });
+      for (var pi = 0; pi < pageNos.length; pi++) {
+        var pageNo = pageNos[pi];
+        var meta = metaMap[pageNo];
+        if (!meta || !meta.textLines) continue;
+        var pageRowCount = meta.textLines.length;
+        meta.textLines.forEach(function (span, idx) {
+          if (span._normKey === undefined) {
+            span._normKey = normalizeTextForCompare(span.text)
+              .replace(/\s/g, "");
+          }
+          result.push({
+            pageNo: pageNo,
+            rowIndexInPage: idx,
+            pageRowCount: pageRowCount,
+            globalRowIndex: globalRowIndex,
+            line: span
+          });
+          globalRowIndex++;
+        });
+      }
+      return result;
     }
 
     function createPageShell_TextOnly(container, pageNo, sideLabel, width, height, rowIndex) {
-      var wrap  = document.createElement("div");
+      var wrap = document.createElement("div");
       wrap.className = "page-wrap"; wrap.dataset.rowIndex = rowIndex;
-      var lbl   = document.createElement("div");
+      var lbl = document.createElement("div");
       lbl.className = "page-label"; lbl.textContent = sideLabel + " PDF - 페이지 " + pageNo;
-      var body  = document.createElement("div"); body.className = "page-body";
+      var body = document.createElement("div"); body.className = "page-body";
       var stage = document.createElement("div"); stage.className = "page-stage";
       stage.style.width = width + "px"; stage.style.height = height + "px";
       var ph = document.createElement("div");
       ph.className = "text-placeholder canvas-placeholder";
-      ph.style.width  = width  + "px";
+      ph.style.width = width + "px";
       ph.style.height = height + "px";
       ph.textContent = "p" + pageNo;
       var overlay = document.createElement("div");
@@ -1654,15 +1891,15 @@
         return;
       }
       if (_virtualizationObserver) _virtualizationObserver.disconnect();
-      _virtualizationObserver = new IntersectionObserver(function(entries){
-        entries.forEach(function(entry){
+      _virtualizationObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
           var wrap = entry.target;
           var rowIndex = parseInt(wrap.dataset.rowIndex);
           if (isNaN(rowIndex)) return;
 
           if (!entry.isIntersecting) {
             if (!_releaseTimers[rowIndex]) {
-              _releaseTimers[rowIndex] = setTimeout(function(){
+              _releaseTimers[rowIndex] = setTimeout(function () {
                 releaseCanvasForRow(rowIndex);
                 delete _releaseTimers[rowIndex];
               }, 8000);
@@ -1677,7 +1914,7 @@
         });
       }, { rootMargin: '1500px 0px 1500px 0px', threshold: 0 });
 
-      document.querySelectorAll('.page-wrap').forEach(function(wrap){
+      document.querySelectorAll('.page-wrap').forEach(function (wrap) {
         _virtualizationObserver.observe(wrap);
       });
     }
@@ -1688,13 +1925,13 @@
       var row = alignmentRows[rowIndex];
       if (!row) return;
 
-      var pLeft  = (row.leftPageNo  != null && lv && !lv.isRendered && !lv.isMissing) ? pdfDoc1 : null;
+      var pLeft = (row.leftPageNo != null && lv && !lv.isRendered && !lv.isMissing) ? pdfDoc1 : null;
       var pRight = (row.rightPageNo != null && rv && !rv.isRendered && !rv.isMissing) ? pdfDoc2 : null;
 
       if (!pLeft && !pRight) return;
 
       var tasks = [];
-      if (pLeft)  tasks.push(ensureRendered(pdfDoc1, lv, generation));
+      if (pLeft) tasks.push(ensureRendered(pdfDoc1, lv, generation));
       if (pRight) tasks.push(ensureRendered(pdfDoc2, rv, generation));
       await Promise.all(tasks);
       if (lv && lv.canvas) downscaleCanvasToDisplay(lv);
@@ -1706,7 +1943,7 @@
         if (generation !== renderGeneration) return;
         var row = alignmentRows[i];
         if (!row) continue;
-        if (row.leftPageNo  != null) await ensureRendered(pdfDoc1, pageViews1[i], generation);
+        if (row.leftPageNo != null) await ensureRendered(pdfDoc1, pageViews1[i], generation);
         if (row.rightPageNo != null) await ensureRendered(pdfDoc2, pageViews2[i], generation);
       }
     }
@@ -1772,10 +2009,10 @@
           if (pg === primaryRightPageNo && rects.length) firstRightRect = rects[0];
         });
 
-        var leftRowIdx  = primaryLeftPageNo  != null ? (leftRowIndexByPageNo[primaryLeftPageNo]  || 0) : null;
+        var leftRowIdx = primaryLeftPageNo != null ? (leftRowIndexByPageNo[primaryLeftPageNo] || 0) : null;
         var rightRowIdx = primaryRightPageNo != null ? (rightRowIndexByPageNo[primaryRightPageNo] || 0) : null;
-        if (leftRowIdx  === null) leftRowIdx  = rightRowIdx !== null ? Math.min(rightRowIdx,  pageViews1.length-1) : 0;
-        if (rightRowIdx === null) rightRowIdx = leftRowIdx  !== null ? Math.min(leftRowIdx,   pageViews2.length-1) : 0;
+        if (leftRowIdx === null) leftRowIdx = rightRowIdx !== null ? Math.min(rightRowIdx, pageViews1.length - 1) : 0;
+        if (rightRowIdx === null) rightRowIdx = leftRowIdx !== null ? Math.min(leftRowIdx, pageViews2.length - 1) : 0;
 
         var leftText = block.leftLines.map(function (e) { return e.line.text; }).join(" / ");
         var rightText = block.rightLines.map(function (e) { return e.line.text; }).join(" / ");
@@ -1812,7 +2049,7 @@
         if (!ka || !kb) return false;
         if (ka === kb) return true;
 
-        var isPunctOnly = function(s) { return /^[.,!?;:()\[\]\/\-"']+$/.test(s); };
+        var isPunctOnly = function (s) { return /^[.,!?;:()\[\]\/\-"']+$/.test(s); };
         if (isPunctOnly(ka) && isPunctOnly(kb)) return true;
         if (isPunctOnly(ka) || isPunctOnly(kb)) return false;
 
@@ -1911,7 +2148,7 @@
 
     function postProcessDiffOps(ops) {
       var SAME_PAGE_PROX = 2;
-      var MAX_PAGE_GAP   = 1;
+      var MAX_PAGE_GAP = 1;
 
       var delsByText = {};
       var insByText = {};
@@ -1946,8 +2183,8 @@
 
             if (pageGap > MAX_PAGE_GAP) return;
 
-            var rowDist      = Math.abs(de.globalRowIndex - ie.globalRowIndex);
-            var samePage     = pageGap === 0;
+            var rowDist = Math.abs(de.globalRowIndex - ie.globalRowIndex);
+            var samePage = pageGap === 0;
             var nearBoundary = !samePage && (
               de.rowIndexInPage >= de.pageRowCount - 2 ||
               ie.rowIndexInPage <= 1
@@ -1957,7 +2194,7 @@
 
             if (eligible && rowDist < bestDist) {
               bestDist = rowDist;
-              bestIi   = ins_.i;
+              bestIi = ins_.i;
             }
           });
           if (bestIi >= 0) {
@@ -2008,7 +2245,7 @@
       result.rects.forEach(function (rect, idx) {
         var diffId = "r" + rowIndex + "-d" + (idx + 1);
         var type = rect.type || "compact";
-        drawDiffElement(left.overlay,  rect.left,  diffId, "change", type);
+        drawDiffElement(left.overlay, rect.left, diffId, "change", type);
         drawDiffElement(right.overlay, rect.right, diffId, "change", type);
         diffEntries.push({
           id: diffId, kind: "change", rowIndex: rowIndex,
@@ -2062,10 +2299,10 @@
       var coarseDiff = 0;
       for (var k = 0; k < cw * ch; k++) {
         var p = k * 4;
-        if (cd1[p] > 250 && cd1[p+1] > 250 && cd1[p+2] > 250 &&
-            cd2[p] > 250 && cd2[p+1] > 250 && cd2[p+2] > 250) continue;
-        if (Math.max(Math.abs(cd1[p]-cd2[p]), Math.abs(cd1[p+1]-cd2[p+1]),
-                     Math.abs(cd1[p+2]-cd2[p+2])) > 20) coarseDiff++;
+        if (cd1[p] > 250 && cd1[p + 1] > 250 && cd1[p + 2] > 250 &&
+          cd2[p] > 250 && cd2[p + 1] > 250 && cd2[p + 2] > 250) continue;
+        if (Math.max(Math.abs(cd1[p] - cd2[p]), Math.abs(cd1[p + 1] - cd2[p + 1]),
+          Math.abs(cd1[p + 2] - cd2[p + 2])) > 20) coarseDiff++;
       }
       if (generation !== renderGeneration) return { rects: [], meta: {} };
       if (coarseDiff === 0) {
@@ -2074,28 +2311,28 @@
       await yieldToBrowser();
 
       // ── Stage 2: content bounds ROI 계산 ───────────────────────────────────
-      var cb1 = leftView.contentBounds  || { x: 0, y: 0, w: w, h: h };
+      var cb1 = leftView.contentBounds || { x: 0, y: 0, w: w, h: h };
       var cb2 = rightView.contentBounds || { x: 0, y: 0, w: w, h: h };
-      var roiX  = Math.max(0, Math.min(cb1.x, cb2.x));
-      var roiY  = Math.max(0, Math.min(cb1.y, cb2.y));
+      var roiX = Math.max(0, Math.min(cb1.x, cb2.x));
+      var roiY = Math.max(0, Math.min(cb1.y, cb2.y));
       var roiX2 = Math.min(w, Math.max(cb1.x + cb1.w, cb2.x + cb2.w));
       var roiY2 = Math.min(h, Math.max(cb1.y + cb1.h, cb2.y + cb2.h));
-      var roiW  = Math.max(1, roiX2 - roiX);
-      var roiH  = Math.max(1, roiY2 - roiY);
+      var roiW = Math.max(1, roiX2 - roiX);
+      var roiH = Math.max(1, roiY2 - roiY);
 
       // ── Stage 3: OpenCV 풀 파이프라인 ──────────────────────────────────────
       // cv.Mat 변수 전부 null 초기화 → finally에서 일괄 delete
-      var src1=null, src2=null, gray1=null, gray2=null, gray2a=null;
-      var blur1=null, blur2=null;
-      var edges1=null, edges2=null;
-      var invEdges1=null, invEdges2=null;
-      var dist1=null, dist2=null;
-      var farFrom1f=null, farFrom2f=null, farFrom1u=null, farFrom2u=null;
-      var newEdges=null, removedEdges=null, edgeDiff=null;
-      var diffInt=null, threshInt=null;
-      var combined=null, morphed=null;
-      var labels=null, stats=null, centroids=null;
-      var kOpen=null, kClose=null;
+      var src1 = null, src2 = null, gray1 = null, gray2 = null, gray2a = null;
+      var blur1 = null, blur2 = null;
+      var edges1 = null, edges2 = null;
+      var invEdges1 = null, invEdges2 = null;
+      var dist1 = null, dist2 = null;
+      var farFrom1f = null, farFrom2f = null, farFrom1u = null, farFrom2u = null;
+      var newEdges = null, removedEdges = null, edgeDiff = null;
+      var diffInt = null, threshInt = null;
+      var combined = null, morphed = null;
+      var labels = null, stats = null, centroids = null;
+      var kOpen = null, kClose = null;
 
       try {
         // 1. ROI ImageData → cv.Mat (RGBA)
@@ -2118,7 +2355,7 @@
         if (DIFF_POST.CV_ALIGN_TRANSLATION) {
           gray2a = cvAlignTranslation(gray1, gray2);
           if (gray2a !== gray2) { gray2.delete(); gray2 = null; }
-          else                  { gray2 = null; }
+          else { gray2 = null; }
         } else {
           gray2a = gray2; gray2 = null;
         }
@@ -2127,13 +2364,13 @@
         blur1 = new cv.Mat(); blur2 = new cv.Mat();
         var bSz = Math.max(3, (DIFF_POST.CV_BLUR_KSIZE * Math.round(ES / 3)) | 1);
         var kBlur = new cv.Size(bSz, bSz);
-        cv.GaussianBlur(gray1,  blur1, kBlur, 0);
+        cv.GaussianBlur(gray1, blur1, kBlur, 0);
         cv.GaussianBlur(gray2a, blur2, kBlur, 0);
-        gray1.delete();  gray1  = null;
+        gray1.delete(); gray1 = null;
         gray2a.delete(); gray2a = null;
 
         // 5. 직접 픽셀 강도 차이
-        diffInt  = new cv.Mat(); threshInt = new cv.Mat();
+        diffInt = new cv.Mat(); threshInt = new cv.Mat();
         cv.absdiff(blur1, blur2, diffInt);
         var pixThr = Math.max(20, Math.round(DIFF_POST.CV_PIX_DIFF_THR * 3 / ES));
         cv.threshold(diffInt, threshInt, pixThr, 255, cv.THRESH_BINARY);
@@ -2190,42 +2427,42 @@
 
         edgeDiff = new cv.Mat();
         cv.bitwise_or(newEdges, removedEdges, edgeDiff);
-        newEdges.delete();    newEdges    = null;
+        newEdges.delete(); newEdges = null;
         removedEdges.delete(); removedEdges = null;
 
         // 8. 강도 diff + edge diff 합산
         combined = new cv.Mat();
         cv.bitwise_or(threshInt, edgeDiff, combined);
         threshInt.delete(); threshInt = null;
-        edgeDiff.delete();  edgeDiff  = null;
+        edgeDiff.delete(); edgeDiff = null;
 
         if (generation !== renderGeneration) return { rects: [], meta: {} };
         await yieldToBrowser();
 
         // 9. Morphology: Opening(노이즈 제거) → Closing(갭 메우기)
-        var oSz = Math.max(3, (DIFF_POST.CV_MORPH_OPEN  * Math.round(ES / 3)) | 1);
+        var oSz = Math.max(3, (DIFF_POST.CV_MORPH_OPEN * Math.round(ES / 3)) | 1);
         var cSz = Math.max(5, (DIFF_POST.CV_MORPH_CLOSE * Math.round(ES / 3)) | 1);
-        kOpen  = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(oSz, oSz));
-        kClose = cv.getStructuringElement(cv.MORPH_RECT,    new cv.Size(cSz, cSz));
+        kOpen = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(oSz, oSz));
+        kClose = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(cSz, cSz));
         morphed = new cv.Mat();
-        cv.morphologyEx(combined, morphed, cv.MORPH_OPEN,  kOpen);
+        cv.morphologyEx(combined, morphed, cv.MORPH_OPEN, kOpen);
         combined.delete(); combined = null;
-        cv.morphologyEx(morphed,  morphed, cv.MORPH_CLOSE, kClose);
-        kOpen.delete();  kOpen  = null;
+        cv.morphologyEx(morphed, morphed, cv.MORPH_CLOSE, kClose);
+        kOpen.delete(); kOpen = null;
         kClose.delete(); kClose = null;
 
         // 10. connectedComponentsWithStats
         labels = new cv.Mat(); stats = new cv.Mat(); centroids = new cv.Mat();
         var nComp = cv.connectedComponentsWithStats(morphed, labels, stats, centroids, 8, cv.CV_32S);
-        labels.delete();    labels    = null;
+        labels.delete(); labels = null;
         centroids.delete(); centroids = null;
 
         var components = [];
         for (var i = 1; i < nComp; i++) {
-          var cx   = stats.intAt(i, cv.CC_STAT_LEFT);
-          var cy   = stats.intAt(i, cv.CC_STAT_TOP);
-          var cw2  = stats.intAt(i, cv.CC_STAT_WIDTH);
-          var ch2  = stats.intAt(i, cv.CC_STAT_HEIGHT);
+          var cx = stats.intAt(i, cv.CC_STAT_LEFT);
+          var cy = stats.intAt(i, cv.CC_STAT_TOP);
+          var cw2 = stats.intAt(i, cv.CC_STAT_WIDTH);
+          var ch2 = stats.intAt(i, cv.CC_STAT_HEIGHT);
           var area = stats.intAt(i, cv.CC_STAT_AREA);
           if (cw2 > 0 && ch2 > 0 && area > 0) {
             components.push({ x: cx, y: cy, w: cw2, h: ch2, area: area });
@@ -2254,12 +2491,12 @@
       } finally {
         // 모든 cv.Mat 일괄 해제
         [src1, src2, gray1, gray2, gray2a, blur1, blur2,
-         edges1, edges2, invEdges1, invEdges2,
-         dist1, dist2, farFrom1f, farFrom2f, farFrom1u, farFrom2u,
-         newEdges, removedEdges, edgeDiff,
-         diffInt, threshInt, combined, morphed,
-         labels, stats, centroids, kOpen, kClose
-        ].forEach(function (m) { if (m) try { m.delete(); } catch (e) {} });
+          edges1, edges2, invEdges1, invEdges2,
+          dist1, dist2, farFrom1f, farFrom2f, farFrom1u, farFrom2u,
+          newEdges, removedEdges, edgeDiff,
+          diffInt, threshInt, combined, morphed,
+          labels, stats, centroids, kOpen, kClose
+        ].forEach(function (m) { if (m) try { m.delete(); } catch (e) { } });
       }
     }
 
@@ -2294,14 +2531,14 @@
       }
       await yieldToBrowser();
 
-      var cb1 = leftView.contentBounds  || { x: 0, y: 0, w: w, h: h };
+      var cb1 = leftView.contentBounds || { x: 0, y: 0, w: w, h: h };
       var cb2 = rightView.contentBounds || { x: 0, y: 0, w: w, h: h };
-      var roiX  = Math.max(0, Math.min(cb1.x, cb2.x));
-      var roiY  = Math.max(0, Math.min(cb1.y, cb2.y));
+      var roiX = Math.max(0, Math.min(cb1.x, cb2.x));
+      var roiY = Math.max(0, Math.min(cb1.y, cb2.y));
       var roiX2 = Math.min(w, Math.max(cb1.x + cb1.w, cb2.x + cb2.w));
       var roiY2 = Math.min(h, Math.max(cb1.y + cb1.h, cb2.y + cb2.h));
-      var roiW  = Math.max(1, roiX2 - roiX);
-      var roiH  = Math.max(1, roiY2 - roiY);
+      var roiW = Math.max(1, roiX2 - roiX);
+      var roiH = Math.max(1, roiY2 - roiY);
 
       var img1 = canvas1.getContext("2d").getImageData(roiX, roiY, roiW, roiH).data;
       var img2 = sampledCanvas2.getContext("2d").getImageData(roiX, roiY, roiW, roiH).data;
@@ -2333,10 +2570,10 @@
       var mask = new Uint8Array(w * h);
       for (var i = 0, n = w * h; i < n; i++) {
         var p = i * 4;
-        var r1 = img1[p], g1 = img1[p+1], b1 = img1[p+2];
-        var r2 = img2[p], g2 = img2[p+1], b2 = img2[p+2];
+        var r1 = img1[p], g1 = img1[p + 1], b1 = img1[p + 2];
+        var r2 = img2[p], g2 = img2[p + 1], b2 = img2[p + 2];
         if (r1 > 245 && g1 > 245 && b1 > 245 && r2 > 245 && g2 > 245 && b2 > 245) continue;
-        if (Math.abs(r1-r2) > threshold || Math.abs(g1-g2) > threshold || Math.abs(b1-b2) > threshold) {
+        if (Math.abs(r1 - r2) > threshold || Math.abs(g1 - g2) > threshold || Math.abs(b1 - b2) > threshold) {
           mask[i] = 1;
         }
       }
@@ -2344,7 +2581,7 @@
     }
 
     function pixelOnlyDiffMask_LowContrastFilter(img1, img2, w, h) {
-      var LOW_DIFF  = 35;
+      var LOW_DIFF = 35;
       var HIGH_DIFF = 80;
 
       var LUM_LO = 40, LUM_HI = 215;
@@ -2352,12 +2589,12 @@
       var mask = new Uint8Array(w * h);
       for (var i = 0, n = w * h; i < n; i++) {
         var p = i * 4;
-        var r1 = img1[p], g1 = img1[p+1], b1 = img1[p+2];
-        var r2 = img2[p], g2 = img2[p+1], b2 = img2[p+2];
+        var r1 = img1[p], g1 = img1[p + 1], b1 = img1[p + 2];
+        var r2 = img2[p], g2 = img2[p + 1], b2 = img2[p + 2];
 
         if (r1 > 245 && g1 > 245 && b1 > 245 && r2 > 245 && g2 > 245 && b2 > 245) continue;
 
-        var dr = Math.abs(r1-r2), dg = Math.abs(g1-g2), db = Math.abs(b1-b2);
+        var dr = Math.abs(r1 - r2), dg = Math.abs(g1 - g2), db = Math.abs(b1 - b2);
         var maxDiff = dr > dg ? (dr > db ? dr : db) : (dg > db ? dg : db);
 
         if (maxDiff <= LOW_DIFF) continue;
@@ -2397,10 +2634,10 @@
           if (!mask[idx]) continue;
 
           var neighbors = [];
-          if (x > 0   && labels[idx - 1])       neighbors.push(labels[idx - 1]);
-          if (y > 0   && labels[idx - w])       neighbors.push(labels[idx - w]);
-          if (x > 0   && y > 0 && labels[idx - w - 1]) neighbors.push(labels[idx - w - 1]);
-          if (x < w-1 && y > 0 && labels[idx - w + 1]) neighbors.push(labels[idx - w + 1]);
+          if (x > 0 && labels[idx - 1]) neighbors.push(labels[idx - 1]);
+          if (y > 0 && labels[idx - w]) neighbors.push(labels[idx - w]);
+          if (x > 0 && y > 0 && labels[idx - w - 1]) neighbors.push(labels[idx - w - 1]);
+          if (x < w - 1 && y > 0 && labels[idx - w + 1]) neighbors.push(labels[idx - w + 1]);
 
           if (neighbors.length === 0) {
             labels[idx] = nextLabel;
@@ -2433,7 +2670,7 @@
         }
       }
 
-      return Object.values(stats).map(function(s) {
+      return Object.values(stats).map(function (s) {
         return { x: s.minX, y: s.minY, w: s.maxX - s.minX + 1, h: s.maxY - s.minY + 1, area: s.area };
       });
     }
@@ -2461,12 +2698,12 @@
         if (tw < 8 || th < 8) return gray2; // 너무 작으면 skip
 
         var templRect = new cv.Rect(mx, my, tw, th);
-        templ  = small2.roi(templRect);
+        templ = small2.roi(templRect);
         result = new cv.Mat();
         cv.matchTemplate(small1, templ, result, cv.TM_CCOEFF_NORMED);
 
         var minMaxRes = cv.minMaxLoc(result);
-        var maxLoc    = minMaxRes.maxLoc;
+        var maxLoc = minMaxRes.maxLoc;
 
         // 소형 이미지 상 오프셋 → 원본 스케일로 환산
         var dxSmall = maxLoc.x - mx;
@@ -2476,7 +2713,7 @@
 
         // 의미 없는 수준(< 2px) 또는 너무 큰 오프셋(> 20px)은 보정 생략
         if ((Math.abs(dx) < 2 && Math.abs(dy) < 2) ||
-             Math.abs(dx) > 20 || Math.abs(dy) > 20) {
+          Math.abs(dx) > 20 || Math.abs(dy) > 20) {
           return gray2;
         }
 
@@ -2485,17 +2722,17 @@
         var aligned = new cv.Mat();
         var fullSize = new cv.Size(gray2.cols, gray2.rows);
         cv.warpAffine(gray2, aligned, M, fullSize,
-                      cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar(255));
+          cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar(255));
         M.delete();
         return aligned; // 호출자가 delete 책임
 
       } catch (e) {
         return gray2; // 오류 시 원본 반환
       } finally {
-        if (small1)  try { small1.delete();  } catch (e) {}
-        if (small2)  try { small2.delete();  } catch (e) {}
-        if (templ)   try { templ.delete();   } catch (e) {}
-        if (result)  try { result.delete();  } catch (e) {}
+        if (small1) try { small1.delete(); } catch (e) { }
+        if (small2) try { small2.delete(); } catch (e) { }
+        if (templ) try { templ.delete(); } catch (e) { }
+        if (result) try { result.delete(); } catch (e) { }
       }
     }
 
@@ -2534,7 +2771,7 @@
 
         var batchSigs = await Promise.all(pages.map(function (p) { return buildPageSignature(pdfDoc, p); }));
         for (var i = 0; i < batchSigs.length; i++) result.push(batchSigs[i]);
-        
+
         summaryTextEl.textContent = sideLabel + " PDF 시그니처 생성 중... " + end + " / " + total;
         ldUpdateSub(stepIdx, end + " / " + total + " 페이지");
         ldSetLog(sideLabel + " PDF 시그니처 생성 중... " + end + " / " + total);
@@ -2876,16 +3113,16 @@
       var token = pageView.renderToken;
       pageView.status.textContent = "rendering";
       var page = await pdfDoc.getPage(pageView.pageNo);
-      var effectiveScale  = pageView.renderScaleOverride || renderScale;
+      var effectiveScale = pageView.renderScaleOverride || renderScale;
       var displayViewport = page.getViewport({ scale: effectiveScale });
-      var renderViewport  = page.getViewport({ scale: effectiveScale * renderOversample });
+      var renderViewport = page.getViewport({ scale: effectiveScale * renderOversample });
       if (generation !== renderGeneration || token !== pageView.renderToken) {
         return;
       }
       var canvas = document.createElement("canvas");
-      canvas.style.width  = displayViewport.width  + "px";
+      canvas.style.width = displayViewport.width + "px";
       canvas.style.height = displayViewport.height + "px";
-      canvas.width  = Math.floor(renderViewport.width  * dpr);
+      canvas.width = Math.floor(renderViewport.width * dpr);
       canvas.height = Math.floor(renderViewport.height * dpr);
       var ctx = canvas.getContext("2d", { alpha: false });
       ctx.imageSmoothingEnabled = false;
@@ -3027,12 +3264,12 @@
             var lv = pageViews1[rowIndex];
             var rv = pageViews2[rowIndex];
             if (lv && !lv.isRendered && !lv.isMissing && pdfDoc1) {
-              ensureRendered(pdfDoc1, lv, renderGeneration).then(function() {
+              ensureRendered(pdfDoc1, lv, renderGeneration).then(function () {
                 if (lv.status) lv.status.textContent = lv.isCompared ? 'ready' : 'ready';
               });
             }
             if (rv && !rv.isRendered && !rv.isMissing && pdfDoc2) {
-              ensureRendered(pdfDoc2, rv, renderGeneration).then(function() {
+              ensureRendered(pdfDoc2, rv, renderGeneration).then(function () {
                 if (rv.status) rv.status.textContent = rv.isCompared ? 'ready' : 'ready';
               });
             }
@@ -3058,7 +3295,7 @@
         var placeholder = document.createElement('div');
         placeholder.className = 'canvas-placeholder';
         if (compareMode === "text") placeholder.classList.add("text-placeholder");
-        placeholder.style.width  = pv.canvas.style.width;
+        placeholder.style.width = pv.canvas.style.width;
         placeholder.style.height = pv.canvas.style.height;
         if (compareMode === "text") placeholder.textContent = "p" + (pv.pageNo || "");
         pv.canvas.replaceWith(placeholder);
@@ -3070,13 +3307,13 @@
 
     function downscaleCanvasToDisplay(pv) {
       if (!pv || !pv.canvas || !pv.viewport) return;
-      var targetW = Math.floor(pv.viewport.width  * dpr);
+      var targetW = Math.floor(pv.viewport.width * dpr);
       var targetH = Math.floor(pv.viewport.height * dpr);
       if (pv.canvas.width <= targetW && pv.canvas.height <= targetH) return;
       var small = document.createElement("canvas");
-      small.width  = targetW;
+      small.width = targetW;
       small.height = targetH;
-      small.style.width  = pv.viewport.width  + "px";
+      small.style.width = pv.viewport.width + "px";
       small.style.height = pv.viewport.height + "px";
       small.getContext("2d", { alpha: false }).drawImage(pv.canvas, 0, 0, targetW, targetH);
       pv.canvas.replaceWith(small);
@@ -3171,12 +3408,12 @@
       // (두 조건 모두 분리가 있을 때만 적용 → 대각선 배치 박스의 연쇄 병합 차단)
       var minOv = DIFF_POST.MERGE_OVERLAP_RATIO;
       if (xGap > 0) {
-        var yOv  = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        var yOv = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
         var yRef = Math.min(a.h, b.h);
         if (yRef > 0 && yOv / yRef < minOv) return false;
       }
       if (yGap > 0) {
-        var xOv  = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+        var xOv = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
         var xRef = Math.min(a.w, b.w);
         if (xRef > 0 && xOv / xRef < minOv) return false;
       }
@@ -3188,7 +3425,7 @@
       var bPixels = (b.area != null ? b.area : b.w * b.h);
       var u = unionRect(a, b);
       if (aPixels + bPixels > 0 &&
-          u.w * u.h > DIFF_POST.MERGE_MAX_FILL_INV * (aPixels + bPixels)) return false;
+        u.w * u.h > DIFF_POST.MERGE_MAX_FILL_INV * (aPixels + bPixels)) return false;
 
       return true;
     }
@@ -3404,9 +3641,9 @@
       if (kind === "insert") box.classList.add("insert-box");
       if (kind === "delete") box.classList.add("delete-box");
       box.dataset.diffId = diffId;
-      box.style.left   = rect.x + "px";
-      box.style.top    = rect.y + "px";
-      box.style.width  = rect.w + "px";
+      box.style.left = rect.x + "px";
+      box.style.top = rect.y + "px";
+      box.style.width = rect.w + "px";
       box.style.height = rect.h + "px";
       overlay.appendChild(box);
     }
@@ -3416,9 +3653,9 @@
       var box = document.createElement("div");
       box.className = "diff-box diff-line";
       box.dataset.diffId = diffId;
-      box.style.left   = rect.x + "px";
-      box.style.top    = rect.y + "px";
-      box.style.width  = rect.w + "px";
+      box.style.left = rect.x + "px";
+      box.style.top = rect.y + "px";
+      box.style.width = rect.w + "px";
       box.style.height = rect.h + "px";
       overlay.appendChild(box);
     }
@@ -3428,9 +3665,9 @@
       var box = document.createElement("div");
       box.className = "diff-box diff-overlay-mask";
       box.dataset.diffId = diffId;
-      box.style.left   = rect.x + "px";
-      box.style.top    = rect.y + "px";
-      box.style.width  = rect.w + "px";
+      box.style.left = rect.x + "px";
+      box.style.top = rect.y + "px";
+      box.style.width = rect.w + "px";
       box.style.height = rect.h + "px";
       overlay.appendChild(box);
     }
@@ -3455,14 +3692,14 @@
      * { left, right, type } 배열로 반환.
      */
     function postProcessDiffComponents(components, mask, roiW, roiH, roiX, roiY,
-                                        canvasW, canvasH, effectiveScale, cssWidth, cssHeight) {
+      canvasW, canvasH, effectiveScale, cssWidth, cssHeight) {
       var ES = Math.max(1, effectiveScale);
 
       // ── 1. filterNoiseBoxes (초기): bbox 너무 작거나 밀도 너무 낮은 제거 ──
-      var minArea    = Math.round(DIFF_POST.MIN_AREA * ES / 3);
-      var minBboxPx  = Math.max(60 * ES, 60);
-      var borderX    = Math.round(canvasW * DIFF_POST.BORDER_MARGIN);
-      var borderY    = Math.round(canvasH * DIFF_POST.BORDER_MARGIN);
+      var minArea = Math.round(DIFF_POST.MIN_AREA * ES / 3);
+      var minBboxPx = Math.max(60 * ES, 60);
+      var borderX = Math.round(canvasW * DIFF_POST.BORDER_MARGIN);
+      var borderY = Math.round(canvasH * DIFF_POST.BORDER_MARGIN);
 
       var items = components.filter(function (c) {
         if (c.area < minArea) return false;
@@ -3503,7 +3740,7 @@
       // ── 4. mergeNearbyBoxesWithType ─────────────────────────────────────────
       var mergeGap = Math.round(DIFF_POST.BOX_MERGE_GAP * ES / 3);
       var merged = mergeNearbyBoxesWithType(paddedPx, mergeGap);
-      merged     = mergeNearbyBoxesWithType(merged,   Math.round(mergeGap * 0.5));
+      merged = mergeNearbyBoxesWithType(merged, Math.round(mergeGap * 0.5));
 
       // ── 5. filterNoiseBoxes (최종): 병합 후 최소 면적 필터 ─────────────────
       var minFinalArea = Math.max(500 * ES, 500);
@@ -3542,7 +3779,7 @@
       // sparse 분할 대상
       var bboxArea = w * h;
       if (bboxArea >= DIFF_POST.SPARSE_MIN_BBOX * Math.max(1, ES / 2) &&
-          density < DIFF_POST.SPARSE_SPLIT_THRESHOLD) {
+        density < DIFF_POST.SPARSE_SPLIT_THRESHOLD) {
         return "sparse";
       }
       // 작은 점
@@ -3657,7 +3894,7 @@
               // 같은 선 타입끼리는 유지, 그 외 compact
               var bt = base.type, jt = merged[j].type;
               if (bt === "compact" || jt === "compact" ||
-                  bt === "point"   || jt === "point") {
+                bt === "point" || jt === "point") {
                 u.type = "compact";
               } else if (bt === jt) {
                 u.type = bt;
@@ -3837,35 +4074,35 @@
     }
 
     function scrollContainerToElement(el, container, smooth) {
-      var elBCR  = el.getBoundingClientRect();
+      var elBCR = el.getBoundingClientRect();
       var cntBCR = container.getBoundingClientRect();
-      var elTop  = container.scrollTop  + (elBCR.top  - cntBCR.top);
+      var elTop = container.scrollTop + (elBCR.top - cntBCR.top);
       var elLeft = container.scrollLeft + (elBCR.left - cntBCR.left);
-      var targetTop  = elTop  - (container.clientHeight - elBCR.height) * 0.38;
-      var targetLeft = elLeft - (container.clientWidth  - elBCR.width)  * 0.5;
+      var targetTop = elTop - (container.clientHeight - elBCR.height) * 0.38;
+      var targetLeft = elLeft - (container.clientWidth - elBCR.width) * 0.5;
       container.scrollTo({
-        top:  Math.max(0, Math.min(targetTop,  container.scrollHeight - container.clientHeight)),
-        left: Math.max(0, Math.min(targetLeft, container.scrollWidth  - container.clientWidth)),
+        top: Math.max(0, Math.min(targetTop, container.scrollHeight - container.clientHeight)),
+        left: Math.max(0, Math.min(targetLeft, container.scrollWidth - container.clientWidth)),
         behavior: smooth ? "smooth" : "auto"
       });
     }
 
     function scrollContainerToRect(pageWrap, rect, container, smooth) {
       var wrapBCR = pageWrap.getBoundingClientRect();
-      var cntBCR  = container.getBoundingClientRect();
-      var wrapTop  = container.scrollTop  + (wrapBCR.top  - cntBCR.top);
+      var cntBCR = container.getBoundingClientRect();
+      var wrapTop = container.scrollTop + (wrapBCR.top - cntBCR.top);
       var wrapLeft = container.scrollLeft + (wrapBCR.left - cntBCR.left);
-      var labelEl  = pageWrap.querySelector('.page-label');
-      var labelH   = labelEl ? labelEl.offsetHeight : 0;
+      var labelEl = pageWrap.querySelector('.page-label');
+      var labelH = labelEl ? labelEl.offsetHeight : 0;
       var ry = rect ? (rect.y * viewScale) : 0;
       var rx = rect ? (rect.x * viewScale) : 0;
       var rh = rect ? (rect.h * viewScale) : 0;
       var rw = rect ? (rect.w * viewScale) : 0;
-      var targetTop  = wrapTop  + labelH + ry - (container.clientHeight - rh) * 0.38;
-      var targetLeft = wrapLeft +          rx - (container.clientWidth  - rw) * 0.5;
+      var targetTop = wrapTop + labelH + ry - (container.clientHeight - rh) * 0.38;
+      var targetLeft = wrapLeft + rx - (container.clientWidth - rw) * 0.5;
       container.scrollTo({
-        top:  Math.max(0, Math.min(targetTop,  container.scrollHeight - container.clientHeight)),
-        left: Math.max(0, Math.min(targetLeft, container.scrollWidth  - container.clientWidth)),
+        top: Math.max(0, Math.min(targetTop, container.scrollHeight - container.clientHeight)),
+        left: Math.max(0, Math.min(targetLeft, container.scrollWidth - container.clientWidth)),
         behavior: smooth ? "smooth" : "auto"
       });
     }
@@ -3890,7 +4127,7 @@
         return;
       }
       navLockUntil = performance.now() + 500;
-      var leftBox  = pdf1El.querySelector('.diff-box[data-diff-id="' + entry.id + '"]');
+      var leftBox = pdf1El.querySelector('.diff-box[data-diff-id="' + entry.id + '"]');
       var rightBox = pdf2El.querySelector('.diff-box[data-diff-id="' + entry.id + '"]');
       if (leftBox) {
         scrollContainerToElement(leftBox, pdf1El, smooth);
@@ -4022,8 +4259,8 @@
         ? rowIndex : 0;
 
       var row = alignmentRows[i];
-      var lv  = pageViews1[i];
-      var rv  = pageViews2[i];
+      var lv = pageViews1[i];
+      var rv = pageViews2[i];
       var refView = (row.type === "delete") ? lv : rv;
       var baseW = refView.baseWidth, baseH = refView.baseHeight;
 
@@ -4044,12 +4281,12 @@
 
       var body = document.createElement("div");
       body.className = "page-body";
-      body.style.width  = Math.max(1, Math.round(baseW * viewScale)) + "px";
+      body.style.width = Math.max(1, Math.round(baseW * viewScale)) + "px";
       body.style.height = Math.max(1, Math.round(baseH * viewScale)) + "px";
 
       var stage = document.createElement("div");
       stage.className = "page-stage";
-      stage.style.width  = baseW + "px";
+      stage.style.width = baseW + "px";
       stage.style.height = baseH + "px";
       stage.style.transformOrigin = "top left";
       stage.style.transform = "scale(" + viewScale + ")";
@@ -4068,7 +4305,7 @@
       } else {
         var ph = document.createElement("div");
         ph.className = "canvas-placeholder";
-        ph.style.width  = baseW + "px";
+        ph.style.width = baseW + "px";
         ph.style.height = baseH + "px";
         ph.style.display = "flex";
         ph.style.alignItems = "center";
@@ -4110,7 +4347,7 @@
 
       var outCanvas = document.createElement("canvas");
       outCanvas.width = w; outCanvas.height = h;
-      outCanvas.style.width  = leftView.baseWidth  + "px";
+      outCanvas.style.width = leftView.baseWidth + "px";
       outCanvas.style.height = leftView.baseHeight + "px";
 
       var ctx = outCanvas.getContext("2d");
@@ -4119,18 +4356,18 @@
 
       for (var i = 0, n = w * h; i < n; i++) {
         var p = i * 4;
-        var lum1 = (d1[p] * 77 + d1[p+1] * 150 + d1[p+2] * 29) >> 8;
-        var lum2 = (d2[p] * 77 + d2[p+1] * 150 + d2[p+2] * 29) >> 8;
+        var lum1 = (d1[p] * 77 + d1[p + 1] * 150 + d1[p + 2] * 29) >> 8;
+        var lum2 = (d2[p] * 77 + d2[p + 1] * 150 + d2[p + 2] * 29) >> 8;
         var inv1 = 255 - lum1, inv2 = 255 - lum2;
-        var white     = lum1 < lum2 ? lum1 : lum2;          // min(lum1,lum2) — 배경 밝기
-        var leftOnly  = inv1 > inv2 ? inv1 - inv2 : 0;       // 왼쪽만 있는 강도
+        var white = lum1 < lum2 ? lum1 : lum2;          // min(lum1,lum2) — 배경 밝기
+        var leftOnly = inv1 > inv2 ? inv1 - inv2 : 0;       // 왼쪽만 있는 강도
         var rightOnly = inv2 > inv1 ? inv2 - inv1 : 0;       // 오른쪽만 있는 강도
-        var common    = inv1 < inv2 ? inv1 : inv2;           // min(inv1,inv2) — 공통 강도
+        var common = inv1 < inv2 ? inv1 : inv2;           // min(inv1,inv2) — 공통 강도
         // 공통 부분 → d1 원본 색상, 왼쪽만 → 파랑, 오른쪽만 → 빨강, 배경 → 흰색
-        out[p]   = Math.min(255, white + rightOnly  + ((common * d1[p])   >> 8)); // R
-        out[p+1] = Math.min(255, white + ((common * d1[p+1]) >> 8)); // G
-        out[p+2] = Math.min(255, white + leftOnly + ((common * d1[p+2]) >> 8)); // B
-        out[p+3] = 255;
+        out[p] = Math.min(255, white + rightOnly + ((common * d1[p]) >> 8)); // R
+        out[p + 1] = Math.min(255, white + ((common * d1[p + 1]) >> 8)); // G
+        out[p + 2] = Math.min(255, white + leftOnly + ((common * d1[p + 2]) >> 8)); // B
+        out[p + 3] = 255;
       }
 
       ctx.putImageData(imgData, 0, 0);
@@ -4145,7 +4382,7 @@
 
       var outCanvas = document.createElement("canvas");
       outCanvas.width = w; outCanvas.height = h;
-      outCanvas.style.width  = view.baseWidth  + "px";
+      outCanvas.style.width = view.baseWidth + "px";
       outCanvas.style.height = view.baseHeight + "px";
 
       var ctx = outCanvas.getContext("2d");
@@ -4154,17 +4391,17 @@
 
       for (var i = 0, n = w * h; i < n; i++) {
         var p = i * 4;
-        var lum = (data[p] * 77 + data[p+1] * 150 + data[p+2] * 29) >> 8;
+        var lum = (data[p] * 77 + data[p + 1] * 150 + data[p + 2] * 29) >> 8;
         if (side === "left") {
-          out[p]   = lum;  // R = full
-          out[p+1] = lum;  // G = 배경만
-          out[p+2] = 255;  // B = 배경만
+          out[p] = lum;  // R = full
+          out[p + 1] = lum;  // G = 배경만
+          out[p + 2] = 255;  // B = 배경만
         } else {
-          out[p]   = 255;  // R = 배경만
-          out[p+1] = lum;  // G = full
-          out[p+2] = lum;  // B = 배경만
+          out[p] = 255;  // R = 배경만
+          out[p + 1] = lum;  // G = full
+          out[p + 2] = lum;  // B = 배경만
         }
-        out[p+3] = 255;
+        out[p + 3] = 255;
       }
 
       ctx.putImageData(imgData, 0, 0);
@@ -4182,6 +4419,7 @@
 
     // ── 드래그 패닝 ──────────────────────────────────────────────────────────
 
+    // 드래그로 스크롤 (Pan) 시작
     function startPan(e, container) {
       if (e.button !== 0) return;
       isPanning = true;
@@ -4189,21 +4427,22 @@
       panStartX = e.clientX;
       panStartY = e.clientY;
       panScrollLeft = container.scrollLeft;
-      panScrollTop  = container.scrollTop;
+      panScrollTop = container.scrollTop;
       container.classList.add("panning");
       e.preventDefault();
     }
 
+    // 드래그 중 (스크롤 이동)
     function doPan(e) {
       if (!isPanning || !panTarget) return;
       e.preventDefault();
       var dx = panStartX - e.clientX;
       var dy = panStartY - e.clientY;
       panTarget.scrollLeft = panScrollLeft + dx;
-      panTarget.scrollTop  = panScrollTop  + dy;
-      // pixel 모드에서는 scroll 이벤트 → syncScroll 이 반대쪽 패인을 자동 동기화
+      panTarget.scrollTop = panScrollTop + dy;
     }
 
+    // 드래그 종료
     function stopPan() {
       if (!isPanning) return;
       isPanning = false;
@@ -4215,12 +4454,12 @@
       pane.addEventListener("mousedown", function (e) { startPan(e, pane); });
     });
     document.addEventListener("mousemove", doPan);
-    document.addEventListener("mouseup",   stopPan);
+    document.addEventListener("mouseup", stopPan);
 
     // ── 현재 페이지 감지 (Pixel Only) ────────────────────────────────────────
 
     function findVisibleRowIndex() {
-      var cTop    = pdf1El.scrollTop;
+      var cTop = pdf1El.scrollTop;
       var cBottom = cTop + pdf1El.clientHeight;
       var cCenter = (cTop + cBottom) / 2;
       var bestDist = Infinity, bestRow = 0;
@@ -4264,6 +4503,85 @@
       if (lv && lv.pageWrap) lv.pageWrap.classList.add("viewing");
       if (rv && rv.pageWrap) rv.pageWrap.classList.add("viewing");
     }
+
+    // 사이드바 리사이즈(드래그로 너비 조절) 기능 초기화
+    function initSidebarResizer() {
+      if (!sidebarEl || !sidebarResizerEl) {
+        return;
+      }
+
+      var minWidth = 180;
+      var maxWidth = 640;
+      var dragging = false;
+
+      // 사이드바 너비를 최소/최대 범위 내로 제한하는 함수
+      function clampWidth(width) {
+        var layoutWidth = layoutEl ? layoutEl.clientWidth : window.innerWidth;
+        var safeMax = Math.min(maxWidth, Math.max(minWidth, layoutWidth - 320));
+        return Math.max(minWidth, Math.min(width, safeMax));
+      }
+
+      // 실제 사이드바 너비 적용
+      function setSidebarWidth(width) {
+        sidebarEl.style.width = clampWidth(width) + "px";
+      }
+
+      // 드래그 종료 처리
+      function stopDrag() {
+        if (!dragging) {
+          return;
+        }
+        dragging = false;
+        document.body.classList.remove("is-resizing-sidebar");
+      }
+
+      sidebarResizerEl.addEventListener("mousedown", function (e) {
+        dragging = true;
+        document.body.classList.add("is-resizing-sidebar");
+        e.preventDefault();
+      });
+
+      window.addEventListener("mousemove", function (e) {
+        if (!dragging) {
+          return;
+        }
+        setSidebarWidth(e.clientX);
+      });
+
+      window.addEventListener("mouseup", stopDrag);
+      window.addEventListener("mouseleave", stopDrag);
+      window.addEventListener("resize", function () {
+        setSidebarWidth(sidebarEl.getBoundingClientRect().width);
+      });
+    }
+
+    function syncCompareViewportHeight() {
+      if (!layoutEl) {
+        return;
+      }
+
+      var viewportHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+      var layoutTop = layoutEl.getBoundingClientRect().top;
+      var availableHeight = Math.max(240, Math.floor(viewportHeight - layoutTop));
+
+      document.documentElement.style.setProperty("--compare-layout-h", availableHeight + "px");
+
+      if (toolbarEl) {
+        document.documentElement.style.setProperty("--toolbar-h", toolbarEl.offsetHeight + "px");
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", async function () {
+      syncCompareViewportHeight();
+      initSidebarResizer();
+      setTimeout(syncCompareViewportHeight, 0);
+      setTimeout(syncCompareViewportHeight, 300);
+      setTimeout(syncCompareViewportHeight, 1000);
+      if (file1El.value) await loadPDF1({ target: file1El });
+      if (file2El.value) await loadPDF2({ target: file2El });
+    });
+
+    window.addEventListener("resize", syncCompareViewportHeight);
 
     function syncScroll(src, tgt) {
       if (compareMode === "text") {
