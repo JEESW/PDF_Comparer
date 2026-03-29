@@ -1,4 +1,4 @@
-# PDF Visual Compare Viewer
+# PDF Comparer
 
 A **single-file HTML tool** for visually comparing differences between two PDF files.
 No installation required — runs directly in the browser, and files are never sent to any server, making it safe to use with sensitive documents.
@@ -9,12 +9,14 @@ No installation required — runs directly in the browser, and files are never s
 
 | Feature | Description |
 |---------|-------------|
-| **Pixel Comparison** | Renders both PDFs as images and detects differences at the pixel level |
+| **Pixel Comparison** | Renders both PDFs as images and detects differences using an OpenCV.js-based edge pipeline (with pure-JS fallback) |
 | **Text Comparison** | Extracts text from each PDF and performs character-level diff using the Myers algorithm |
 | **Auto Page Alignment** | Automatically aligns pages to account for insertions and deletions between documents |
 | **Changed Pages List** | Sidebar lists only pages where changes were detected |
 | **Diff Navigation** | Jump through detected differences in order using Prev/Next buttons |
 | **Zoom Control** | Freely adjust page display size with Zoom +/- buttons |
+| **Toggle Diff** | Show or hide diff highlights on the current view with the Hide/Show Changes button |
+| **Overlay / Split View** | Switch between a side-by-side split view and a single overlaid comparison view |
 | **Cancel** | Stop an in-progress comparison at any time with the Cancel button |
 
 ---
@@ -48,23 +50,26 @@ Comparison starts automatically once both files are selected.
 ### 4. Review Results
 
 ```
-┌───────────────────────────────────────────────────────────────────────┐
-│  [File1] [File2] [Mode▼] [Zoom-] [Zoom+] [Prev] [Next] [Re-compare]   │
-├────────────────┬──────────────────────────┬───────────────────────────┤
-│                │   Left PDF               │   Right PDF               │
-│ Changed Pages  │                          │                           │
-│                │   Page 1                 │   Page 1                  │
-│ • p.3 changed  │                          │                           │
-│ • p.5 inserted │   Page 2                 │   Page 2                  │
-│                │   [highlighted changes]  │   [highlighted changes]   │
-│                │        ...               │        ...                │
-└────────────────┴──────────────────────────┴───────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│  [File1] [File2] [Mode▼] [Hide Changes] [Overlay] [Zoom-] [Zoom+] [Prev] [Next]     │
+│                                                                       [Re-compare]   │
+├────────────────┬──────────────────────────┬─────────────────────────────────────────┤
+│                │   Left PDF               │   Right PDF                             │
+│ Changed Pages  │                          │                                         │
+│                │   Page 1                 │   Page 1                                │
+│ • p.3 changed  │                          │                                         │
+│ • p.5 inserted │   Page 2                 │   Page 2                                │
+│                │   [highlighted changes]  │   [highlighted changes]                 │
+│                │        ...               │        ...                              │
+└────────────────┴──────────────────────────┴─────────────────────────────────────────┘
 ```
 
 - **Red areas**: Deleted or modified content
 - **Green areas**: Added or modified content
 - **Click a sidebar item**: Jump directly to that page
 - **Prev / Next**: Navigate through diff locations one by one
+- **Hide/Show Changes**: Toggle the diff highlight overlay on or off
+- **Overlay**: Switch to a single-pane overlay view; click again (Split View) to return to side-by-side
 
 ### 5. Re-compare
 
@@ -75,10 +80,10 @@ Click the **[Re-compare]** button to re-run the comparison after changing the mo
 ## Requirements
 
 - **Browser**: Chrome, Edge, or Firefox (latest version recommended)
-- **Internet**: Required on first load to fetch [PDF.js](https://mozilla.github.io/pdf.js/) from CDN
+- **Internet**: Required on first load to fetch [PDF.js](https://mozilla.github.io/pdf.js/) and [OpenCV.js](https://docs.opencv.org/4.8.0/opencv.js) from CDN
 - **Installation**: None
 
-> For offline use, download the PDF.js library locally and update the CDN paths in the HTML file.
+> For offline use, download the PDF.js and OpenCV.js libraries locally and update the CDN paths in the HTML file.
 
 ---
 
@@ -105,7 +110,8 @@ A loading overlay shows progress through four steps during comparison:
 ## Tech Stack
 
 - **PDF.js** v3.11.174 — PDF rendering and text extraction
-- **Canvas API** — Pixel-level image comparison
+- **OpenCV.js** v4.8.0 — Advanced pixel-level image processing for diff detection
+- **Canvas API** — Pixel-level image comparison (used in the pure-JS fallback path)
 
 ## Algorithms
 
@@ -114,5 +120,6 @@ A loading overlay shows progress through four steps during comparison:
 | **Needleman-Wunsch** | Pixel | Global sequence alignment for matching pages across two PDFs. Each page is treated as an element in a sequence; the algorithm finds the optimal pairing using a similarity score and a gap penalty (0.43), handling inserted or deleted pages gracefully. |
 | **Myers Diff** | Text | Character-level diff across the full text stream of both documents. After extracting text from every page, all tokens are flattened into a single sequence and diffed in one pass — page boundaries are ignored to catch text that shifts between pages. |
 | **Levenshtein Distance** | Pixel | Used internally during page similarity scoring to compare sampled text snippets from two pages, contributing to the similarity score that feeds into the Needleman-Wunsch alignment. |
+| **OpenCV Edge Pipeline** | Pixel | When OpenCV.js is loaded, pixel diff uses a multi-stage pipeline: Gaussian blur → Canny edge detection → distance transform → morphological open/close → connected-component labeling. A lightweight translation-alignment correction is also applied to cancel minor scan offsets before diffing. Falls back to a pure-JS pixel comparison if OpenCV is unavailable. |
 
 - Pure HTML / CSS / JavaScript (no frameworks)
